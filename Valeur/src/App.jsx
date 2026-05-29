@@ -7,6 +7,9 @@ import CandleChart from "./components/CandleChart";
 // import HowItWorks from "./components/HowItWorks";
 // import CTA from "./components/CTA";
 // import Footer from "./components/Footer";
+import EcosystemSection from "./components/EcosystemSection" 
+import CTA from "./components/CTA";
+
 
 
 function App() {
@@ -17,6 +20,8 @@ function App() {
       <ProblemSection />
       <FeaturesShowcase />
       <CandleChart />
+      <EcosystemSection />
+      <CTA />
     </>
   );
 }
