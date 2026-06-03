@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Valeur — Invertí con amigos</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Poppins:wght@300;400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <button id="theme-toggle">
+      🌙
+    </button>
+    <a href="#hero" style="text-decoration: none;">
+      <div class="nav-logo">Valeur<span>.</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="#features">Funciones</a>
+      <a href="#social">Comunidad</a>
+      <a href="#how">Cómo funciona</a>
+      <a href="#cta" class="nav-cta">Empezar gratis</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero" id="hero">
+    <h1>Invertí con <em>inteligencia</em>,<br>crecé con amigos</h1>
+    <p class="hero-sub">
+      Valeur es la plataforma que convierte las inversiones en algo simple, social y accesible. Para vos que querés
+      empezar, aunque nunca lo hayas hecho.
+    </p>
+    <div class="hero-buttons">
+      <a href="#cta" class="btn-primary">Crear mi cuenta gratis</a>
+      <a href="#features" class="btn-secondary">Ver cómo funciona</a>
+    </div>
+
+    <div class="hero-visual">
+      <!-- Floating cards -->
+      <div class="float-card float-left">
+        <div class="float-card-label">Amigos invirtiendo</div>
+        <div class="float-friends">
+          <div class="friend-dot" style="background:#1E3A8A;">MA</div>
+          <div class="friend-dot" style="background:#2563EB;">JL</div>
+          <div class="friend-dot" style="background:#1E40AF;">SR</div>
+          <div class="friend-dot" style="background:#3B82F6;">+4</div>
+        </div>
+      </div>
+      <div class="float-card float-right">
+        <div class="float-card-label">Tu cartera hoy</div>
+        <div class="float-card-val">+12.4%</div>
+        <div style="font-size:10px;color:#94A3B8;margin-top:2px;">vs. el mes pasado</div>
+      </div>
+
+      <!-- Phone mock -->
+      <div class="mock-phone">
+        <div class="mock-screen">
+          <div class="mock-top">
+            <div>
+              <div class="mock-greeting">Buenos días,</div>
+              <div class="mock-name">Sofía 👋</div>
+            </div>
+            <div class="mock-avatar">SO</div>
+          </div>
+          <div class="mock-balance-label">Balance total</div>
+          <div class="mock-balance">$24.830</div>
+          <div class="mock-change">↑ +$1.240 este mes</div>
+          <div class="mock-chart">
+            <svg viewBox="0 0 220 60" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.3" />
+                  <stop offset="100%" stop-color="#3B82F6" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M0,50 C20,48 35,42 55,38 C75,34 90,40 110,30 C130,20 145,25 165,15 C185,5 200,8 220,4 L220,60 L0,60 Z"
+                fill="url(#grad)" />
+              <path d="M0,50 C20,48 35,42 55,38 C75,34 90,40 110,30 C130,20 145,25 165,15 C185,5 200,8 220,4"
+                fill="none" stroke="#3B82F6" stroke-width="1.5" />
+            </svg>
+          </div>
+          <div class="mock-section-title">Mis acciones</div>
+          <div class="mock-stock">
+            <div>
+              <div class="mock-stock-name">AAPL</div>
+              <div class="mock-stock-sub">Apple Inc.</div>
+            </div>
+            <div>
+              <div class="mock-stock-price">$189.25</div>
+              <div class="mock-stock-change up">+2.1%</div>
+            </div>
+          </div>
+          <div class="mock-stock">
+            <div>
+              <div class="mock-stock-name">TSLA</div>
+              <div class="mock-stock-sub">Tesla</div>
+            </div>
+            <div>
+              <div class="mock-stock-price">$242.10</div>
+              <div class="mock-stock-change down">-0.8%</div>
+            </div>
+          </div>
+          <div class="mock-stock">
+            <div>
+              <div class="mock-stock-name">MSFT</div>
+              <div class="mock-stock-sub">Microsoft</div>
+            </div>
+            <div>
+              <div class="mock-stock-price">$415.30</div>
+              <div class="mock-stock-change up">+1.4%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-num">18<em>-</em>25</div>
+      <div class="stat-label">Edad del público objetivo</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">3<em>+</em></div>
+      <div class="stat-label">APIs de mercado en tiempo real</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">0</div>
+      <div class="stat-label">Conocimiento previo necesario</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num"><em>∞</em></div>
+      <div class="stat-label">Posibilidades de aprendizaje</div>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <span class="section-tag">Funcionalidades</span>
+    <h2 class="section-title">Todo lo que necesitás para <em>empezar</em></h2>
+    <p class="section-sub">Sin jerga financiera. Sin pantallas confusas. Solo vos y tus inversiones.</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.8">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+        </div>
+        <div class="feature-title">Inversiones en tiempo real</div>
+        <div class="feature-desc">Comprá acciones de Apple, Tesla y más. Precios actualizados al instante con fallback
+          automático entre Alpha Vantage, Finnhub y Twelve Data.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.8">
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+            <circle cx="17.5" cy="17.5" r="3.5" />
+          </svg>
+        </div>
+        <div class="feature-title">Portfolio visual</div>
+        <div class="feature-desc">Seguí tus ganancias y pérdidas con gráficos simples. Historial de operaciones y
+          métricas claras para entender cómo va tu plata.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.8">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+        </div>
+        <div class="feature-title">Red social de inversiones</div>
+        <div class="feature-desc">Agregá amigos, mirá en qué invierten y aprendé de sus movimientos. Perfiles públicos o
+          privados según tus preferencias.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.8">
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+        </div>
+        <div class="feature-title">Puntuación de activos</div>
+        <div class="feature-desc">Cada acción tiene su rating de 1 a 5 estrellas basado en opiniones de la comunidad.
+          Tomá decisiones con el respaldo del colectivo.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.8">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+            <path d="M4.93 4.93a10 10 0 0 0 0 14.14" />
+            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+            <path d="M8.46 8.46a5 5 0 0 0 0 7.07" />
+          </svg>
+        </div>
+        <div class="feature-title">Recomendaciones inteligentes</div>
+        <div class="feature-desc">Como Netflix pero de inversiones. El sistema aprende de tu historial y preferencias
+          para sugerirte activos que hacen sentido para vos.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="1.8">
+            <rect x="2" y="3" width="6" height="18" rx="1" />
+            <rect x="9" y="8" width="6" height="13" rx="1" />
+            <rect x="16" y="13" width="6" height="8" rx="1" />
+          </svg>
+        </div>
+        <div class="feature-title">Multi-perfil estilo Netflix</div>
+        <div class="feature-desc">Creá sub-perfiles dentro de tu cuenta. Uno para inversiones reales, otro para probar
+          estrategias de alto riesgo. Cambiá con un toque.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOCIAL -->
+  <section class="social-section" id="social">
+    <div class="social-inner">
+      <span class="section-tag">Comunidad</span>
+      <h2 class="section-title" style="color:white;margin:0 auto 1rem;">Invertir es mejor<br><em>con amigos</em></h2>
+      <p class="section-sub" style="margin:0 auto 3rem;">Mirá las carteras de tus amigos, aprendé de sus estrategias y
+        tomá mejores decisiones juntos.</p>
+      <div class="friends-grid">
+        <div class="friend-card">
+          <div class="friend-avatar" style="background:#1E3A8A;">MA</div>
+          <div>
+            <div class="friend-name">Matías A.</div>
+            <div class="friend-portfolio">AAPL · MSFT · ETF</div>
+            <div class="friend-return positive">+18.2% anual</div>
+          </div>
+        </div>
+        <div class="friend-card">
+          <div class="friend-avatar" style="background:#2563EB;">JL</div>
+          <div>
+            <div class="friend-name">Juli L.</div>
+            <div class="friend-portfolio">TSLA · NVDA</div>
+            <div class="friend-return positive">+31.5% anual</div>
+          </div>
+        </div>
+        <div class="friend-card">
+          <div class="friend-avatar" style="background:#1E40AF;">SR</div>
+          <div>
+            <div class="friend-name">Santi R.</div>
+            <div class="friend-portfolio">Fondos · AMZN</div>
+            <div class="friend-return positive">+9.8% anual</div>
+          </div>
+        </div>
+        <div class="friend-card">
+          <div class="friend-avatar" style="background:#3B82F6;">VA</div>
+          <div>
+            <div class="friend-name">Vale A.</div>
+            <div class="friend-portfolio">ETF · GOOG</div>
+            <div class="friend-return positive">+14.1% anual</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="steps-section" id="how">
+    <span class="section-tag">Cómo funciona</span>
+    <h2 class="section-title">Cuatro pasos para <em>empezar</em></h2>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-title">Creá tu cuenta</div>
+        <div class="step-desc">Registro simple, sin papeles. Solo tu mail y contraseña. El onboarding te guía paso a
+          paso desde el primer minuto.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-title">Explorá el mercado</div>
+        <div class="step-desc">Buscá acciones y fondos, mirá precios en tiempo real y recibí recomendaciones
+          personalizadas según tu perfil.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-title">Conectá con amigos</div>
+        <div class="step-desc">Agregá a tus amigos, mirá sus carteras públicas y aprendé de las estrategias de quienes
+          ya están invirtiendo.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-title">Crecé juntos</div>
+        <div class="step-desc">Seguí tu portfolio, recibí alertas personalizadas y tomá decisiones más informadas con
+          cada operación.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section" id="cta">
+    <span class="section-tag">Empezá hoy</span>
+    <h2 class="section-title">Invertir no tiene<br>que ser <em>difícil</em></h2>
+    <p class="section-sub">Unite a la plataforma que te enseña mientras invertís. Simple, social y pensada para vos.</p>
+    <a href="#" class="btn-primary btn-large">Crear mi cuenta — es gratis</a>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">Valeur<span>.</span></div>
+    <p>© 2025 Valeur. Todos los derechos reservados.</p>
+    <div class="footer-links">
+      <a href="#">Términos</a>
+      <a href="#">Privacidad</a>
+      <a href="#">Contacto</a>
+    </div>
+  </footer>
+
+  <script>
+    const toggle = document.getElementById("theme-toggle");
+
+    toggle.addEventListener("click", () => {
+      document.body.classList.toggle("dark");
+
+      localStorage.setItem(
+        "theme",
+        document.body.classList.contains("dark")
+          ? "dark"
+          : "light"
+      );
+    });
+
+    const savedTheme = localStorage.getItem("theme");
+
+    if (savedTheme === "dark") {
+      document.body.classList.add("dark");
+    }
+  </script>
+
+</body>
+
+</html>
