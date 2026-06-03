@@ -116,11 +116,11 @@ def get_candles(symbol):
     try:
         ticker = yf.Ticker(symbol)
         if interval == "daily":
-            period = "1mo"      # igual que ahora
+            period = "1mo"      
         elif interval == "weekly":
-            period = "6mo"      # más semanas
+            period = "6mo"     
         elif interval == "monthly":
-            period = "12mo"     # más meses
+            period = "12mo"     
         else:
             period = "1mo"
 
