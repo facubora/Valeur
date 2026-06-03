@@ -136,6 +136,9 @@ export default function CandleChart() {
   useEffect(() => {
     if (!candleSer.current || !volSer.current || !candles.length) return;
 
+    candleSer.current.setData([]);
+    volSer.current.setData([]);
+
     candleSer.current.setData(candles.map(c => ({
       time: c.date, open: c.open, high: c.high, low: c.low, close: c.close,
     })));
