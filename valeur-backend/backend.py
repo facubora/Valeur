@@ -120,7 +120,7 @@ def get_candles(symbol):
         elif interval == "weekly":
             period = "6mo"     
         elif interval == "monthly":
-            period = "12mo"     
+            period = "300mo"     
         else:
             period = "1mo"
 
