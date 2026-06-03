@@ -1,164 +1,196 @@
-# valeur/backend.py — Mini backend para datos de Alpha Vantage
-# Requiere: pip install flask flask-cors requests python-dotenv
+# valeur/backend.py — Mini backend con yfinance + auth
+# Requiere: pip install flask flask-cors yfinance mysql-connector-python bcrypt pyjwt python-dotenv
 
-from flask import Flask, jsonify, request # type: ignore
-from flask_cors import CORS # type: ignore
-import requests # type: ignore
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+import yfinance as yf
 import os
-from datetime import datetime, timedelta
-from dotenv import load_dotenv # type: ignore
+import bcrypt
+import jwt
+import datetime
+import mysql.connector
+from dotenv import load_dotenv
 
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # Permite requests desde React (localhost:3000)
+CORS(app, origins=["http://localhost:5173"])
 
-AV_KEY = os.getenv("ALPHA_VANTAGE_KEY", "demo")
-AV_BASE = "https://www.alphavantage.co/query"
+JWT_SECRET = os.getenv("JWT_SECRET", "dev_secret_change_me")
 
 
-def av_get(params: dict):
-    """Helper: llama a Alpha Vantage con tu API key."""
-    params["apikey"] = AV_KEY
-    r = requests.get(AV_BASE, params=params, timeout=10)
-    r.raise_for_status()
-    return r.json()
+def get_db():
+    return mysql.connector.connect(
+        host=os.getenv("DB_HOST", "localhost"),
+        port=int(os.getenv("DB_PORT", 3306)),
+        user=os.getenv("DB_USER", "root"),
+        password=os.getenv("DB_PASSWORD", ""),
+        database=os.getenv("DB_NAME", "valeur"),
+    )
+
+
+# ─── Auth ─────────────────────────────────────────────────────────────────────
+
+@app.route("/api/auth/register", methods=["POST"])
+def register():
+    data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip()
+    email    = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+
+    if not username or not email or not password:
+        return jsonify({"error": "username, email y password son requeridos"}), 400
+    if len(password) < 8:
+        return jsonify({"error": "La contraseña debe tener al menos 8 caracteres"}), 400
+
+    password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute(
+            "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)",
+            (username, email, password_hash),
+        )
+        db.commit()
+        user_id = cursor.lastrowid
+        cursor.close()
+        db.close()
+    except mysql.connector.IntegrityError:
+        return jsonify({"error": "El email o username ya está en uso"}), 409
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    token = jwt.encode(
+        {"user_id": user_id, "exp": datetime.datetime.utcnow() + datetime.timedelta(days=7)},
+        JWT_SECRET,
+        algorithm="HS256",
+    )
+    return jsonify({"token": token, "user": {"id": user_id, "username": username, "email": email}}), 201
+
+
+@app.route("/api/auth/login", methods=["POST"])
+def login():
+    data = request.get_json(silent=True) or {}
+    email    = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+
+    if not email or not password:
+        return jsonify({"error": "email y password son requeridos"}), 400
+
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+        cursor.execute("SELECT id, username, email, password_hash FROM users WHERE email = %s", (email,))
+        user = cursor.fetchone()
+        cursor.close()
+        db.close()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    if not user or not bcrypt.checkpw(password.encode(), user["password_hash"].encode()):
+        return jsonify({"error": "Credenciales incorrectas"}), 401
+
+    token = jwt.encode(
+        {"user_id": user["id"], "exp": datetime.datetime.utcnow() + datetime.timedelta(days=7)},
+        JWT_SECRET,
+        algorithm="HS256",
+    )
+    return jsonify({"token": token, "user": {"id": user["id"], "username": user["username"], "email": user["email"]}})
 
 
 # ─── Velas japonesas (OHLCV) ─────────────────────────────────────────────────
 
 @app.route("/api/candles/<symbol>")
 def get_candles(symbol):
-    """
-    Retorna velas diarias para un símbolo.
-    Query params:
-    - interval: "daily" (default) | "weekly" | "monthly"
-    - limit:    cantidad de velas a devolver (default: 90)
+    interval = request.args.get("interval", "daily").lower()
+    limit    = int(request.args.get("limit", 120))
 
-    Ejemplo: GET /api/candles/AAPL?interval=daily&limit=60
-    """
-    interval = request.args.get("interval", "daily").upper()
-    limit    = int(request.args.get("limit", 90))
-
-    func_map = {
-        "DAILY":   "TIME_SERIES_DAILY",
-        "WEEKLY":  "TIME_SERIES_WEEKLY",
-        "MONTHLY": "TIME_SERIES_MONTHLY",
+    interval_map = {
+        "daily":   "1d",
+        "weekly":  "1wk",
+        "monthly": "1mo",
     }
-    ts_key_map = {
-        "DAILY":   "Time Series (Daily)",
-        "WEEKLY":  "Weekly Time Series",
-        "MONTHLY": "Monthly Time Series",
-    }
-
-    func    = func_map.get(interval, "TIME_SERIES_DAILY")
-    ts_key  = ts_key_map.get(interval, "Time Series (Daily)")
+    yf_interval = interval_map.get(interval, "1d")
 
     try:
-        data = av_get({"function": func, "symbol": symbol, "outputsize": "compact"})
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(period="1mo", interval=yf_interval)
+
+        if df.empty:
+            return jsonify({"error": "Symbol not found or no data"}), 404
+
+        df = df.tail(limit)
+        candles = []
+        for date, row in df.iterrows():
+            candles.append({
+                "date":   date.strftime("%Y-%m-%d"),
+                "open":   round(float(row["Open"]), 4),
+                "high":   round(float(row["High"]), 4),
+                "low":    round(float(row["Low"]), 4),
+                "close":  round(float(row["Close"]), 4),
+                "volume": int(row["Volume"]),
+            })
+
+        return jsonify({"symbol": symbol.upper(), "interval": interval, "candles": candles})
+
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
-    ts = data.get(ts_key, {})
-    if not ts:
-        return jsonify({"error": "Symbol not found or API limit reached", "raw": data}), 404
 
-    candles = []
-    for date_str, vals in sorted(ts.items(), reverse=True)[:limit]:
-        candles.append({
-            "date":   date_str,
-            "open":   float(vals["1. open"]),
-            "high":   float(vals["2. high"]),
-            "low":    float(vals["3. low"]),
-            "close":  float(vals["4. close"]),
-            "volume": int(vals["5. volume"]),
-        })
-
-    # Más viejo primero (para el gráfico)
-    candles.reverse()
-
-    return jsonify({
-        "symbol":   symbol.upper(),
-        "interval": interval,
-        "candles":  candles,
-    })
-
-
-# ─── Quote en tiempo real ────────────────────────────────────────────────────
+# ─── Quote ────────────────────────────────────────────────────────────────────
 
 @app.route("/api/quote/<symbol>")
 def get_quote(symbol):
     try:
-        data = av_get({"function": "GLOBAL_QUOTE", "symbol": symbol})
+        ticker = yf.Ticker(symbol)
+        info   = ticker.fast_info
+
+        price      = round(float(info.last_price), 4)
+        prev_close = round(float(info.previous_close), 4)
+        change     = round(price - prev_close, 4)
+        change_pct = round((change / prev_close) * 100, 4) if prev_close else 0
+
+        return jsonify({
+            "symbol":     symbol.upper(),
+            "price":      price,
+            "change":     change,
+            "change_pct": change_pct,
+            "volume":     int(info.three_month_average_volume or 0),
+            "prev_close": prev_close,
+        })
+
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
-    q = data.get("Global Quote", {})
-    if not q:
-        return jsonify({"error": "No data", "raw": data}), 404
 
-    price      = float(q.get("05. price", 0))
-    prev_close = float(q.get("08. previous close", 0))
-
-    # Calculamos el cambio desde las velas si el campo viene vacío
-    raw_pct = q.get("10. change percent", "0%").replace("%", "")
-    try:
-        change_pct = float(raw_pct)
-    except:
-        change_pct = 0.0
-
-    change = price - prev_close
-
-    if change_pct == 0.0 and prev_close != 0:
-        change_pct = ((price - prev_close) / prev_close) * 100
-
-    return jsonify({
-        "symbol":             q.get("01. symbol"),
-        "price":              price,
-        "change":             round(change, 4),
-        "change_pct":         round(change_pct, 4),
-        "volume":             int(q.get("06. volume", 0)),
-        "prev_close":         prev_close,
-        "latest_trading_day": q.get("07. latest trading day"),
-    })
-
-
-# ─── Búsqueda de símbolo ─────────────────────────────────────────────────────
+# ─── Búsqueda ─────────────────────────────────────────────────────────────────
 
 @app.route("/api/search")
 def search_symbol():
-    """
-    Busca símbolos por nombre o ticker.
-    Ejemplo: GET /api/search?q=apple
-    """
     q = request.args.get("q", "")
     if not q:
         return jsonify({"error": "Param 'q' required"}), 400
-
     try:
-        data = av_get({"function": "SYMBOL_SEARCH", "keywords": q})
+        results = yf.Search(q).quotes
+        return jsonify({"results": [
+            {
+                "symbol": r.get("symbol"),
+                "name":   r.get("longname") or r.get("shortname"),
+                "type":   r.get("quoteType"),
+            }
+            for r in results[:8]
+        ]})
     except Exception as e:
         return jsonify({"error": str(e)}), 502
-
-    results = [
-        {
-            "symbol":   m["1. symbol"],
-            "name":     m["2. name"],
-            "type":     m["3. type"],
-            "region":   m["4. region"],
-            "currency": m["8. currency"],
-        }
-        for m in data.get("bestMatches", [])
-    ]
-    return jsonify({"results": results})
 
 
 # ─── Health check ─────────────────────────────────────────────────────────────
 
 @app.route("/api/health")
 def health():
-    return jsonify({"status": "ok", "key_set": AV_KEY != "demo"})
+    return jsonify({"status": "ok"})
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001, host="0.0.0.0")

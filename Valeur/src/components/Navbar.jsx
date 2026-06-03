@@ -25,7 +25,7 @@ function Navbar() {
         </nav>
 
         <div className="nav-actions">
-          <a href="#login" className="nav-login">Iniciar Sesión</a>
+          <a href="/login" className="nav-login">Iniciar Sesión</a>
           <a href="#cta" className="nav-cta">Registrarse</a>
         </div>
       </div>

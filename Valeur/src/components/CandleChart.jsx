@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createChart, CrosshairMode, CandlestickSeries, HistogramSeries } from "lightweight-charts";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "http://localhost:5001/api";
 
 const THEME = {
   bg:        "#f8fafc",
