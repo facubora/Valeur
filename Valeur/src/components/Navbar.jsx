@@ -20,7 +20,7 @@ function Navbar() {
 
         <nav className="nav-links">
           <a href="#features">Funciones</a>
-          <a href="#social">Comunidad</a>
+          <a href="/tickersearch">Busqueda de Tickers</a>
           <a href="#how">Cómo funciona</a>
         </nav>
 
