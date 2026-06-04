@@ -29,7 +29,23 @@ function Navbar() {
   }, [menuOpen]);
 
   return (
-    <>
+    <header className={`navbar ${scrolled ? "navbar-scrolled" : ""}`}>
+      <div className="nav-inner">
+        <a href="#hero" className="nav-logo">
+          Valeur<span>.</span>
+        </a>
+
+        <nav className="nav-links">
+          <a href="#features">Funciones</a>
+          <a href="/tickersearch">Busqueda de Tickers</a>
+          <a href="#how">Cómo funciona</a>
+        </nav>
+
+        <div className="nav-actions">
+          <a href="/login" className="nav-login">Iniciar Sesión</a>
+          <a href="#cta" className="nav-cta">Registrarse</a>
+    </div>
+    </div>
       <header className={`navbar ${scrolled ? "navbar-scrolled" : ""}`}>
         <div className="nav-inner">
           <a href="#hero" className="nav-logo" onClick={() => setMenuOpen(false)}>
@@ -75,7 +91,7 @@ function Navbar() {
         <a href="/login" onClick={() => setMenuOpen(false)}>Iniciar Sesión</a>
         <a href="/register" className="nav-cta" onClick={() => setMenuOpen(false)}>Registrarse gratis</a>
       </nav>
-    </>
+    </header>
   );
 }
 
