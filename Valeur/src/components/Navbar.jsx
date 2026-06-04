@@ -31,59 +31,40 @@ function Navbar() {
   return (
     <header className={`navbar ${scrolled ? "navbar-scrolled" : ""}`}>
       <div className="nav-inner">
-        <a href="#hero" className="nav-logo">
+        <a href="#hero" className="nav-logo" onClick={() => setMenuOpen(false)}>
           Valeur<span>.</span>
         </a>
 
         <nav className="nav-links">
-          <a href="#features">Funciones</a>
-          <a href="/tickersearch">Busqueda de Tickers</a>
-          <a href="#how">Cómo funciona</a>
+          <a href="#problem-section">¿Por qué Valeur?</a>
+          <a href="/tickersearch">Búsqueda</a>
+          <a href="#features">Funcionalidades</a>
         </nav>
 
         <div className="nav-actions">
+          <button
+            className="nav-theme-toggle"
+            onClick={toggle}
+            aria-label="Cambiar tema"
+            title={dark ? "Modo claro" : "Modo oscuro"}
+          >
+            {dark ? <i class="bi bi-sun"></i> : <i className="bi bi-moon"></i>}
+          </button>
+
           <a href="/login" className="nav-login">Iniciar Sesión</a>
-          <a href="#cta" className="nav-cta">Registrarse</a>
-    </div>
-    </div>
-      <header className={`navbar ${scrolled ? "navbar-scrolled" : ""}`}>
-        <div className="nav-inner">
-          <a href="#hero" className="nav-logo" onClick={() => setMenuOpen(false)}>
-            Valeur<span>.</span>
-          </a>
+          <a href="/register" className="nav-cta">Registrarse</a>
 
-          <nav className="nav-links">
-            <a href="#problem-section">¿Por qué Valeur?</a>
-            <a href="">Búsqueda</a>
-            <a href="#features">Funcionalidades</a>
-          </nav>
-
-          <div className="nav-actions">
-            <button
-              className="nav-theme-toggle"
-              onClick={toggle}
-              aria-label="Cambiar tema"
-              title={dark ? "Modo claro" : "Modo oscuro"}
-            >
-              {dark ? <i class="bi bi-sun"></i> : <i className="bi bi-moon"></i>}
-            </button>
-
-            <a href="/login" className="nav-login">Iniciar Sesión</a>
-            <a href="/register" className="nav-cta">Registrarse</a>
-
-            <button
-              className={`nav-hamburger ${menuOpen ? "open" : ""}`}
-              onClick={() => setMenuOpen((o) => !o)}
-              aria-label="Menú"
-            >
-              <span />
-              <span />
-              <span />
-            </button>
-          </div>
+          <button
+            className={`nav-hamburger ${menuOpen ? "open" : ""}`}
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label="Menú"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
         </div>
-      </header>
-
+      </div>
       {/* Mobile drawer */}
       <nav className={`nav-mobile-menu ${menuOpen ? "open" : ""}`}>
         <a href="#features" onClick={() => setMenuOpen(false)}>Funciones</a>
