@@ -13,12 +13,8 @@ function CTA() {
         </p>
 
         <div className="cta-actions">
-          <a href="#" className="cta-primary">
-            Crear cuenta gratis
-          </a>
-
-          <a href="#" className="cta-secondary">
-            Explorar plataforma
+          <a href="/register" className="cta-primary">
+            Quiero crear mi cuenta gratis
           </a>
         </div>
 

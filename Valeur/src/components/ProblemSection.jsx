@@ -1,6 +1,6 @@
 function ProblemSection() {
   return (
-    <section className="problem-section">
+    <section id="problem-section" className="problem-section">
       <div className="problem-inner">
         <h2>
           Tu debut como <em>inversor</em> no tiene por qué sentirse como un salto al vacío
@@ -39,4 +39,4 @@ function ProblemSection() {
   );
 }
 
-export default ProblemSection;  
+export default ProblemSection;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import CandleChart from "../components/CandleChart";
+import { useTheme } from "../context/ThemeContext";
 
 const MOCK_PORTFOLIO = [
   { symbol: "AAPL",  name: "Apple Inc.",      value: 4820.50,  change_pct:  2.14, shares: 28 },
@@ -9,12 +10,13 @@ const MOCK_PORTFOLIO = [
   { symbol: "TSLA",  name: "Tesla Inc.",       value: 1380.20,  change_pct: -1.97, shares: 9  },
 ];
 
-const TOTAL_VALUE   = MOCK_PORTFOLIO.reduce((s, a) => s + a.value, 0);
-const TOTAL_CHANGE  = 1.84;
+const TOTAL_VALUE  = MOCK_PORTFOLIO.reduce((s, a) => s + a.value, 0);
+const TOTAL_CHANGE = 1.84;
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const { dark, toggle } = useTheme();
 
   useEffect(() => {
     const stored = localStorage.getItem("user");
@@ -31,17 +33,33 @@ export default function Dashboard() {
   if (!user) return null;
 
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
+  const greeting =
+    hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
 
   return (
     <div className="dash-page">
 
       {/* Topbar */}
       <header className="dash-topbar">
-        <a href="/" className="auth-logo" style={{ marginBottom: 0 }}>Valeur<span>.</span></a>
+        <a href="/" className="auth-logo" style={{ marginBottom: 0 }}>
+          Valeur<span>.</span>
+        </a>
+
         <div className="dash-topbar-right">
           <span className="dash-username">@{user.username}</span>
-          <button className="dash-logout" onClick={handleLogout}>Cerrar sesión</button>
+
+          <button
+            className="dash-theme-toggle"
+            onClick={toggle}
+            aria-label="Cambiar tema"
+            title={dark ? "Modo claro" : "Modo oscuro"}
+          >
+            {dark ? <i class="bi bi-sun"></i> : <i className="bi bi-moon"></i>}
+          </button>
+
+          <button className="dash-logout" onClick={handleLogout}>
+            Cerrar sesión
+          </button>
         </div>
       </header>
 
@@ -57,7 +75,9 @@ export default function Dashboard() {
         <section className="dash-summary">
           <div className="dash-summary-card main-card">
             <span className="summary-label">Valor total</span>
-            <strong className="summary-value">${TOTAL_VALUE.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</strong>
+            <strong className="summary-value">
+              ${TOTAL_VALUE.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+            </strong>
             <span className={`summary-badge ${TOTAL_CHANGE >= 0 ? "badge-up" : "badge-down"}`}>
               {TOTAL_CHANGE >= 0 ? "▲" : "▼"} {Math.abs(TOTAL_CHANGE).toFixed(2)}% hoy
             </span>
@@ -82,7 +102,6 @@ export default function Dashboard() {
           </div>
         </section>
 
-
         {/* Posiciones */}
         <section className="dash-positions">
           <h2 className="dash-section-title">Mis posiciones</h2>
@@ -96,7 +115,9 @@ export default function Dashboard() {
                     <span>{asset.name}</span>
                   </div>
                   <div className="position-shares">{asset.shares} acciones</div>
-                  <div className="position-value">${asset.value.toLocaleString("es-AR", { minimumFractionDigits: 2 })}</div>
+                  <div className="position-value">
+                    ${asset.value.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
+                  </div>
                   <div className={`position-change ${isUp ? "change-up" : "change-down"}`}>
                     {isUp ? "▲" : "▼"} {Math.abs(asset.change_pct).toFixed(2)}%
                   </div>
