@@ -1,24 +1,33 @@
-// valeur/CandleChart.jsx — Estilo Valeur (light mode, glassmorphism, Poppins)
-// Requiere: npm install lightweight-charts
-
 import { useEffect, useRef, useState, useCallback } from "react";
-import { createChart, CrosshairMode, CandlestickSeries, HistogramSeries } from "lightweight-charts";
+import {
+  createChart,
+  CrosshairMode,
+  CandlestickSeries,
+  HistogramSeries,
+} from "lightweight-charts";
+import { useTheme } from "../context/ThemeContext";
 
 const API_BASE = "http://localhost:5001/api";
 
-const THEME = {
-  bg:        "#f8fafc",
-  surface:   "rgba(255,255,255,0.72)",
-  border:    "rgba(30,58,138,0.08)",
-  text:      "#0f172a",
-  textMuted: "#64748b",
-  blue:      "#2563eb",
-  blueDark:  "#1e3a8a",
-  green:     "#16a34a",
-  red:       "#dc2626",
-};
-
 const SYMBOLS = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA"];
+
+function getThemeColors(dark) {
+  return {
+    bg:        "transparent",
+    text:      dark ? "#94a3b8" : "#64748b",
+    gridLine:  dark ? "rgba(255,255,255,0.04)" : "rgba(30,58,138,0.05)",
+    crosshair: dark ? "rgba(148,163,184,0.3)"  : "rgba(37,99,235,0.3)",
+    border:    dark ? "rgba(255,255,255,0.07)"  : "rgba(30,58,138,0.08)",
+    green:     dark ? "#22c55e" : "#16a34a",
+    red:       dark ? "#f87171" : "#dc2626",
+    textMain:  dark ? "#f1f5f9" : "#0f172a",
+    textMuted: dark ? "#94a3b8" : "#64748b",
+    surface:   dark ? "rgba(20,20,30,0.9)" : "rgba(255,255,255,0.85)",
+    surfaceBg: dark ? "rgba(255,255,255,0.03)" : "rgba(248,250,252,0.5)",
+    blue:      dark ? "#3b82f6" : "#2563eb",
+    blueDark:  dark ? "#2563eb" : "#1e3a8a",
+  };
+}
 
 function useCandles(symbol, interval) {
   const [candles, setCandles] = useState([]);
@@ -62,35 +71,39 @@ export default function CandleChart() {
   const [hovered,  setHovered]  = useState(null);
   const [input,    setInput]    = useState("");
 
+  const { dark } = useTheme();
+  const C = getThemeColors(dark);
+
   const { candles, quote, loading, error, reload } = useCandles(symbol, interval);
 
+  // Create chart once
   useEffect(() => {
     if (!chartRef.current) return;
 
     const chart = createChart(chartRef.current, {
       width:  chartRef.current.clientWidth,
-      height: 380,
+      height: 360,
       layout: {
         background:  { color: "transparent" },
-        textColor:   THEME.textMuted,
+        textColor:   C.text,
         fontFamily:  "'Poppins', system-ui, sans-serif",
         fontSize:    11,
       },
       grid: {
-        vertLines: { color: "rgba(30,58,138,0.05)" },
-        horzLines: { color: "rgba(30,58,138,0.05)" },
+        vertLines: { color: C.gridLine },
+        horzLines: { color: C.gridLine },
       },
       crosshair: {
         mode:     CrosshairMode.Normal,
-        vertLine: { color: "rgba(37,99,235,0.3)", width: 1, style: 3 },
-        horzLine: { color: "rgba(37,99,235,0.3)", width: 1, style: 3 },
+        vertLine: { color: C.crosshair, width: 1, style: 3 },
+        horzLine: { color: C.crosshair, width: 1, style: 3 },
       },
       rightPriceScale: {
-        borderColor:  "rgba(30,58,138,0.08)",
+        borderColor:  C.border,
         scaleMargins: { top: 0.1, bottom: 0.3 },
       },
       timeScale: {
-        borderColor:    "rgba(30,58,138,0.08)",
+        borderColor:    C.border,
         timeVisible:    true,
         secondsVisible: false,
         rightOffset:    5,
@@ -99,12 +112,12 @@ export default function CandleChart() {
     });
 
     const cs = chart.addSeries(CandlestickSeries, {
-      upColor:         THEME.green,
-      downColor:       THEME.red,
-      borderUpColor:   THEME.green,
-      borderDownColor: THEME.red,
-      wickUpColor:     THEME.green,
-      wickDownColor:   THEME.red,
+      upColor:         C.green,
+      downColor:       C.red,
+      borderUpColor:   C.green,
+      borderDownColor: C.red,
+      wickUpColor:     C.green,
+      wickDownColor:   C.red,
     });
 
     const vs = chart.addSeries(HistogramSeries, {
@@ -122,7 +135,7 @@ export default function CandleChart() {
     });
 
     const ro = new ResizeObserver(() => {
-      chart.resize(chartRef.current.clientWidth, 380);
+      if (chartRef.current) chart.resize(chartRef.current.clientWidth, 360);
     });
     ro.observe(chartRef.current);
 
@@ -131,20 +144,43 @@ export default function CandleChart() {
     volSer.current    = vs;
 
     return () => { chart.remove(); ro.disconnect(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Update chart colors when dark mode changes
+  useEffect(() => {
+    if (!chartInst.current) return;
+    const colors = getThemeColors(dark);
+    chartInst.current.applyOptions({
+      layout:    { textColor: colors.text },
+      grid:      { vertLines: { color: colors.gridLine }, horzLines: { color: colors.gridLine } },
+      crosshair: { vertLine: { color: colors.crosshair }, horzLine: { color: colors.crosshair } },
+      rightPriceScale: { borderColor: colors.border },
+      timeScale:       { borderColor: colors.border },
+    });
+    candleSer.current?.applyOptions({
+      upColor: colors.green, downColor: colors.red,
+      borderUpColor: colors.green, borderDownColor: colors.red,
+      wickUpColor: colors.green, wickDownColor: colors.red,
+    });
+  }, [dark]);
+
+  // Update candle data
   useEffect(() => {
     if (!candleSer.current || !volSer.current || !candles.length) return;
-
-    candleSer.current.setData(candles.map(c => ({
+    const colors = getThemeColors(dark);
+    candleSer.current.setData(candles.map((c) => ({
       time: c.date, open: c.open, high: c.high, low: c.low, close: c.close,
     })));
-    volSer.current.setData(candles.map(c => ({
+    volSer.current.setData(candles.map((c) => ({
       time:  c.date,
       value: c.volume,
-      color: c.close >= c.open ? "rgba(22,163,74,0.25)" : "rgba(220,38,38,0.2)",
+      color: c.close >= c.open
+        ? `${colors.green}40`
+        : `${colors.red}33`,
     })));
     chartInst.current?.timeScale().fitContent();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candles]);
 
   const handleSearch = (e) => {
@@ -155,95 +191,182 @@ export default function CandleChart() {
 
   const pct    = quote ? parseFloat(quote.change_pct) : 0;
   const isUp   = pct >= 0;
-  const pctClr = isUp ? THEME.green : THEME.red;
 
   return (
-    <div style={s.root}>
+    <div style={{
+      background:     C.surface,
+      backdropFilter: "blur(14px)",
+      borderRadius:   24,
+      border:         `1px solid ${C.border}`,
+      boxShadow:      "0 24px 60px rgba(0,0,0,0.07)",
+      overflow:       "hidden",
+      fontFamily:     "'Poppins', system-ui, sans-serif",
+      transition:     "background 0.25s ease, border-color 0.25s ease",
+    }}>
       {/* Header */}
-      <div style={s.header}>
-        <div style={s.titleRow}>
-          <div>
-            <div style={s.symbolName}>{symbol}</div>
-            {quote && (
-              <div style={s.priceRow}>
-                <span style={s.price}>${quote.price.toFixed(2)}</span>
-                <span style={{ ...s.badge, background: isUp ? "rgba(22,163,74,0.1)" : "rgba(220,38,38,0.1)", color: pctClr }}>
-                  {isUp ? "▲" : "▼"} {Math.abs(pct).toFixed(2)}%
-                </span>
-                <span style={s.change}>
-                  {isUp ? "+" : ""}{quote.change?.toFixed(2)} hoy
-                </span>
-              </div>
-            )}
+      <div style={{
+        display:        "flex",
+        alignItems:     "flex-start",
+        justifyContent: "space-between",
+        padding:        "20px 24px 14px",
+        borderBottom:   `1px solid ${C.border}`,
+        flexWrap:       "wrap",
+        gap:            14,
+      }}>
+        <div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: C.textMain, letterSpacing: "-0.04em" }}>
+            {symbol}
           </div>
+          {quote && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 17, fontWeight: 600, color: C.textMain }}>
+                ${quote.price.toFixed(2)}
+              </span>
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 999,
+                background: isUp ? `${C.green}18` : `${C.red}18`,
+                color: isUp ? C.green : C.red,
+              }}>
+                {isUp ? "▲" : "▼"} {Math.abs(pct).toFixed(2)}%
+              </span>
+              <span style={{ fontSize: 12, color: C.textMuted }}>
+                {isUp ? "+" : ""}{quote.change?.toFixed(2)} hoy
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Búsqueda */}
-        <form onSubmit={handleSearch} style={s.form}>
+        <form onSubmit={handleSearch} style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <input
             value={input}
-            onChange={e => setInput(e.target.value.toUpperCase())}
+            onChange={(e) => setInput(e.target.value.toUpperCase())}
             placeholder="Buscar ticker…"
-            style={s.input}
+            style={{
+              background:   C.surfaceBg,
+              border:       `1px solid ${C.border}`,
+              borderRadius: 12,
+              padding:      "7px 12px",
+              color:        C.textMain,
+              fontSize:     13,
+              fontFamily:   "'Poppins', sans-serif",
+              width:        120,
+              outline:      "none",
+            }}
           />
-          <button type="submit" style={s.btnPrimary}>Ir</button>
+          <button type="submit" style={{
+            background:   C.blueDark,
+            border:       "none",
+            borderRadius: 12,
+            color:        "#fff",
+            padding:      "7px 14px",
+            cursor:       "pointer",
+            fontSize:     13,
+            fontWeight:   600,
+            fontFamily:   "'Poppins', sans-serif",
+          }}>
+            Ir
+          </button>
         </form>
       </div>
 
-      {/* Chips */}
-      <div style={s.chips}>
-        {SYMBOLS.map(sym => (
-          <button
-            key={sym}
-            onClick={() => setSymbol(sym)}
-            style={{ ...s.chip, ...(sym === symbol ? s.chipActive : {}) }}
-          >
+      {/* Symbol chips */}
+      <div style={{ display: "flex", gap: 6, padding: "12px 24px", flexWrap: "wrap" }}>
+        {SYMBOLS.map((sym) => (
+          <button key={sym} onClick={() => setSymbol(sym)} style={{
+            background:   sym === symbol ? `${C.blue}14` : C.surfaceBg,
+            border:       `1px solid ${sym === symbol ? `${C.blue}33` : C.border}`,
+            borderRadius: 10,
+            color:        sym === symbol ? C.blue : C.textMuted,
+            padding:      "4px 11px",
+            cursor:       "pointer",
+            fontSize:     12,
+            fontWeight:   sym === symbol ? 700 : 500,
+            fontFamily:   "'Poppins', sans-serif",
+            transition:   "all 0.2s ease",
+          }}>
             {sym}
           </button>
         ))}
       </div>
 
-      {/* Intervalo */}
-      <div style={s.intervalRow}>
-        {[["daily","Diario"],["weekly","Semanal"],["monthly","Mensual"]].map(([iv, label]) => (
-          <button
-            key={iv}
-            onClick={() => setInterval(iv)}
-            style={{ ...s.ivBtn, ...(iv === interval ? s.ivActive : {}) }}
-          >
+      {/* Interval row */}
+      <div style={{ display: "flex", gap: 4, padding: "0 24px 10px", alignItems: "center" }}>
+        {[["daily", "Diario"], ["weekly", "Semanal"], ["monthly", "Mensual"]].map(([iv, label]) => (
+          <button key={iv} onClick={() => setInterval(iv)} style={{
+            background:   iv === interval ? `${C.blue}10` : "none",
+            border:       "none",
+            borderRadius: 8,
+            color:        iv === interval ? C.blue : C.textMuted,
+            padding:      "5px 12px",
+            cursor:       "pointer",
+            fontSize:     12,
+            fontFamily:   "'Poppins', sans-serif",
+            fontWeight:   iv === interval ? 700 : 500,
+          }}>
             {label}
           </button>
         ))}
-        <button onClick={reload} style={s.reloadBtn} title="Recargar">↻</button>
+        <button onClick={reload} style={{
+          marginLeft: "auto", background: "none", border: "none",
+          color: C.textMuted, cursor: "pointer", fontSize: 18,
+          padding: "2px 6px", borderRadius: 8,
+        }} title="Recargar">
+          ↻
+        </button>
       </div>
 
-      {/* Tooltip OHLC */}
-      <div style={s.tooltip}>
+      {/* OHLC tooltip */}
+      <div style={{
+        padding:    "7px 24px",
+        minHeight:  32,
+        display:    "flex",
+        alignItems: "center",
+        background: C.surfaceBg,
+        borderTop:  `1px solid ${C.border}`,
+      }}>
         {hovered ? (
-          <div style={{ display: "flex", gap: 16, fontSize: 12, fontFamily: "'Poppins', sans-serif" }}>
-            {[["A", hovered.open, THEME.textMuted], ["H", hovered.high, THEME.green], ["L", hovered.low, THEME.red], ["C", hovered.close, THEME.text]].map(([l, v, c]) => (
+          <div style={{ display: "flex", gap: 14, fontSize: 12, fontFamily: "'Poppins', sans-serif" }}>
+            {[["A", hovered.open, C.textMuted], ["H", hovered.high, C.green], ["L", hovered.low, C.red], ["C", hovered.close, C.textMain]].map(([l, v, c]) => (
               <span key={l}>
-                <span style={{ color: THEME.textMuted, marginRight: 4 }}>{l}</span>
+                <span style={{ color: C.textMuted, marginRight: 3 }}>{l}</span>
                 <span style={{ color: c, fontWeight: 600 }}>{v?.toFixed(2)}</span>
               </span>
             ))}
           </div>
         ) : (
-          <span style={{ color: THEME.textMuted, fontSize: 12, fontFamily: "'Poppins', sans-serif" }}>
+          <span style={{ color: C.textMuted, fontSize: 12, fontFamily: "'Poppins', sans-serif" }}>
             {loading ? "Cargando datos…" : error ? `Error: ${error}` : "Pasá el mouse por el gráfico"}
           </span>
         )}
       </div>
 
-      {/* Gráfico */}
-      <div style={{ position: "relative", borderRadius: 16, overflow: "hidden" }}>
+      {/* Chart area */}
+      <div style={{ position: "relative", overflow: "hidden" }}>
         {(loading || error) && (
-          <div style={s.overlay}>
-            {loading && <div style={s.spinner} />}
+          <div style={{
+            position: "absolute", inset: 0, zIndex: 10,
+            background: dark ? "rgba(9,9,15,0.7)" : "rgba(248,250,252,0.75)",
+            backdropFilter: "blur(4px)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            {loading && (
+              <div style={{
+                width: 28, height: 28,
+                border: `3px solid ${C.border}`,
+                borderTop: `3px solid ${C.blue}`,
+                borderRadius: "50%",
+                animation: "spin 0.8s linear infinite",
+              }} />
+            )}
             {error && !loading && (
               <div style={{ textAlign: "center" }}>
-                <div style={{ color: THEME.red, marginBottom: 10, fontFamily: "'Poppins', sans-serif", fontSize: 14 }}>{error}</div>
-                <button onClick={reload} style={s.btnPrimary}>Reintentar</button>
+                <div style={{ color: C.red, marginBottom: 10, fontSize: 14 }}>{error}</div>
+                <button onClick={reload} style={{
+                  background: C.blueDark, border: "none", borderRadius: 12,
+                  color: "#fff", padding: "8px 16px", cursor: "pointer", fontSize: 13, fontWeight: 600,
+                }}>
+                  Reintentar
+                </button>
               </div>
             )}
           </div>
@@ -253,171 +376,30 @@ export default function CandleChart() {
 
       {/* Stats footer */}
       {quote && (
-        <div style={s.stats}>
+        <div style={{ display: "flex", borderTop: `1px solid ${C.border}`, flexWrap: "wrap" }}>
           {[
             ["Volumen",       (quote.volume / 1e6).toFixed(1) + "M"],
             ["Cierre ant.",   "$" + quote.prev_close?.toFixed(2)],
             ["Cambio $",      (isUp ? "+" : "") + quote.change?.toFixed(2)],
             ["Última sesión", quote.latest_trading_day],
           ].map(([label, value]) => (
-            <div key={label} style={s.stat}>
-              <span style={s.statLabel}>{label}</span>
-              <span style={s.statValue}>{value}</span>
+            <div key={label} style={{
+              flex: "1 1 25%",
+              display: "flex", flexDirection: "column", gap: 4,
+              padding: "12px 18px",
+              borderRight: `1px solid ${C.border}`,
+              minWidth: 100,
+            }}>
+              <span style={{ color: C.textMuted, fontSize: 11, fontWeight: 500 }}>{label}</span>
+              <span style={{ color: C.textMain, fontSize: 13, fontWeight: 600 }}>{value}</span>
             </div>
           ))}
         </div>
       )}
+
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }
-
-const s = {
-  root: {
-    background:   "rgba(255,255,255,0.72)",
-    backdropFilter: "blur(14px)",
-    borderRadius: 24,
-    border:       "1px solid rgba(15,23,42,0.06)",
-    boxShadow:    "0 24px 60px rgba(15,23,42,0.05)",
-    overflow:     "hidden",
-    fontFamily:   "'Poppins', system-ui, sans-serif",
-    transition:   "transform 0.25s ease, box-shadow 0.25s ease",
-  },
-  header: {
-    display:        "flex",
-    alignItems:     "flex-start",
-    justifyContent: "space-between",
-    padding:        "24px 28px 16px",
-    borderBottom:   "1px solid rgba(30,58,138,0.06)",
-    flexWrap:       "wrap",
-    gap:            16,
-  },
-  titleRow:   { display: "flex", alignItems: "flex-start", gap: 16 },
-  symbolName: { fontSize: 22, fontWeight: 700, color: "#0f172a", letterSpacing: "-0.04em" },
-  priceRow:   { display: "flex", alignItems: "center", gap: 10, marginTop: 4 },
-  price:      { fontSize: 18, fontWeight: 600, color: "#0f172a" },
-  badge: {
-    fontSize:     11,
-    fontWeight:   700,
-    padding:      "3px 9px",
-    borderRadius: 999,
-  },
-  change: { fontSize: 12, color: "#64748b" },
-  form:   { display: "flex", gap: 8, alignItems: "center" },
-  input: {
-    background:   "rgba(248,250,252,0.8)",
-    border:       "1px solid rgba(30,58,138,0.1)",
-    borderRadius: 12,
-    padding:      "8px 14px",
-    color:        "#0f172a",
-    fontSize:     13,
-    fontFamily:   "'Poppins', sans-serif",
-    width:        130,
-    outline:      "none",
-  },
-  btnPrimary: {
-    background:   "#1e3a8a",
-    border:       "none",
-    borderRadius: 12,
-    color:        "#fff",
-    padding:      "8px 16px",
-    cursor:       "pointer",
-    fontSize:     13,
-    fontWeight:   600,
-    fontFamily:   "'Poppins', sans-serif",
-    boxShadow:    "0 10px 24px rgba(30,58,138,0.18)",
-    transition:   "background 0.2s ease, transform 0.2s ease",
-  },
-  chips: { display: "flex", gap: 8, padding: "14px 28px", flexWrap: "wrap" },
-  chip: {
-    background:   "rgba(248,250,252,0.72)",
-    border:       "1px solid rgba(30,58,138,0.08)",
-    borderRadius: 10,
-    color:        "#64748b",
-    padding:      "5px 12px",
-    cursor:       "pointer",
-    fontSize:     12,
-    fontWeight:   500,
-    fontFamily:   "'Poppins', sans-serif",
-    transition:   "all 0.2s ease",
-  },
-  chipActive: {
-    background:   "rgba(37,99,235,0.08)",
-    borderColor:  "rgba(37,99,235,0.2)",
-    color:        "#2563eb",
-    fontWeight:   700,
-  },
-  intervalRow: {
-    display:    "flex",
-    gap:        4,
-    padding:    "0 28px 12px",
-    alignItems: "center",
-  },
-  ivBtn: {
-    background:   "none",
-    border:       "none",
-    borderRadius: 8,
-    color:        "#64748b",
-    padding:      "5px 12px",
-    cursor:       "pointer",
-    fontSize:     12,
-    fontFamily:   "'Poppins', sans-serif",
-    fontWeight:   500,
-    transition:   "all 0.2s ease",
-  },
-  ivActive: {
-    background: "rgba(37,99,235,0.07)",
-    color:      "#2563eb",
-    fontWeight: 700,
-  },
-  reloadBtn: {
-    marginLeft:   "auto",
-    background:   "none",
-    border:       "none",
-    color:        "#64748b",
-    cursor:       "pointer",
-    fontSize:     18,
-    padding:      "2px 6px",
-    borderRadius: 8,
-    transition:   "color 0.15s",
-  },
-  tooltip: {
-    padding:    "8px 28px",
-    minHeight:  34,
-    display:    "flex",
-    alignItems: "center",
-    background: "rgba(248,250,252,0.5)",
-    borderTop:  "1px solid rgba(30,58,138,0.04)",
-  },
-  overlay: {
-    position:       "absolute",
-    inset:          0,
-    zIndex:         10,
-    background:     "rgba(248,250,252,0.75)",
-    backdropFilter: "blur(4px)",
-    display:        "flex",
-    alignItems:     "center",
-    justifyContent: "center",
-  },
-  spinner: {
-    width:        32,
-    height:       32,
-    border:       "3px solid rgba(30,58,138,0.1)",
-    borderTop:    "3px solid #2563eb",
-    borderRadius: "50%",
-    animation:    "spin 0.8s linear infinite",
-  },
-  stats: {
-    display:       "flex",
-    borderTop:     "1px solid rgba(30,58,138,0.06)",
-  },
-  stat: {
-    flex:          1,
-    display:       "flex",
-    flexDirection: "column",
-    gap:           4,
-    padding:       "14px 20px",
-    borderRight:   "1px solid rgba(30,58,138,0.06)",
-  },
-  statLabel: { color: "#64748b", fontSize: 11, fontWeight: 500 },
-  statValue: { color: "#0f172a", fontSize: 13, fontWeight: 600 },
-};
