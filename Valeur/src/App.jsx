@@ -9,6 +9,7 @@ import CTA from "./components/CTA";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import Tickersearch from "./pages/Tickersearch";
 import Footer from "./components/Footer"
 
 function Landing() {
@@ -33,6 +34,7 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/tickersearch" element={<Tickersearch />} />
       </Routes>
     </BrowserRouter>
   );

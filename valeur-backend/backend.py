@@ -115,7 +115,16 @@ def get_candles(symbol):
 
     try:
         ticker = yf.Ticker(symbol)
-        df = ticker.history(period="1mo", interval=yf_interval)
+        if interval == "daily":
+            period = "1mo"      
+        elif interval == "weekly":
+            period = "6mo"     
+        elif interval == "monthly":
+            period = "300mo"     
+        else:
+            period = "1mo"
+
+        df = ticker.history(period=period, interval=yf_interval)
 
         if df.empty:
             return jsonify({"error": "Symbol not found or no data"}), 404
@@ -194,3 +203,4 @@ def health():
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001, host="0.0.0.0")
+    
