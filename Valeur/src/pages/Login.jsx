@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTheme } from "../context/ThemeContext";
 
 const API_BASE = "http://localhost:5001/api";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [form, setForm]     = useState({ email: "", password: "" });
-  const [error, setError]   = useState("");
+  const { dark, toggle } = useTheme();
+  const [form, setForm]       = useState({ email: "", password: "" });
+  const [error, setError]     = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -44,6 +46,17 @@ export default function Login() {
 
   return (
     <div className="auth-page">
+
+      {/* Theme toggle */}
+      <button
+        className="auth-theme-toggle"
+        onClick={toggle}
+        aria-label="Cambiar tema"
+        title={dark ? "Modo claro" : "Modo oscuro"}
+      >
+        {dark ? <i class="bi bi-sun"></i> : <i className="bi bi-moon"></i>}
+      </button>
+
       <div className="auth-card">
         <a href="/" className="auth-logo">Valeur<span>.</span></a>
 

@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTheme } from "../context/ThemeContext";
 
 const API_BASE = "http://localhost:5001/api";
 
 export default function Register() {
   const navigate = useNavigate();
+  const { dark, toggle } = useTheme();
   const [form, setForm]       = useState({ username: "", email: "", password: "", confirm: "" });
   const [error, setError]     = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,7 +29,11 @@ export default function Register() {
       const res = await fetch(`${API_BASE}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: form.username, email: form.email, password: form.password }),
+        body: JSON.stringify({
+          username: form.username,
+          email: form.email,
+          password: form.password,
+        }),
       });
       const data = await res.json();
 
@@ -48,6 +54,17 @@ export default function Register() {
 
   return (
     <div className="auth-page">
+
+      {/* Theme toggle */}
+      <button
+        className="auth-theme-toggle"
+        onClick={toggle}
+        aria-label="Cambiar tema"
+        title={dark ? "Modo claro" : "Modo oscuro"}
+      >
+        {dark ? <i class="bi bi-sun"></i> : <i className="bi bi-moon"></i>}
+      </button>
+
       <div className="auth-card">
         <a href="/" className="auth-logo">Valeur<span>.</span></a>
 

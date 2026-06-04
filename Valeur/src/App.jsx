@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Tickersearch from "./pages/Tickersearch";
+import Footer from "./components/Footer"
 
 function Landing() {
   return (
@@ -20,6 +21,7 @@ function Landing() {
       <FeaturesShowcase />
       <EcosystemSection />
       <CTA />
+      <Footer />
     </>
   );
 }
