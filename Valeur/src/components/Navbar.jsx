@@ -44,7 +44,8 @@ function Navbar() {
         <div className="nav-actions">
           <a href="/login" className="nav-login">Iniciar Sesión</a>
           <a href="#cta" className="nav-cta">Registrarse</a>
-    <>
+    </div>
+    </div>
       <header className={`navbar ${scrolled ? "navbar-scrolled" : ""}`}>
         <div className="nav-inner">
           <a href="#hero" className="nav-logo" onClick={() => setMenuOpen(false)}>
@@ -90,7 +91,7 @@ function Navbar() {
         <a href="/login" onClick={() => setMenuOpen(false)}>Iniciar Sesión</a>
         <a href="/register" className="nav-cta" onClick={() => setMenuOpen(false)}>Registrarse gratis</a>
       </nav>
-    </>
+    </header>
   );
 }
 
