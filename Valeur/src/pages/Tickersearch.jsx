@@ -23,7 +23,6 @@ const POPULAR_TICKERS = [
   { symbol: "TSLA", name: "Tesla" },
   { symbol: "NVDA", name: "NVIDIA" },
   { symbol: "META", name: "Meta" },
-  { symbol: "BRK.B", name: "Berkshire" },
   { symbol: "JPM", name: "JPMorgan" },
   { symbol: "V", name: "Visa" },
   { symbol: "NFLX", name: "Netflix" },
