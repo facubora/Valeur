@@ -1,10 +1,21 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const { dark, toggle } = useTheme();
+  const navigate = useNavigate();
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const sym = query.trim().toUpperCase();
+    if (!sym) return;
+    setMenuOpen(false);
+    navigate(`/tickersearch?symbol=${encodeURIComponent(sym)}`);
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
@@ -35,11 +46,16 @@ function Navbar() {
           Valeur<span>.</span>
         </a>
 
-        <nav className="nav-links">
-          <a href="#problem-section">¿Por qué Valeur?</a>
-          <a href="/tickersearch">Búsqueda</a>
-          <a href="#features">Funcionalidades</a>
-        </nav>
+        <form className="nav-search" onSubmit={handleSearch}>
+          <i className="bi bi-search nav-search-icon"></i>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar un ticker"
+            aria-label="Buscar ticker"
+          />
+        </form>
 
         <div className="nav-actions">
           <button
@@ -67,8 +83,16 @@ function Navbar() {
       </div>
       {/* Mobile drawer */}
       <nav className={`nav-mobile-menu ${menuOpen ? "open" : ""}`}>
-        <a href="#features" onClick={() => setMenuOpen(false)}>Funciones</a>
-        <a href="#social" onClick={() => setMenuOpen(false)}>Buscar</a>
+        <form className="nav-search nav-search-mobile" onSubmit={handleSearch}>
+          <i className="bi bi-search nav-search-icon"></i>
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar un ticker…"
+            aria-label="Buscar ticker"
+          />
+        </form>
         <a href="/login" onClick={() => setMenuOpen(false)}>Iniciar Sesión</a>
         <a href="/register" className="nav-cta" onClick={() => setMenuOpen(false)}>Registrarse gratis</a>
       </nav>

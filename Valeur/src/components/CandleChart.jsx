@@ -11,6 +11,17 @@ const API_BASE = "http://localhost:5001/api";
 
 const SYMBOLS = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA"];
 
+const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+
+function formatDate(d) {
+  if (!d) return "";
+  // d puede ser "2024-08-09" o un timestamp de lightweight-charts
+  const str = typeof d === "string" ? d : "";
+  const m = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return `${parseInt(m[3])} ${MESES[parseInt(m[2]) - 1]} ${m[1]}`;
+  return String(d);
+}
+
 function getThemeColors(dark) {
   return {
     bg:        "transparent",
@@ -29,7 +40,7 @@ function getThemeColors(dark) {
   };
 }
 
-function useCandles(symbol, interval) {
+function useCandles(symbol, interval, range) {
   const [candles, setCandles] = useState([]);
   const [quote,   setQuote]   = useState(null);
   const [loading, setLoading] = useState(false);
@@ -41,7 +52,7 @@ function useCandles(symbol, interval) {
     setError(null);
     try {
       const [cRes, qRes] = await Promise.all([
-        fetch(`${API_BASE}/candles/${symbol}?interval=${interval}&limit=120`),
+        fetch(`${API_BASE}/candles/${symbol}?interval=${interval}&range=${range}`),
         fetch(`${API_BASE}/quote/${symbol}`),
       ]);
       if (!cRes.ok) throw new Error(`HTTP ${cRes.status}`);
@@ -54,27 +65,29 @@ function useCandles(symbol, interval) {
     } finally {
       setLoading(false);
     }
-  }, [symbol, interval]);
+  }, [symbol, interval, range]);
 
   useEffect(() => { load(); }, [load]);
   return { candles, quote, loading, error, reload: load };
 }
 
 export default function CandleChart() {
-  const chartRef  = useRef(null);
-  const chartInst = useRef(null);
-  const candleSer = useRef(null);
-  const volSer    = useRef(null);
+  const chartRef   = useRef(null);
+  const chartInst  = useRef(null);
+  const candleSer  = useRef(null);
+  const volSer     = useRef(null);
+  const candlesRef = useRef([]);
 
   const [symbol,   setSymbol]   = useState("AAPL");
   const [interval, setInterval] = useState("daily");
+  const [range,    setRange]    = useState("max");
   const [hovered,  setHovered]  = useState(null);
   const [input,    setInput]    = useState("");
 
   const { dark } = useTheme();
   const C = getThemeColors(dark);
 
-  const { candles, quote, loading, error, reload } = useCandles(symbol, interval);
+  const { candles, quote, loading, error, reload } = useCandles(symbol, interval, range);
 
   // Create chart once
   useEffect(() => {
@@ -131,7 +144,13 @@ export default function CandleChart() {
     chart.subscribeCrosshairMove((param) => {
       if (!param.time) { setHovered(null); return; }
       const cVal = param.seriesData.get(cs);
-      if (cVal) setHovered(cVal);
+      if (!cVal) { setHovered(null); return; }
+      const arr  = candlesRef.current;
+      const idx  = arr.findIndex((c) => c.time === param.time);
+      const cur  = idx >= 0 ? arr[idx] : null;
+      const prev = idx > 0 ? arr[idx - 1] : null;
+      const dayChange = prev ? ((cVal.close - prev.close) / prev.close) * 100 : null;
+      setHovered({ ...cVal, date: cur ? cur.date : "", dayChange });
     });
 
     const ro = new ResizeObserver(() => {
@@ -167,21 +186,43 @@ export default function CandleChart() {
 
   // Update candle data
   useEffect(() => {
+    candlesRef.current = candles;
     if (!candleSer.current || !volSer.current || !candles.length) return;
     const colors = getThemeColors(dark);
     candleSer.current.setData(candles.map((c) => ({
-      time: c.date, open: c.open, high: c.high, low: c.low, close: c.close,
+      time: c.time, open: c.open, high: c.high, low: c.low, close: c.close,
     })));
     volSer.current.setData(candles.map((c) => ({
-      time:  c.date,
+      time:  c.time,
       value: c.volume,
       color: c.close >= c.open
         ? `${colors.green}40`
         : `${colors.red}33`,
     })));
-    chartInst.current?.timeScale().fitContent();
+    // Tipo TradingView: arranca mostrando lo más reciente con detalle,
+    // y el resto del histórico queda para deslizar hacia atrás.
+    const ts  = chartInst.current?.timeScale();
+    const len = candles.length;
+    if (ts) {
+      if (len > 150) {
+        ts.setVisibleLogicalRange({ from: len - 120, to: len + 3 });
+      } else {
+        ts.fitContent();
+      }
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candles]);
+
+  const INTRADAY = ["hourly", "30min"];
+  const isIntraday = INTRADAY.includes(interval);
+
+  const handleInterval = (iv) => {
+    const toIntraday   = INTRADAY.includes(iv);
+    const fromIntraday = INTRADAY.includes(interval);
+    if (toIntraday && !fromIntraday) setRange("5d");
+    if (!toIntraday && fromIntraday) setRange("max");
+    setInterval(iv);
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -290,9 +331,9 @@ export default function CandleChart() {
       </div>
 
       {/* Interval row */}
-      <div style={{ display: "flex", gap: 4, padding: "0 24px 10px", alignItems: "center" }}>
-        {[["daily", "Diario"], ["weekly", "Semanal"], ["monthly", "Mensual"]].map(([iv, label]) => (
-          <button key={iv} onClick={() => setInterval(iv)} style={{
+      <div style={{ display: "flex", gap: 4, padding: "0 24px 10px", alignItems: "center", flexWrap: "wrap" }}>
+        {[["30min", "30min"], ["hourly", "Hora"], ["daily", "Diario"], ["weekly", "Semanal"], ["monthly", "Mensual"]].map(([iv, label]) => (
+          <button key={iv} onClick={() => handleInterval(iv)} style={{
             background:   iv === interval ? `${C.blue}10` : "none",
             border:       "none",
             borderRadius: 8,
@@ -306,8 +347,36 @@ export default function CandleChart() {
             {label}
           </button>
         ))}
+
+        {/* Range selector */}
+        <div style={{
+          display: "flex", gap: 2, marginLeft: "auto", alignItems: "center",
+          background: C.surfaceBg, borderRadius: 10, padding: 3,
+          border: `1px solid ${C.border}`,
+        }}>
+          {(isIntraday
+            ? [["1d", "1D"], ["5d", "5D"], ["1m", "1M"]]
+            : [["1m", "1M"], ["6m", "6M"], ["1y", "1A"], ["5y", "5A"], ["max", "Máx"]]
+          ).map(([rg, label]) => (
+            <button key={rg} onClick={() => setRange(rg)} style={{
+              background:   rg === range ? C.blueDark : "none",
+              border:       "none",
+              borderRadius: 7,
+              color:        rg === range ? "#fff" : C.textMuted,
+              padding:      "4px 10px",
+              cursor:       "pointer",
+              fontSize:     11,
+              fontFamily:   "'Poppins', sans-serif",
+              fontWeight:   rg === range ? 700 : 500,
+              transition:   "all 0.15s ease",
+            }}>
+              {label}
+            </button>
+          ))}
+        </div>
+
         <button onClick={reload} style={{
-          marginLeft: "auto", background: "none", border: "none",
+          background: "none", border: "none",
           color: C.textMuted, cursor: "pointer", fontSize: 18,
           padding: "2px 6px", borderRadius: 8,
         }} title="Recargar">
@@ -325,13 +394,24 @@ export default function CandleChart() {
         borderTop:  `1px solid ${C.border}`,
       }}>
         {hovered ? (
-          <div style={{ display: "flex", gap: 14, fontSize: 12, fontFamily: "'Poppins', sans-serif" }}>
+          <div style={{ display: "flex", gap: 14, fontSize: 12, fontFamily: "'Poppins', sans-serif", alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ color: C.textMain, fontWeight: 700 }}>{formatDate(hovered.date)}</span>
             {[["A", hovered.open, C.textMuted], ["H", hovered.high, C.green], ["L", hovered.low, C.red], ["C", hovered.close, C.textMain]].map(([l, v, c]) => (
               <span key={l}>
                 <span style={{ color: C.textMuted, marginRight: 3 }}>{l}</span>
                 <span style={{ color: c, fontWeight: 600 }}>{v?.toFixed(2)}</span>
               </span>
             ))}
+            {hovered.dayChange != null && (
+              <span style={{
+                fontWeight: 700,
+                padding: "2px 8px", borderRadius: 999,
+                background: hovered.dayChange >= 0 ? `${C.green}18` : `${C.red}18`,
+                color: hovered.dayChange >= 0 ? C.green : C.red,
+              }}>
+                {hovered.dayChange >= 0 ? "▲" : "▼"} {Math.abs(hovered.dayChange).toFixed(2)}% vs ant.
+              </span>
+            )}
           </div>
         ) : (
           <span style={{ color: C.textMuted, fontSize: 12, fontFamily: "'Poppins', sans-serif" }}>
