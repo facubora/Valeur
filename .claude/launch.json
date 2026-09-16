@@ -1,0 +1,28 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "valeur-frontend",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--config",
+        "Valeur/vite.config.js",
+        "Valeur"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "valeur-market",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd valeur-backend && exec venv/bin/python backend.py"
+      ],
+      "port": 5002,
+      "env": {
+        "PORT": "5002"
+      }
+    }
+  ]
+}
