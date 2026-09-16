@@ -114,6 +114,7 @@ export default function LandingPage() {
   const [ind, setInd] = useState({ x: 0, w: 0, o: 0 });
   const [scrolled, setScrolled] = useState(false);
   const [navPill, setNavPill] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const moveTo = (el) => {
     if (el) setInd({ x: el.offsetLeft, w: el.offsetWidth, o: 1 });
@@ -125,6 +126,20 @@ export default function LandingPage() {
     }
   };
   const toTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+
+  // Menú mobile: se cierra con Escape y al volver a ancho desktop
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e) => e.key === "Escape" && setMenuOpen(false);
+    const mq = window.matchMedia("(min-width: 901px)");
+    const onMq = (e) => e.matches && setMenuOpen(false);
+    window.addEventListener("keydown", onKey);
+    mq.addEventListener("change", onMq);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      mq.removeEventListener("change", onMq);
+    };
+  }, [menuOpen]);
 
   useLayoutEffect(() => {
     const first = navRef.current?.querySelector("a");
@@ -182,11 +197,15 @@ export default function LandingPage() {
       <span ref={topRef} className="scroll-sentinel" aria-hidden="true" style={{ top: 0 }} />
       <span ref={deepRef} className="scroll-sentinel" aria-hidden="true" style={{ top: 480 }} />
       {/* NAV */}
-      <header className={"top" + (navPill ? " scrolled" : "")}>
+      <header
+        className={
+          "top" + (navPill ? " scrolled" : "") + (menuOpen ? " menu-open" : "")
+        }
+      >
         <div className="wrap top-in">
           <div className="brand">
             <span className="mark" />
-            Valeur<b></b>
+            Valeur
           </div>
           <nav ref={navRef} onMouseLeave={() => moveTo(activeRef.current)}>
             {NAV.map(([href, label]) => (
@@ -217,6 +236,43 @@ export default function LandingPage() {
             <Link to="/register" className="btn btn-pink">
               Crear cuenta
             </Link>
+            <button
+              type="button"
+              className="burger"
+              aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+              aria-expanded={menuOpen}
+              aria-controls="mobile-menu"
+              onClick={() => setMenuOpen((o) => !o)}
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+          </div>
+        </div>
+
+        {/* Menú desplegable (solo mobile / tablet) */}
+        <div
+          id="mobile-menu"
+          className="mobile-menu"
+          inert={!menuOpen || undefined}
+        >
+          <div className="wrap mobile-menu-in">
+            <nav aria-label="Secciones">
+              {NAV.map(([href, label]) => (
+                <a key={href} href={href} onClick={() => setMenuOpen(false)}>
+                  {label}
+                </a>
+              ))}
+            </nav>
+            <div className="mobile-menu-cta">
+              <Link to="/login" className="btn btn-line">
+                Iniciar Sesión
+              </Link>
+              <Link to="/register" className="btn btn-pink">
+                Crear cuenta
+              </Link>
+            </div>
           </div>
         </div>
       </header>
@@ -302,7 +358,9 @@ export default function LandingPage() {
                 Precios, gráficos e histórico completo de cualquier activo, en
                 tiempo real y sin ruido. Todo lo que pasa, cuando pasa.
               </p>
-              <a className="more">Explorar</a>
+              <Link to="/tickersearch" className="more">
+                Explorar
+              </Link>
             </div>
           </div>
           <div className="frow">
@@ -565,7 +623,7 @@ export default function LandingPage() {
           <div className="foot-grid">
             <div>
               <div className="brand">
-                Valeur<b>.</b>
+                Valeur
               </div>
               <p>
                 La plataforma que convierte las inversiones en algo simple,
@@ -574,7 +632,7 @@ export default function LandingPage() {
             </div>
             <div className="fcol">
               <h4>Producto</h4>
-              <a href="#features">Mercado</a>
+              <Link to="/tickersearch">Mercado</Link>
               <a href="#comunidad">Comunidad</a>
               <a href="#features">Noticias</a>
               <a href="#gratis">Gratis</a>

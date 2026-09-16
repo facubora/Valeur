@@ -1,15 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useTheme } from "../context/ThemeContext";
+import AuthLayout, { PasswordField, FormError, SubmitButton } from "../components/AuthLayout";
+import { useAuth } from "../context/AuthContext";
 
-const API_BASE = "http://localhost:5001/api";
+const USERNAME_RE = /^[a-zA-Z0-9_]{3,30}$/;
 
 export default function Register() {
   const navigate = useNavigate();
-  const { dark, toggle } = useTheme();
-  const [form, setForm]       = useState({ username: "", email: "", password: "", confirm: "" });
-  const [error, setError]     = useState("");
+  const { user, signUp, configured } = useAuth();
+  const [done, setDone] = useState(false); // registrado, falta confirmar el mail
+  const [form, setForm] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirm: "",
+  });
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) navigate("/home", { replace: true });
+  }, [user, navigate]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -18,123 +29,134 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const username = form.username.trim();
+    if (!USERNAME_RE.test(username)) {
+      setError("El usuario debe tener 3 a 30 caracteres: letras, números o guión bajo");
+      return;
+    }
+    if (form.password.length < 8) {
+      setError("La contraseña debe tener al menos 8 caracteres");
+      return;
+    }
     if (form.password !== form.confirm) {
       setError("Las contraseñas no coinciden");
       return;
     }
     setLoading(true);
     setError("");
-
-    try {
-      const res = await fetch(`${API_BASE}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: form.username,
-          email: form.email,
-          password: form.password,
-        }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || "Error al registrarse");
-        return;
-      }
-
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      navigate("/dashboard");
-    } catch {
-      setError("No se pudo conectar al servidor");
-    } finally {
-      setLoading(false);
-    }
+    const { error: err, needsConfirmation } = await signUp({
+      username,
+      email: form.email.trim(),
+      password: form.password,
+    });
+    setLoading(false);
+    if (err) setError(err);
+    else if (needsConfirmation) setDone(true);
+    // con sesión inmediata, el efecto de arriba redirige al dashboard
   };
 
-  return (
-    <div className="auth-page">
-
-      {/* Theme toggle */}
-      <button
-        className="auth-theme-toggle"
-        onClick={toggle}
-        aria-label="Cambiar tema"
-        title={dark ? "Modo claro" : "Modo oscuro"}
+  if (done) {
+    return (
+      <AuthLayout
+        headline={
+          <>
+            Un paso <em>más</em>.
+          </>
+        }
       >
-        {dark ? <i class="bi bi-sun"></i> : <i className="bi bi-moon"></i>}
-      </button>
-
-      <div className="auth-card">
-        <a href="/" className="auth-logo">Valeur<span>.</span></a>
-
-        <h1 className="auth-title">Creá tu cuenta</h1>
-        <p className="auth-subtitle">Empezá a invertir con inteligencia, gratis.</p>
-
-        <form onSubmit={handleSubmit} className="auth-form">
-          <div className="auth-field">
-            <label>Usuario</label>
-            <input
-              type="text"
-              name="username"
-              placeholder="tunombre"
-              value={form.username}
-              onChange={handleChange}
-              required
-              autoComplete="username"
-            />
-          </div>
-
-          <div className="auth-field">
-            <label>Email</label>
-            <input
-              type="email"
-              name="email"
-              placeholder="tu@email.com"
-              value={form.email}
-              onChange={handleChange}
-              required
-              autoComplete="email"
-            />
-          </div>
-
-          <div className="auth-field">
-            <label>Contraseña</label>
-            <input
-              type="password"
-              name="password"
-              placeholder="Mínimo 8 caracteres"
-              value={form.password}
-              onChange={handleChange}
-              required
-              autoComplete="new-password"
-            />
-          </div>
-
-          <div className="auth-field">
-            <label>Confirmá la contraseña</label>
-            <input
-              type="password"
-              name="confirm"
-              placeholder="••••••••"
-              value={form.confirm}
-              onChange={handleChange}
-              required
-              autoComplete="new-password"
-            />
-          </div>
-
-          {error && <p className="auth-error">{error}</p>}
-
-          <button type="submit" className="auth-btn" disabled={loading}>
-            {loading ? "Creando cuenta..." : "Crear cuenta gratis"}
-          </button>
-        </form>
-
-        <p className="auth-switch">
-          ¿Ya tenés cuenta? <Link to="/login">Iniciar sesión</Link>
+        <span className="done-ic" aria-hidden="true">
+          <i className="bi bi-envelope-check" />
+        </span>
+        <h1>Revisá tu email.</h1>
+        <p>
+          Te mandamos un enlace a <b>{form.email.trim()}</b> para confirmar la
+          cuenta. Cuando lo abras, ya podés iniciar sesión.
         </p>
-      </div>
-    </div>
+        <p className="auth-alt">
+          <Link to="/login">Ir a iniciar sesión</Link>
+        </p>
+      </AuthLayout>
+    );
+  }
+
+  return (
+    <AuthLayout
+      headline={
+        <>
+          Empezá a invertir <em>hoy</em>.
+        </>
+      }
+    >
+      <h1>Creá tu cuenta.</h1>
+      <p>Gratis, en un minuto y sin tarjeta.</p>
+
+      <form onSubmit={handleSubmit} className="auth-form" noValidate>
+        <div className="field">
+          <label htmlFor="username">Usuario</label>
+          <input
+            id="username"
+            type="text"
+            name="username"
+            placeholder="tunombre"
+            value={form.username}
+            onChange={handleChange}
+            required
+            autoComplete="username"
+            autoFocus
+          />
+        </div>
+
+        <div className="field">
+          <label htmlFor="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            name="email"
+            placeholder="tu@email.com"
+            value={form.email}
+            onChange={handleChange}
+            required
+            autoComplete="email"
+          />
+        </div>
+
+        <PasswordField
+          label="Contraseña"
+          name="password"
+          placeholder="Mínimo 8 caracteres"
+          value={form.password}
+          onChange={handleChange}
+          required
+          minLength={8}
+          autoComplete="new-password"
+        />
+
+        <PasswordField
+          label="Confirmá la contraseña"
+          name="confirm"
+          placeholder="••••••••"
+          value={form.confirm}
+          onChange={handleChange}
+          required
+          autoComplete="new-password"
+        />
+
+        <FormError
+          error={
+            !configured
+              ? "Falta configurar Supabase: copiá .env.example a .env"
+              : error
+          }
+        />
+
+        <SubmitButton loading={loading} loadingText="Creando cuenta…" disabled={loading || !configured}>
+          Crear cuenta gratis
+        </SubmitButton>
+      </form>
+
+      <p className="auth-alt">
+        ¿Ya tenés cuenta? <Link to="/login">Iniciar sesión</Link>
+      </p>
+    </AuthLayout>
   );
 }

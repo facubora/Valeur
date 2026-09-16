@@ -1,102 +1,21 @@
-# valeur/backend.py — Mini backend con yfinance + auth
-# Requiere: pip install flask flask-cors yfinance mysql-connector-python bcrypt pyjwt python-dotenv
+# valeur/backend.py — Micro-servicio de datos de mercado (yfinance)
+# Auth y base de datos viven en Supabase; acá solo hay candles, quote y search.
+# Requiere: pip install flask flask-cors yfinance python-dotenv
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import yfinance as yf
 import os
-import bcrypt
-import jwt
-import datetime
-import mysql.connector
 from dotenv import load_dotenv
 
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, origins=["http://localhost:5173"])
 
-JWT_SECRET = os.getenv("JWT_SECRET", "dev_secret_change_me")
-
-
-def get_db():
-    return mysql.connector.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        port=int(os.getenv("DB_PORT", 3306)),
-        user=os.getenv("DB_USER", "root"),
-        password=os.getenv("DB_PASSWORD", ""),
-        database=os.getenv("DB_NAME", "valeur"),
-    )
-
-
-# ─── Auth ─────────────────────────────────────────────────────────────────────
-
-@app.route("/api/auth/register", methods=["POST"])
-def register():
-    data = request.get_json(silent=True) or {}
-    username = (data.get("username") or "").strip()
-    email    = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
-
-    if not username or not email or not password:
-        return jsonify({"error": "username, email y password son requeridos"}), 400
-    if len(password) < 8:
-        return jsonify({"error": "La contraseña debe tener al menos 8 caracteres"}), 400
-
-    password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-
-    try:
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute(
-            "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s)",
-            (username, email, password_hash),
-        )
-        db.commit()
-        user_id = cursor.lastrowid
-        cursor.close()
-        db.close()
-    except mysql.connector.IntegrityError:
-        return jsonify({"error": "El email o username ya está en uso"}), 409
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-    token = jwt.encode(
-        {"user_id": user_id, "exp": datetime.datetime.utcnow() + datetime.timedelta(days=7)},
-        JWT_SECRET,
-        algorithm="HS256",
-    )
-    return jsonify({"token": token, "user": {"id": user_id, "username": username, "email": email}}), 201
-
-
-@app.route("/api/auth/login", methods=["POST"])
-def login():
-    data = request.get_json(silent=True) or {}
-    email    = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
-
-    if not email or not password:
-        return jsonify({"error": "email y password son requeridos"}), 400
-
-    try:
-        db = get_db()
-        cursor = db.cursor(dictionary=True)
-        cursor.execute("SELECT id, username, email, password_hash FROM users WHERE email = %s", (email,))
-        user = cursor.fetchone()
-        cursor.close()
-        db.close()
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-    if not user or not bcrypt.checkpw(password.encode(), user["password_hash"].encode()):
-        return jsonify({"error": "Credenciales incorrectas"}), 401
-
-    token = jwt.encode(
-        {"user_id": user["id"], "exp": datetime.datetime.utcnow() + datetime.timedelta(days=7)},
-        JWT_SECRET,
-        algorithm="HS256",
-    )
-    return jsonify({"token": token, "user": {"id": user["id"], "username": user["username"], "email": user["email"]}})
+# CORS: cualquier origen local (localhost / 127.0.0.1, cualquier puerto) + los de CORS_ORIGINS
+_origins = [r"^http://localhost(:\d+)?$", r"^http://127\.0\.0\.1(:\d+)?$"]
+_origins += [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+CORS(app, origins=_origins)
 
 
 # ─── Velas japonesas (OHLCV) ─────────────────────────────────────────────────
@@ -184,6 +103,10 @@ def get_quote(symbol):
         if hist.empty:
             return jsonify({"error": "Symbol not found or no data"}), 404
 
+        hist = hist.dropna(subset=["Close"])
+        if hist.empty:
+            return jsonify({"error": "Symbol not found or no data"}), 404
+
         last       = hist.iloc[-1]
         price      = round(float(last["Close"]), 4)
         volume     = int(last["Volume"])
@@ -235,5 +158,5 @@ def health():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001, host="0.0.0.0")
+    app.run(debug=True, port=int(os.getenv("PORT", 5001)), host="0.0.0.0")
     

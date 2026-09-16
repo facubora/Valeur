@@ -1,0 +1,369 @@
+/* ============================================================
+   Base compartida — landing y app (dashboard, mercado, auth)
+   Tokens, reset, botones y marca. Scopeado a .landing-root / .app-root
+   Tipografía: Bricolage Grotesque (display) + DM Sans (texto)
+   ============================================================ */
+:is(.landing-root, .app-root) {
+  --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+  --bg: oklch(0.995 0 0);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.965 0 0);
+  --ink: oklch(0.19 0 0);
+  --ink-soft: oklch(0.44 0 0);
+  --line: oklch(0.19 0 0 / 0.13);
+  --line-soft: oklch(0.19 0 0 / 0.07);
+  --ink-invert: oklch(0.995 0 0);
+  --accent: #1447e6;
+  --accent-text: #1447e6;
+  --accent-ink: oklch(0.99 0 0);
+  --up: oklch(0.6 0.15 155);
+  --down: oklch(0.575 0.205 27);
+  --z-sticky: 100;
+}
+
+[data-theme="dark"] :is(.landing-root, .app-root) {
+  --bg: #0a0a0a;
+  --surface: oklch(0.195 0 0);
+  --surface-2: oklch(0.235 0 0);
+  --ink: oklch(0.97 0 0);
+  --ink-soft: oklch(0.72 0 0);
+  --line: oklch(0.97 0 0 / 0.14);
+  --line-soft: oklch(0.97 0 0 / 0.07);
+  --ink-invert: oklch(0.155 0 0);
+  --accent: #c25cf5;
+  --accent-text: #e6b3ff;
+  --accent-ink: oklch(0.16 0 0);
+  --up: oklch(0.72 0.16 158);
+  --down: oklch(0.68 0.19 27);
+}
+
+:is(.landing-root, .app-root) * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+:is(.landing-root, .app-root) a {
+  text-decoration: none;
+  color: inherit;
+}
+:is(.landing-root, .app-root) ::selection {
+  background: var(--accent-text);
+  color: var(--bg);
+}
+:is(.landing-root, .app-root) :focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+:is(.landing-root, .app-root) .wrap {
+  width: min(1200px, calc(100% - 48px));
+  margin-inline: auto;
+}
+/* al saltar a un ancla, el título no queda debajo del header sticky */
+:is(.landing-root, .app-root) section[id] {
+  scroll-margin-top: 96px;
+}
+:is(.landing-root, .app-root) h1,
+:is(.landing-root, .app-root) h2,
+:is(.landing-root, .app-root) h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+:is(.landing-root, .app-root) em {
+  font-style: normal;
+  color: var(--accent-text);
+}
+
+:is(.landing-root, .app-root) .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.96rem;
+  padding: 13px 22px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: 0;
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.25s,
+    box-shadow 0.25s,
+    border-color 0.25s;
+}
+:is(.landing-root, .app-root) .btn-pink {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+:is(.landing-root, .app-root) .btn-pink:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -8px
+    color-mix(in oklch, var(--accent) 60%, transparent);
+}
+:is(.landing-root, .app-root) .btn-dark {
+  background: var(--ink);
+  color: var(--ink-invert);
+}
+:is(.landing-root, .app-root) .btn-dark:hover {
+  transform: translateY(-2px);
+}
+:is(.landing-root, .app-root) .btn-line {
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+:is(.landing-root, .app-root) .btn-line:hover {
+  border-color: var(--accent);
+  color: var(--accent-text);
+  transform: translateY(-2px);
+}
+
+/* ---------- NAV (landing y app) ---------- */
+:is(.landing-root, .app-root) .top {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  padding: 14px 0;
+}
+:is(.landing-root, .app-root) .top-in {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  height: 60px;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: 0 12px 0 20px;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  transition:
+    max-width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease,
+    backdrop-filter 0.35s ease;
+}
+:is(.landing-root, .app-root) .top.scrolled .top-in {
+  max-width: 960px;
+  margin-inline: auto;
+  background: color-mix(in oklch, var(--bg) 60%, transparent);
+  backdrop-filter: saturate(1.6) blur(16px);
+  border-color: var(--line);
+  box-shadow: 0 14px 40px -18px oklch(0.19 0 0 / 0.5);
+  opacity: 80%;
+  transition: ease-in-out all 0.2s;
+}
+
+:is(.landing-root, .app-root) .top.scrolled .top-in:hover {
+  opacity: 100%;
+}
+
+:is(.landing-root, .app-root) .top-in nav {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+:is(.landing-root, .app-root) .top-in nav a {
+  position: relative;
+  z-index: 1;
+  padding: 9px 14px;
+  border-radius: 10px;
+  transition: color 0.25s;
+}
+:is(.landing-root, .app-root) .top-in nav a:hover {
+  color: var(--accent-text);
+}
+:is(.landing-root, .app-root) .nav-ind {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 10px;
+  z-index: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: color-mix(in oklch, var(--accent) 16%, transparent);
+  border: 1px solid color-mix(in oklch, var(--accent) 36%, transparent);
+  box-shadow: 0 2px 8px -2px color-mix(in oklch, var(--accent) 42%, transparent);
+  transition:
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.25s;
+}
+:is(.landing-root, .app-root) .top .right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+:is(.landing-root, .app-root) .top .btn {
+  padding: 10px 18px;
+  font-size: 0.9rem;
+}
+
+:is(.landing-root, .app-root) .link-strong {
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 8px 12px;
+  color: var(--ink);
+  border: 1px solid;
+  border-color: transparent;
+  border-radius: 10px;
+  max-width: 160px;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    max-width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease,
+    border-color 0.25s;
+}
+
+:is(.landing-root, .app-root) .link-strong:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+/* Al scrollear (pill), se oculta "Iniciar Sesión" y queda solo "Crear cuenta" */
+:is(.landing-root, .app-root) .top.scrolled .link-strong {
+  max-width: 0;
+  padding-inline: 0;
+  margin-left: -8px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- DOCK FLOTANTE (tema + volver arriba) — landing y app ---------- */
+:is(.landing-root, .app-root) .dock {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* botón "volver arriba" */
+:is(.landing-root, .app-root) .dock-up {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  border: 1px solid var(--line);
+  background: color-mix(in oklch, var(--bg) 78%, transparent);
+  backdrop-filter: saturate(1.4) blur(12px);
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 22px -10px oklch(0.19 0 0 /0.35);
+  opacity: 0;
+  transform: translateY(10px) scale(0.9);
+  pointer-events: none;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s;
+}
+:is(.landing-root, .app-root) .dock-up.show {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+:is(.landing-root, .app-root) .dock-up:hover {
+  color: var(--accent-text);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+:is(.landing-root, .app-root) .dock-up i {
+  font-size: 15px;
+  line-height: 1;
+}
+/* toggle de tema segmentado (tipo radio) */
+:is(.landing-root, .app-root) .theme-seg {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: color-mix(in oklch, var(--bg) 78%, transparent);
+  backdrop-filter: saturate(1.4) blur(12px);
+  box-shadow: 0 8px 22px -10px oklch(0.19 0 0 /0.35);
+}
+:is(.landing-root, .app-root) .theme-seg button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition:
+    color 0.2s,
+    background 0.25s;
+}
+:is(.landing-root, .app-root) .theme-seg button:hover {
+  color: var(--ink);
+}
+:is(.landing-root, .app-root) .theme-seg button.on {
+  background: color-mix(in oklch, var(--accent) 16%, transparent);
+  color: var(--accent-text);
+}
+:is(.landing-root, .app-root) .theme-seg i {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* ---------- MARCA ---------- */
+:is(.landing-root, .app-root) .brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.4rem;
+  letter-spacing: -0.02em;
+}
+:is(.landing-root, .app-root) .brand b {
+  color: var(--accent-text);
+}
+:is(.landing-root, .app-root) .mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  position: relative;
+  flex-shrink: 0;
+  animation: mark-beat 2.4s ease-out infinite;
+}
+@keyframes mark-beat {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 45%, transparent);
+  }
+  60% {
+    box-shadow: 0 0 0 9px color-mix(in oklch, var(--accent) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent) 0%, transparent);
+  }
+}
+:is(.landing-root, .app-root) .mark::after {
+  content: "";
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--bg);
+  inset: 0;
+  margin: auto;
+}

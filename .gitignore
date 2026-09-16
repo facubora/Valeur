@@ -3,3 +3,8 @@ valeur-backend/.env
 node_modules/
 dist/
 .DS_Store
+
+# Supabase keys (frontend)
+Valeur/.env
+Valeur/.env.*
+!Valeur/.env.example
