@@ -7,7 +7,7 @@ import SymbolSearch from "../components/SymbolSearch";
 import TradeModal from "../components/TradeModal";
 import Onboarding from "../components/Onboarding";
 import { useAuth } from "../context/AuthContext";
-import { getCandles, useQuotes, money, signed, pct, formatDate } from "../lib/market";
+import { useQuotes, useSparks, money, signed, pct, formatDate } from "../lib/market";
 import {
   useTrades,
   useWatchlist,
@@ -36,25 +36,6 @@ function Delta({ value, className = "" }) {
       {Math.abs(value).toFixed(2)}%
     </span>
   );
-}
-
-/* Cierres del último mes para los sparklines de seguidos */
-function useSparks(symbols) {
-  const key = [...new Set(symbols)].sort().join(",");
-  const [res, setRes] = useState({ key: null, data: {} });
-  useEffect(() => {
-    if (!key) return;
-    let alive = true;
-    const syms = key.split(",");
-    Promise.all(syms.map((s) => getCandles(s, "daily", "1m"))).then((lists) => {
-      if (!alive) return;
-      setRes({ key, data: Object.fromEntries(syms.map((s, i) => [s, lists[i].map((c) => c.close)])) });
-    });
-    return () => {
-      alive = false;
-    };
-  }, [key]);
-  return res.data;
 }
 
 /* Dashboard "fantasma": la forma de lo que va a haber, sin datos.

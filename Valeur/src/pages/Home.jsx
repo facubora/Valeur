@@ -6,7 +6,7 @@ import Sparkline from "../components/Sparkline";
 import Logo from "../components/Logo";
 import SymbolSearch from "../components/SymbolSearch";
 import { useAuth } from "../context/AuthContext";
-import { getCandles, useQuotes, fmtPrice, money, signed, pct } from "../lib/market";
+import { useQuotes, useSparks, useAgo, fmtPrice, money, signed, pct } from "../lib/market";
 import { POPULAR } from "../lib/onboarding";
 import { useTrades, useWatchlist, computePositions, addWatch, removeWatch } from "../lib/portfolio";
 
@@ -51,6 +51,7 @@ const MARKET = {
   },
   fx: {
     label: "Monedas y cripto",
+    short: "Cripto y FX",
     items: [
       ["USDARS=X", "Dólar / Peso"],
       ["EURUSD=X", "Euro / Dólar"],
@@ -82,25 +83,6 @@ function Delta({ value }) {
   );
 }
 
-/* Cierres del último mes para sparklines */
-function useSparks(symbols) {
-  const key = [...new Set(symbols)].sort().join(",");
-  const [res, setRes] = useState({ key: null, data: {} });
-  useEffect(() => {
-    if (!key) return;
-    let alive = true;
-    const syms = key.split(",");
-    Promise.all(syms.map((s) => getCandles(s, "daily", "1m"))).then((lists) => {
-      if (!alive) return;
-      setRes({ key, data: Object.fromEntries(syms.map((s, i) => [s, lists[i].map((c) => c.close)])) });
-    });
-    return () => {
-      alive = false;
-    };
-  }, [key]);
-  return res.data;
-}
-
 const tickerUrl = (s) => `/tickersearch?symbol=${encodeURIComponent(s)}`;
 
 export default function Home() {
@@ -125,8 +107,20 @@ export default function Home() {
   const tabSymbols = useMemo(() => tabItems.map(([s]) => s), [tabItems]);
   const posSymbols = useMemo(() => [...new Set(trades.rows.map((t) => t.symbol))], [trades.rows]);
 
-  const { quotes, loading: quotesLoading } = useQuotes([...watchSymbols, ...tabSymbols, ...posSymbols]);
-  const sparks = useSparks([...watchSymbols, ...tabSymbols]);
+  const {
+    quotes,
+    loading: quotesLoading,
+    error: netError,
+    updatedAt,
+    refresh,
+  } = useQuotes([...watchSymbols, ...tabSymbols, ...posSymbols]);
+  const [sparkEpoch, setSparkEpoch] = useState(0);
+  const sparks = useSparks([...watchSymbols, ...tabSymbols], sparkEpoch);
+  const ago = useAgo(updatedAt);
+  const retry = () => {
+    refresh();
+    setSparkEpoch((e) => e + 1);
+  };
   const { positions, totals } = useMemo(
     () => computePositions(trades.rows, quotes),
     [trades.rows, quotes],
@@ -176,6 +170,21 @@ export default function Home() {
           onFollow={follow}
           busy={busy}
         />
+      )}
+
+      {netError && (
+        <div className="net-notice" role="alert">
+          <i className="bi bi-wifi-off" />
+          <div>
+            <b>No pudimos traer los precios del mercado.</b>
+            <span>
+              {updatedAt ? `Te mostramos los últimos que teníamos (${ago}).` : "Revisá tu conexión o que el servidor esté levantado."}
+            </span>
+          </div>
+          <button type="button" className="btn btn-line btn-sm" onClick={retry}>
+            <i className="bi bi-arrow-clockwise" /> Reintentar
+          </button>
+        </div>
       )}
 
       {/* Seguidos */}
@@ -254,7 +263,21 @@ export default function Home() {
       <section>
         <div className="sec-head">
           <h2>Mercado hoy</h2>
-          <Link to="/tickersearch">Ver todo el mercado</Link>
+          <div className="sec-meta">
+            {updatedAt && (
+              <button
+                type="button"
+                className="sub refresh"
+                onClick={retry}
+                disabled={quotesLoading}
+                title="Actualizar precios"
+              >
+                <i className="bi bi-arrow-clockwise" />
+                {quotesLoading ? "actualizando…" : `actualizado ${ago}`}
+              </button>
+            )}
+            <Link to="/tickersearch">Ver todo el mercado</Link>
+          </div>
         </div>
         <div className="mkt-bar">
           <div className="seg mkt-tabs" role="tablist" aria-label="Listas de mercado">
@@ -267,7 +290,14 @@ export default function Home() {
                 className={tab === k ? "on" : ""}
                 onClick={() => setTab(k)}
               >
-                {v.label}
+                {v.short ? (
+                  <>
+                    <span className="full">{v.label}</span>
+                    <span className="short">{v.short}</span>
+                  </>
+                ) : (
+                  v.label
+                )}
               </button>
             ))}
           </div>
@@ -318,7 +348,7 @@ export default function Home() {
                       </>
                     ) : (
                       <>
-                        <span className="ph-line" />
+                        <span className="ph-line px" />
                         <span className="ph-line short" />
                       </>
                     )}
@@ -362,8 +392,14 @@ export default function Home() {
               </span>
             </div>
             <div className="pf-kv">
-              <small>Posiciones</small>
-              <span>{positions.map((p) => p.symbol).join(" · ")}</span>
+              <small>{positions.length === 1 ? "Posición" : `${positions.length} posiciones`}</small>
+              <span>
+                {positions
+                  .slice(0, 3)
+                  .map((p) => p.symbol)
+                  .join(" · ")}
+                {positions.length > 3 && <em> +{positions.length - 3}</em>}
+              </span>
             </div>
           </Link>
         ) : (

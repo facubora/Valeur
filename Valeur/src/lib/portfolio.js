@@ -146,7 +146,9 @@ export function useHistory(trades, range = "6m") {
     if (!symbols) return;
     let alive = true;
     const syms = symbols.split(",");
-    Promise.all(syms.map((s) => getCandles(s, "daily", HISTORY_RANGES[range] || "6m"))).then(
+    Promise.all(
+      syms.map((s) => getCandles(s, "daily", HISTORY_RANGES[range] || "6m").catch(() => [])),
+    ).then(
       (lists) => {
         if (!alive) return;
         // cierre por fecha y símbolo

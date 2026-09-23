@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MARKET_API } from "./supabase";
 
 /* ── Datos de mercado (backend Flask + yfinance) ─────────────────────────── */
@@ -6,38 +6,65 @@ import { MARKET_API } from "./supabase";
 const QUOTE_TTL = 60_000; // 1 min: mismo precio entre dashboard y mercado
 const quoteCache = new Map(); // symbol → { at, promise }
 
-export function getQuote(symbol) {
+/* Error de red (backend caído, sin conexión): distinto de "no hay datos" */
+export class NetworkError extends Error {}
+
+function fetchJson(url) {
+  return fetch(url).then(
+    (r) => (r.ok ? r.json() : null),
+    (e) => {
+      throw new NetworkError(e.message);
+    },
+  );
+}
+
+/* Cotización de un símbolo (null si no existe). Rechaza con NetworkError si
+   el backend no responde; los fallos no se cachean para poder reintentar. */
+export function getQuote(symbol, force = false) {
   const sym = symbol.toUpperCase();
   const hit = quoteCache.get(sym);
-  if (hit && Date.now() - hit.at < QUOTE_TTL) return hit.promise;
-  const promise = fetch(`${MARKET_API}/quote/${sym}`)
-    .then((r) => (r.ok ? r.json() : null))
+  if (!force && hit && Date.now() - hit.at < QUOTE_TTL) return hit.promise;
+  const promise = fetchJson(`${MARKET_API}/quote/${sym}`)
     .then((q) => (q && q.price != null ? { ...q, change_pct: parseFloat(q.change_pct) } : null))
-    .catch(() => null);
+    .catch((e) => {
+      quoteCache.delete(sym);
+      throw e;
+    });
   quoteCache.set(sym, { at: Date.now(), promise });
   return promise;
 }
 
-/* Cotizaciones de varios símbolos → { SYM: quote | null } */
-export async function getQuotes(symbols) {
+/* Cotizaciones de varios símbolos → { quotes: { SYM: quote | null }, error }.
+   Si algún pedido falla por red, `error` es true y ese símbolo no aparece. */
+export async function getQuotes(symbols, force = false) {
   const uniq = [...new Set(symbols.map((s) => s.toUpperCase()))];
-  const list = await Promise.all(uniq.map(getQuote));
-  return Object.fromEntries(uniq.map((s, i) => [s, list[i]]));
+  const list = await Promise.allSettled(uniq.map((s) => getQuote(s, force)));
+  const quotes = {};
+  let error = false;
+  list.forEach((r, i) => {
+    if (r.status === "fulfilled") quotes[uniq[i]] = r.value;
+    else error = true;
+  });
+  return { quotes, error };
 }
 
 const candleCache = new Map(); // key → { at, promise }
 const CANDLE_TTL = 5 * 60_000;
 
+/* Velas de un símbolo ([] si no hay). Rechaza con NetworkError si el backend
+   no responde; los fallos no se cachean. */
 export function getCandles(symbol, interval = "daily", range = "6m") {
   const key = `${symbol.toUpperCase()}|${interval}|${range}`;
   const hit = candleCache.get(key);
   if (hit && Date.now() - hit.at < CANDLE_TTL) return hit.promise;
-  const promise = fetch(
+  const promise = fetchJson(
     `${MARKET_API}/candles/${symbol.toUpperCase()}?interval=${interval}&range=${range}`,
   )
-    .then((r) => (r.ok ? r.json() : null))
     .then((d) => d?.candles || [])
-    .catch(() => []);
+    .catch((e) => {
+      candleCache.delete(key);
+      throw e;
+    });
   candleCache.set(key, { at: Date.now(), promise });
   return promise;
 }
@@ -68,19 +95,103 @@ export function useSuggestions(query) {
   return q.length < 2 ? [] : items;
 }
 
-/* Cotizaciones de una lista de símbolos; se refrescan cuando cambia la lista */
-export function useQuotes(symbols) {
+/* Cotizaciones de una lista de símbolos. Se refrescan cuando cambia la lista
+   y cada `every` ms (solo con la pestaña visible). Mientras refresca se siguen
+   mostrando las últimas; `error` avisa que el backend no respondió y
+   `refresh()` reintenta salteando el caché. */
+export function useQuotes(symbols, every = QUOTE_TTL) {
   const key = [...new Set(symbols)].sort().join(",");
-  const [res, setRes] = useState({ key: null, quotes: {} });
+  const [res, setRes] = useState({ key: null, quotes: {}, error: false, updatedAt: null });
+  const [tick, setTick] = useState(0);
+
   useEffect(() => {
     if (!key) return;
     let alive = true;
-    getQuotes(key.split(",")).then((quotes) => alive && setRes({ key, quotes }));
+    const force = tick > 0;
+    getQuotes(key.split(","), force).then(({ quotes, error }) => {
+      if (!alive) return;
+      setRes((prev) => ({
+        key,
+        // ante un fallo conservamos lo último que se pudo mostrar
+        quotes: error ? { ...prev.quotes, ...quotes } : quotes,
+        error,
+        updatedAt: error ? prev.updatedAt : Date.now(),
+      }));
+    });
     return () => {
       alive = false;
     };
-  }, [key]);
-  return { quotes: res.quotes, loading: Boolean(key) && res.key !== key };
+  }, [key, tick]);
+
+  // polling: cada `every` ms, y al volver a la pestaña si pasó el intervalo
+  useEffect(() => {
+    if (!key || !every) return;
+    let last = Date.now();
+    const bump = () => {
+      last = Date.now();
+      setTick((t) => t + 1);
+    };
+    const id = setInterval(() => document.visibilityState === "visible" && bump(), every);
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && Date.now() - last >= every) bump();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [key, every]);
+
+  const refresh = useCallback(() => setTick((t) => t + 1), []);
+  return {
+    quotes: res.quotes,
+    loading: Boolean(key) && res.key !== key,
+    error: res.error,
+    updatedAt: res.updatedAt,
+    refresh,
+  };
+}
+
+/* Cierres del último mes para sparklines. Caché por símbolo: al cambiar la
+   lista solo se piden los que faltan y los demás siguen visibles. */
+const sparkCache = new Map(); // symbol → closes[]
+
+export function useSparks(symbols, epoch = 0) {
+  const key = [...new Set(symbols)].sort().join(",");
+  const [data, setData] = useState(() => Object.fromEntries(sparkCache));
+  useEffect(() => {
+    if (!key) return;
+    let alive = true;
+    const missing = key.split(",").filter((s) => !sparkCache.has(s));
+    if (!missing.length) return;
+    Promise.allSettled(missing.map((s) => getCandles(s, "daily", "1m"))).then((results) => {
+      results.forEach((r, i) => {
+        if (r.status === "fulfilled") sparkCache.set(missing[i], r.value.map((c) => c.close));
+      });
+      if (alive) setData(Object.fromEntries(sparkCache));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [key, epoch]);
+  return data;
+}
+
+/* "hace 2 min" — para mostrar cuándo se actualizaron los precios */
+export function useAgo(ts) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!ts) return;
+    const id = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(id);
+  }, [ts]);
+  if (!ts) return "";
+  const s = Math.max(0, Math.round((now - ts) / 1000));
+  if (s < 45) return "recién";
+  const m = Math.round(s / 60);
+  if (m < 60) return `hace ${m} min`;
+  const h = Math.round(m / 60);
+  return `hace ${h} h`;
 }
 
 /* ── Formato ─────────────────────────────────────────────────────────────── */

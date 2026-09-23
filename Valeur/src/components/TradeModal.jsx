@@ -36,11 +36,13 @@ function TradeForm({ onClose, uid, initial = {}, held = {}, onSaved }) {
   useEffect(() => {
     if (!symbol) return;
     let alive = true;
-    getQuote(symbol).then((q) => {
-      if (!alive) return;
-      setQuote(q);
-      if (q) setPrice((p) => (p === "" ? String(q.price) : p));
-    });
+    getQuote(symbol)
+      .catch(() => null)
+      .then((q) => {
+        if (!alive) return;
+        setQuote(q);
+        if (q) setPrice((p) => (p === "" ? String(q.price) : p));
+      });
     return () => {
       alive = false;
     };
