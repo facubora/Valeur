@@ -129,6 +129,41 @@ def get_quote(symbol):
         return jsonify({"error": str(e)}), 502
 
 
+# ─── Dólar MEP ────────────────────────────────────────────────────────────────
+# Yahoo no tiene los bonos (AL30/GD30), así que lo derivamos de los CEDEARs:
+# precio en pesos ÷ precio en dólares de la misma especie. Mediana de varios
+# pares por día, para que un papel sin operaciones no mueva el número.
+
+MEP_PAIRS = ["AAPL", "SPY", "MSFT", "MELI", "NVDA", "KO"]
+MEP_TTL = 15 * 60
+_mep_cache = {"at": 0, "data": None}
+
+
+@app.route("/api/mep")
+def get_mep():
+    import time
+    import pandas as pd
+
+    if _mep_cache["data"] and time.time() - _mep_cache["at"] < MEP_TTL:
+        return jsonify(_mep_cache["data"])
+    try:
+        tickers = [p + ".BA" for p in MEP_PAIRS] + [p + "D.BA" for p in MEP_PAIRS]
+        df = yf.download(tickers, period="max", interval="1d", progress=False, auto_adjust=False)["Close"]
+        ratios = pd.concat([df[p + ".BA"] / df[p + "D.BA"] for p in MEP_PAIRS], axis=1)
+        mep = ratios.median(axis=1, skipna=True).dropna()
+        if mep.empty:
+            return jsonify({"error": "No data"}), 502
+        data = {
+            "rate": round(float(mep.iloc[-1]), 2),
+            "date": mep.index[-1].strftime("%Y-%m-%d"),
+            "series": [[d.strftime("%Y-%m-%d"), round(float(v), 2)] for d, v in mep.items()],
+        }
+        _mep_cache.update(at=time.time(), data=data)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 502
+
+
 # ─── Búsqueda ─────────────────────────────────────────────────────────────────
 
 @app.route("/api/search")

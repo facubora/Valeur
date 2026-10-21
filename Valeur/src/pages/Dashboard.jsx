@@ -7,7 +7,18 @@ import SymbolSearch from "../components/SymbolSearch";
 import TradeModal from "../components/TradeModal";
 import Onboarding from "../components/Onboarding";
 import { useAuth } from "../context/AuthContext";
-import { useQuotes, useSparks, money, signed, pct, formatDate } from "../lib/market";
+import {
+  useQuotes,
+  useSparks,
+  useMep,
+  useDisplayCurrency,
+  assetCurrency,
+  fmtPrice,
+  money,
+  signed,
+  pct,
+  formatDate,
+} from "../lib/market";
 import {
   useTrades,
   useWatchlist,
@@ -171,6 +182,8 @@ export default function Dashboard() {
   const [modal, setModal] = useState(null); // null | { symbol?, name?, side? }
   const [showAll, setShowAll] = useState(false);
   const [busy, setBusy] = useState("");
+  const [cur, setCur] = useDisplayCurrency();
+  const fx = useMep();
 
   // Ruta protegida
   useEffect(() => {
@@ -181,16 +194,18 @@ export default function Dashboard() {
   const watchSymbols = useMemo(() => watch.rows.map((w) => w.symbol), [watch.rows]);
   const { quotes, loading: quotesLoading } = useQuotes([...posSymbols, ...watchSymbols]);
   const { positions, totals } = useMemo(
-    () => computePositions(trades.rows, quotes),
-    [trades.rows, quotes],
+    () => computePositions(trades.rows, quotes, cur, fx.mep),
+    [trades.rows, quotes, cur, fx.mep],
   );
-  const history = useHistory(trades.rows, range);
+  const history = useHistory(trades.rows, range, cur, fx.mep);
   const sparks = useSparks(watchSymbols);
 
   if (!user) return null;
 
   const held = Object.fromEntries(positions.map((p) => [p.symbol, p.qty]));
-  const ready = trades.loaded && watch.loaded;
+  // Si hay activos en otra moneda que la elegida, esperamos el MEP para convertir
+  const needsFx = trades.rows.some((t) => assetCurrency(t.symbol) !== cur);
+  const ready = trades.loaded && watch.loaded && (!needsFx || fx.loaded);
   // El portfolio se "abre" recién con la primera operación (seguir activos no cuenta)
   const empty = ready && trades.rows.length === 0;
 
@@ -246,7 +261,7 @@ export default function Dashboard() {
                   </div>
                   <Sparkline values={closes} up={up} />
                   <div className="watch-px">
-                    <b>{q ? money(q.price) : "—"}</b>
+                    <b>{q ? fmtPrice(w.symbol, q.price) : "—"}</b>
                     {q ? <Delta value={q.change_pct} /> : <small>sin datos</small>}
                   </div>
                 </Link>
@@ -298,6 +313,23 @@ export default function Dashboard() {
           <p className="date-line">{dateLabel}</p>
         </div>
         <div className="head-actions">
+          <div className="cur-pick">
+            <div className="seg" role="group" aria-label="Moneda del portfolio">
+              {[
+                ["USD", "Dólar MEP"],
+                ["ARS", "Pesos"],
+              ].map(([c, label]) => (
+                <button key={c} type="button" className={c === cur ? "on" : ""} onClick={() => setCur(c)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            {fx.mep && (
+              <small title={`Dólar MEP implícito en los CEDEARs, cierre ${formatDate(fx.mep.date)}`}>
+                MEP {money(fx.mep.rate, 0, "ARS")}
+              </small>
+            )}
+          </div>
           <button type="button" className="btn btn-pink btn-sm" onClick={() => setModal({})}>
             <i className="bi bi-plus-lg" /> Registrar operación
           </button>
@@ -336,15 +368,15 @@ export default function Dashboard() {
               <div className="ov-top">
                 <div>
                   <span className="lbl">Valor del portfolio</span>
-                  <div className="ov-val">{money(totals.value)}</div>
+                  <div className="ov-val">{money(totals.value, undefined, cur)}</div>
                   <div className="ov-deltas">
                     <Delta value={totals.dayPct} />
                     <span className={totals.dayChange >= 0 ? "txt-up" : "txt-down"}>
-                      {signed(totals.dayChange)} hoy
+                      {signed(totals.dayChange, undefined, cur)} hoy
                     </span>
                     <span className="sep" />
                     <span className={totals.pnl >= 0 ? "txt-up" : "txt-down"}>
-                      {signed(totals.pnl)} ({pct(totals.pnlPct)}) desde que invertís
+                      {signed(totals.pnl, undefined, cur)} ({pct(totals.pnlPct)}) desde que invertís
                     </span>
                   </div>
                 </div>
@@ -362,7 +394,12 @@ export default function Dashboard() {
                 </div>
               </div>
               {positions.length ? (
-                <PortfolioChart points={history.points} loading={history.loading} />
+                <PortfolioChart
+                  points={history.points}
+                  live={{ value: totals.value, invested: totals.cost }}
+                  currency={cur}
+                  loading={history.loading}
+                />
               ) : (
                 <div className="ov-none">
                   <p>Todavía no tenés posiciones abiertas.</p>
@@ -376,7 +413,7 @@ export default function Dashboard() {
             <div className="card alloc">
               <div className="sec-head">
                 <h2>Distribución</h2>
-                <span className="sub">{money(totals.cost, 0)} invertidos</span>
+                <span className="sub">{money(totals.cost, 0, cur)} invertidos</span>
               </div>
               {positions.length ? (
                 <>
@@ -395,7 +432,7 @@ export default function Dashboard() {
                         <span className="dot" style={{ background: `oklch(0.62 0.17 ${HUES[i % HUES.length]})` }} />
                         <b>{p.symbol}</b>
                         <span className="w">{p.weight.toFixed(1)}%</span>
-                        <span className={"pl " + (p.pnl >= 0 ? "txt-up" : "txt-down")}>{signed(p.pnl, 0)}</span>
+                        <span className={"pl " + (p.pnl >= 0 ? "txt-up" : "txt-down")}>{signed(p.pnl, 0, cur)}</span>
                       </li>
                     ))}
                   </ul>
@@ -447,17 +484,17 @@ export default function Dashboard() {
                       </div>
                     </Link>
                     <div className="pos-num col-shares">{p.qty}</div>
-                    <div className="pos-num col-avg">{money(p.avgCost)}</div>
+                    <div className="pos-num col-avg">{fmtPrice(p.symbol, p.avgCost)}</div>
                     <div className="pos-num col-price">
-                      {money(p.price)}
+                      {fmtPrice(p.symbol, p.price)}
                       <small className={p.dayPct >= 0 ? "txt-up" : "txt-down"}>{pct(p.dayPct)} hoy</small>
                     </div>
                     <div className="pos-num">
-                      {money(p.value)}
+                      {money(p.value, undefined, cur)}
                       <small>{p.weight.toFixed(1)}% del total</small>
                     </div>
                     <div className={"pos-num col-pnl " + (p.pnl >= 0 ? "txt-up" : "txt-down")}>
-                      {signed(p.pnl)}
+                      {signed(p.pnl, undefined, cur)}
                       <small>{pct(p.pnlPct)}</small>
                     </div>
                     <div className="pos-act">
@@ -506,9 +543,9 @@ export default function Dashboard() {
                       </span>
                     </div>
                     <div className="trade-nums">
-                      <b>{money(Number(t.qty) * Number(t.price))}</b>
+                      <b>{money(Number(t.qty) * Number(t.price), undefined, assetCurrency(t.symbol))}</b>
                       <span>
-                        {Number(t.qty)} × {money(Number(t.price))}
+                        {Number(t.qty)} × {fmtPrice(t.symbol, Number(t.price))}
                       </span>
                     </div>
                     <button

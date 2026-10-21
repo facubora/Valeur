@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { getQuote, useSuggestions, money, today } from "../lib/market";
+import { getQuote, useSuggestions, money, fmtPrice, assetCurrency, today } from "../lib/market";
 import { addTrade } from "../lib/portfolio";
 import { FormError, SubmitButton } from "./AuthLayout";
 
@@ -72,6 +72,9 @@ function TradeForm({ onClose, uid, initial = {}, held = {}, onSaved }) {
   const p = Number(price);
   const total = q > 0 && p >= 0 ? q * p : 0;
   const heldQty = held[symbol] || 0;
+  const currency = assetCurrency(symbol);
+  // Precio muy lejos del actual: casi siempre es otra especie (AAPL vs AAPLD.BA) o la moneda equivocada
+  const offPrice = quote && p > 0 && Math.abs(p / quote.price - 1) > 0.5;
 
   const submit = async (e) => {
     e.preventDefault();
@@ -117,7 +120,7 @@ function TradeForm({ onClose, uid, initial = {}, held = {}, onSaved }) {
                 <span className="tk">{symbol.slice(0, 4)}</span>
                 <div>
                   <b>{symbol}</b>
-                  <span>{name || (quote ? money(quote.price) : "…")}</span>
+                  <span>{name || (quote ? fmtPrice(symbol, quote.price) : "…")}</span>
                 </div>
                 <button
                   type="button"
@@ -198,16 +201,23 @@ function TradeForm({ onClose, uid, initial = {}, held = {}, onSaved }) {
             </div>
             <div className="field">
               <label htmlFor="t-price">
-                Precio por unidad
+                Precio{symbol ? ` (${currency === "ARS" ? "ARS" : "US$"})` : " por unidad"}
                 {quote && (
                   <button type="button" className="link-btn" onClick={() => setPrice(String(quote.price))}>
-                    usar actual {money(quote.price)}
+                    usar actual {fmtPrice(symbol, quote.price)}
                   </button>
                 )}
               </label>
               <input id="t-price" type="number" min="0" step="any" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" />
             </div>
           </div>
+
+          {offPrice && (
+            <p className="price-warn" role="status">
+              <i className="bi bi-exclamation-circle" /> {symbol} cotiza a {fmtPrice(symbol, quote.price)}. Revisá que
+              el precio sea de esta especie y en {currency === "ARS" ? "pesos" : "dólares"}.
+            </p>
+          )}
 
           <div className="row-2">
             <div className="field">
@@ -222,7 +232,7 @@ function TradeForm({ onClose, uid, initial = {}, held = {}, onSaved }) {
 
           <div className="trade-total">
             <span>Total {side === "buy" ? "invertido" : "recibido"}</span>
-            <b>{money(total)}</b>
+            <b>{money(total, undefined, currency)}</b>
           </div>
 
           <FormError error={error} />

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "./supabase";
-import { getCandles } from "./market";
+import { getCandles, assetCurrency, convert } from "./market";
 
 /* ── Acceso a datos (Supabase, RLS por usuario) ──────────────────────────── */
 
@@ -67,50 +67,71 @@ export async function removeWatch(uid, symbol) {
 
 /* ── Cálculo de posiciones a partir de las operaciones ───────────────────── */
 
-/* Agrupa por símbolo: cantidad neta, costo promedio de compra, P&L.
-   `quotes` es { SYM: { price, change, change_pct } | null }. */
-export function computePositions(trades, quotes = {}) {
-  const by = new Map();
-  for (const t of trades) {
-    const p = by.get(t.symbol) || { symbol: t.symbol, name: t.name, qty: 0, buyQty: 0, buyCost: 0 };
-    const qty = Number(t.qty);
-    const price = Number(t.price);
-    if (t.side === "buy") {
-      p.qty += qty;
-      p.buyQty += qty;
-      p.buyCost += qty * price;
-    } else {
-      p.qty -= qty;
-    }
-    if (!p.name && t.name) p.name = t.name;
-    by.set(t.symbol, p);
+/* Operaciones en orden cronológico (misma fecha → orden de carga) */
+const chrono = (trades) =>
+  [...trades].sort((a, b) =>
+    a.executed_at === b.executed_at
+      ? String(a.created_at).localeCompare(String(b.created_at))
+      : a.executed_at < b.executed_at
+        ? -1
+        : 1,
+  );
+
+/* Aplica una operación al estado por símbolo. Costo promedio ponderado: la
+   venta saca costo en proporción y no cambia el promedio. El costo se lleva
+   en la moneda del activo y en la de visualización (convertido con el MEP
+   del día de la operación, así la ganancia incluye el efecto del dólar). */
+function applyTrade(state, t, cur, mep) {
+  const native = assetCurrency(t.symbol);
+  const p = state.get(t.symbol) || { symbol: t.symbol, name: t.name, native, qty: 0, costNative: 0, cost: 0 };
+  const qty = Number(t.qty);
+  if (t.side === "buy") {
+    const amount = qty * Number(t.price);
+    p.qty += qty;
+    p.costNative += amount;
+    p.cost += convert(amount, native, cur, mep?.at(t.executed_at));
+  } else if (p.qty > 0) {
+    const frac = Math.min(1, qty / p.qty);
+    p.costNative -= p.costNative * frac;
+    p.cost -= p.cost * frac;
+    p.qty -= qty;
   }
+  if (!p.name && t.name) p.name = t.name;
+  state.set(t.symbol, p);
+}
+
+/* Posiciones abiertas y totales, en la moneda `cur` ("USD" | "ARS").
+   `quotes` es { SYM: { price, change, change_pct } | null }; `mep` viene de
+   useMep(). Precio y costo promedio quedan en la moneda del activo. */
+export function computePositions(trades, quotes = {}, cur = "USD", mep = null) {
+  const state = new Map();
+  for (const t of chrono(trades)) applyTrade(state, t, cur, mep);
 
   const positions = [];
-  for (const p of by.values()) {
+  for (const p of state.values()) {
     if (p.qty <= 1e-9) continue; // posición cerrada
     const q = quotes[p.symbol];
-    const avgCost = p.buyQty ? p.buyCost / p.buyQty : 0;
+    const avgCost = p.costNative / p.qty;
     const price = q?.price ?? avgCost;
-    const value = p.qty * price;
-    const cost = p.qty * avgCost;
-    const dayChange = q ? p.qty * Number(q.change || 0) : 0;
+    const value = convert(p.qty * price, p.native, cur, mep?.rate);
+    const dayChange = q ? convert(p.qty * Number(q.change || 0), p.native, cur, mep?.rate) : 0;
     positions.push({
       symbol: p.symbol,
       name: p.name,
+      currency: p.native,
       qty: p.qty,
       avgCost,
       price,
       live: Boolean(q),
       value,
-      cost,
-      pnl: value - cost,
-      pnlPct: cost ? ((value - cost) / cost) * 100 : 0,
+      cost: p.cost,
+      pnl: value - p.cost,
+      pnlPct: p.cost ? ((value - p.cost) / p.cost) * 100 : 0,
       dayChange,
       dayPct: q ? Number(q.change_pct || 0) : 0,
     });
   }
-  positions.sort((a, b) => b.value - a.value);
+  positions.sort((a, b) => (b.value || 0) - (a.value || 0));
 
   const value = positions.reduce((s, p) => s + p.value, 0);
   const cost = positions.reduce((s, p) => s + p.cost, 0);
@@ -133,13 +154,14 @@ export function computePositions(trades, quotes = {}) {
 
 const HISTORY_RANGES = { "1m": "1m", "6m": "6m", "1y": "1y", max: "max" };
 
-/* Valor del portfolio por día: Σ (cantidad que tenías ese día × cierre).
-   Devuelve [{ time: 'YYYY-MM-DD', value }] desde la primera operación. */
-export function useHistory(trades, range = "6m") {
+/* Por día, desde la primera operación (o el inicio del rango):
+   value    = Σ cantidad que tenías ese día × cierre, en `cur` con el MEP del día
+   invested = costo de lo que tenías ese día (lo que pusiste de tu bolsillo)
+   → [{ time: 'YYYY-MM-DD', value, invested }] */
+export function useHistory(trades, range = "6m", cur = "USD", mep = null) {
   const symbols = [...new Set(trades.map((t) => t.symbol))].sort().join(",");
-  const firstDate = trades.reduce((m, t) => (t.executed_at < m ? t.executed_at : m), "9999");
   const tradesKey = trades.map((t) => `${t.id}`).join(",");
-  const [res, setRes] = useState({ key: null, points: [] });
+  const [res, setRes] = useState({ key: null, candles: null });
   const key = `${symbols}|${range}|${tradesKey}`;
 
   useEffect(() => {
@@ -148,45 +170,50 @@ export function useHistory(trades, range = "6m") {
     const syms = symbols.split(",");
     Promise.all(
       syms.map((s) => getCandles(s, "daily", HISTORY_RANGES[range] || "6m").catch(() => [])),
-    ).then(
-      (lists) => {
-        if (!alive) return;
-        // cierre por fecha y símbolo
-        const closes = new Map(); // date → { sym: close }
-        lists.forEach((candles, i) => {
-          for (const c of candles) {
-            const d = String(c.time).slice(0, 10);
-            if (!closes.has(d)) closes.set(d, {});
-            closes.get(d)[syms[i]] = c.close;
-          }
-        });
-        const dates = [...closes.keys()].sort().filter((d) => d >= firstDate);
-        // cantidad acumulada por símbolo hasta cada fecha (operaciones ordenadas)
-        const sorted = [...trades].sort((a, b) => (a.executed_at < b.executed_at ? -1 : 1));
-        const qty = {};
-        const last = {}; // último cierre conocido por símbolo (días sin vela)
-        let ti = 0;
-        const points = dates.map((d) => {
-          while (ti < sorted.length && sorted[ti].executed_at <= d) {
-            const t = sorted[ti++];
-            qty[t.symbol] = (qty[t.symbol] || 0) + (t.side === "buy" ? 1 : -1) * Number(t.qty);
-          }
-          const row = closes.get(d);
-          let value = 0;
-          for (const s of syms) {
-            if (row[s] != null) last[s] = row[s];
-            if (qty[s] > 0 && last[s] != null) value += qty[s] * last[s];
-          }
-          return { time: d, value };
-        });
-        setRes({ key, points });
-      },
-    );
+    ).then((lists) => {
+      if (alive) setRes({ key, candles: Object.fromEntries(syms.map((s, i) => [s, lists[i]])) });
+    });
     return () => {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
-  return { points: res.points, loading: Boolean(symbols) && res.key !== key };
+  // El armado de la serie depende de la moneda y el MEP: se recalcula sin volver a pedir velas
+  const points = useMemo(() => {
+    if (res.key !== key || !res.candles) return [];
+    const syms = Object.keys(res.candles);
+    const closes = new Map(); // date → { sym: close }
+    for (const s of syms) {
+      for (const c of res.candles[s]) {
+        const d = String(c.time).slice(0, 10);
+        if (!closes.has(d)) closes.set(d, {});
+        closes.get(d)[s] = c.close;
+      }
+    }
+    const firstDate = trades.reduce((m, t) => (t.executed_at < m ? t.executed_at : m), "9999");
+    const dates = [...closes.keys()].sort().filter((d) => d >= firstDate);
+    const sorted = chrono(trades);
+    const state = new Map();
+    const last = {}; // último cierre conocido por símbolo (días sin vela)
+    let ti = 0;
+    return dates.map((d) => {
+      while (ti < sorted.length && sorted[ti].executed_at <= d) applyTrade(state, sorted[ti++], cur, mep);
+      const row = closes.get(d);
+      let value = 0;
+      let invested = 0;
+      for (const p of state.values()) {
+        if (row[p.symbol] != null) last[p.symbol] = row[p.symbol];
+        if (p.qty <= 1e-9) continue;
+        invested += p.cost;
+        // sin cierre todavía (compró hoy, papel sin operaciones): vale lo que costó
+        const px = last[p.symbol] ?? p.costNative / p.qty;
+        value += convert(p.qty * px, p.native, cur, mep?.at(d));
+      }
+      return { time: d, value, invested };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [res, key, cur, mep]);
+
+  return { points, loading: Boolean(symbols) && res.key !== key };
 }

@@ -195,14 +195,20 @@ export function useAgo(ts) {
 }
 
 /* ── Formato ─────────────────────────────────────────────────────────────── */
-export const money = (n, digits = 2) =>
-  (n < 0 ? "-$" : "$") +
-  Math.abs(n).toLocaleString("es-AR", {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  });
+/* Monto con moneda: "US$ 1.234,56" / "ARS 1.234.567". Los pesos van sin
+   decimales salvo que se pidan. No finito → "—". */
+export const money = (n, digits, cur = "USD") => {
+  if (n == null || !Number.isFinite(n)) return "—";
+  const d = digits ?? (cur === "ARS" ? 0 : 2);
+  return (
+    (n < 0 ? "-" : "") +
+    (cur === "ARS" ? "ARS " : "US$ ") +
+    Math.abs(n).toLocaleString("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d })
+  );
+};
 
-export const signed = (n, digits = 2) => (n >= 0 ? "+" : "-") + money(Math.abs(n), digits).slice(1);
+export const signed = (n, digits, cur = "USD") =>
+  n == null || !Number.isFinite(n) ? "—" : (n >= 0 ? "+" : "-") + money(Math.abs(n), digits, cur);
 
 export const pct = (n) => (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
 
@@ -234,19 +240,114 @@ export function assetKind(symbol = "") {
   return "stock";
 }
 
+/* Moneda en la que cotiza un activo: CEDEARs en pesos y cripto contra el
+   peso → ARS; el resto (acciones de EE.UU., CEDEARs D, cripto en dólares) → USD */
+export function assetCurrency(symbol = "") {
+  const kind = assetKind(symbol);
+  if (kind === "cedear") return "ARS";
+  if (kind === "crypto" && symbol.toUpperCase().endsWith("-ARS")) return "ARS";
+  return "USD";
+}
+
 /* Precio con la moneda/unidad que corresponde al tipo de activo */
 export function fmtPrice(symbol, n) {
   if (n == null || Number.isNaN(n)) return "—";
   switch (assetKind(symbol)) {
-    case "cedear":
-      return "ARS " + n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
-    case "cedear-usd":
-      return "US$ " + n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     case "fx":
       return n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
     case "index":
       return n.toLocaleString("es-AR", { maximumFractionDigits: 0 }) + " pts";
     default:
-      return money(n);
+      return money(n, undefined, assetCurrency(symbol));
   }
+}
+
+/* ── Dólar MEP ───────────────────────────────────────────────────────────── */
+/* Serie diaria del MEP (derivado de CEDEARs en el backend). `at(fecha)` da
+   el MEP de ese día o del último día hábil anterior. */
+const MEP_TTL = 15 * 60_000;
+let mepCache = null; // { at, promise }
+
+function buildMep(d) {
+  const dates = d.series.map((r) => r[0]);
+  const rates = d.series.map((r) => r[1]);
+  const at = (date) => {
+    if (!date || date >= dates[dates.length - 1]) return d.rate;
+    // búsqueda binaria: última fecha <= date
+    let lo = 0;
+    let hi = dates.length - 1;
+    if (date < dates[0]) return rates[0];
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (dates[mid] <= date) lo = mid;
+      else hi = mid - 1;
+    }
+    return rates[lo];
+  };
+  return { rate: d.rate, date: d.date, at };
+}
+
+export function getMep() {
+  if (mepCache && Date.now() - mepCache.at < MEP_TTL) return mepCache.promise;
+  const promise = fetchJson(`${MARKET_API}/mep`)
+    .then((d) => (d?.series?.length ? buildMep(d) : null))
+    .catch((e) => {
+      mepCache = null;
+      throw e;
+    });
+  mepCache = { at: Date.now(), promise };
+  return promise;
+}
+
+/* → { mep: { rate, date, at } | null, loaded, error } */
+export function useMep() {
+  const [res, setRes] = useState({ mep: null, loaded: false, error: false });
+  useEffect(() => {
+    let alive = true;
+    getMep().then(
+      (mep) => alive && setRes({ mep, loaded: true, error: !mep }),
+      () => alive && setRes({ mep: null, loaded: true, error: true }),
+    );
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return res;
+}
+
+/* Pasa un monto de una moneda a otra con el MEP dado (NaN si falta el MEP) */
+export function convert(amount, from, to, rate) {
+  if (from === to) return amount;
+  if (!rate) return NaN;
+  return from === "USD" ? amount * rate : amount / rate;
+}
+
+/* Moneda en la que se muestra el portfolio (preferencia del usuario,
+   compartida entre pantallas y recordada en este navegador) */
+const CUR_KEY = "valeur-currency";
+const curListeners = new Set();
+let curValue = (() => {
+  try {
+    return localStorage.getItem(CUR_KEY) === "ARS" ? "ARS" : "USD";
+  } catch {
+    return "USD";
+  }
+})();
+
+export function useDisplayCurrency() {
+  const [cur, setLocal] = useState(curValue);
+  useEffect(() => {
+    curListeners.add(setLocal);
+    return () => curListeners.delete(setLocal);
+  }, []);
+  const setCur = useCallback((c) => {
+    curValue = c;
+    try {
+      localStorage.setItem(CUR_KEY, c);
+    } catch {
+      /* sin storage: queda solo en memoria */
+    }
+    curListeners.forEach((fn) => fn(c));
+  }, []);
+  return [cur, setCur];
 }

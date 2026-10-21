@@ -6,7 +6,17 @@ import Sparkline from "../components/Sparkline";
 import Logo from "../components/Logo";
 import SymbolSearch from "../components/SymbolSearch";
 import { useAuth } from "../context/AuthContext";
-import { useQuotes, useSparks, useAgo, fmtPrice, money, signed, pct } from "../lib/market";
+import {
+  useQuotes,
+  useSparks,
+  useAgo,
+  useMep,
+  useDisplayCurrency,
+  fmtPrice,
+  money,
+  signed,
+  pct,
+} from "../lib/market";
 import { POPULAR } from "../lib/onboarding";
 import { useTrades, useWatchlist, computePositions, addWatch, removeWatch } from "../lib/portfolio";
 
@@ -94,6 +104,8 @@ export default function Home() {
   const [tab, setTab] = useState("popular");
   const [cedearUsd, setCedearUsd] = useState(false);
   const [busy, setBusy] = useState("");
+  const [cur] = useDisplayCurrency();
+  const fx = useMep();
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -122,8 +134,8 @@ export default function Home() {
     setSparkEpoch((e) => e + 1);
   };
   const { positions, totals } = useMemo(
-    () => computePositions(trades.rows, quotes),
-    [trades.rows, quotes],
+    () => computePositions(trades.rows, quotes, cur, fx.mep),
+    [trades.rows, quotes, cur, fx.mep],
   );
 
   if (!user) return null;
@@ -377,18 +389,18 @@ export default function Home() {
           <Link to="/dashboard" className="card pf-strip">
             <div className="pf-main">
               <span className="lbl">Valor total</span>
-              <b>{money(totals.value)}</b>
+              <b>{money(totals.value, undefined, cur)}</b>
             </div>
             <div className="pf-kv">
               <small>Hoy</small>
               <span className={totals.dayChange >= 0 ? "txt-up" : "txt-down"}>
-                {signed(totals.dayChange)} ({pct(totals.dayPct)})
+                {signed(totals.dayChange, undefined, cur)} ({pct(totals.dayPct)})
               </span>
             </div>
             <div className="pf-kv">
               <small>Ganancia</small>
               <span className={totals.pnl >= 0 ? "txt-up" : "txt-down"}>
-                {signed(totals.pnl)} ({pct(totals.pnlPct)})
+                {signed(totals.pnl, undefined, cur)} ({pct(totals.pnlPct)})
               </span>
             </div>
             <div className="pf-kv">

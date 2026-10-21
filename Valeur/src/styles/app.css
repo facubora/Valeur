@@ -1091,8 +1091,20 @@
 }
 .app-root .head-actions {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 8px 14px;
   flex-wrap: wrap;
+}
+.app-root .cur-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.app-root .cur-pick small {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .app-root .dash-grid {
   display: grid;
@@ -1509,17 +1521,47 @@
 .app-root .pchart-tip {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 6px 18px;
   flex-wrap: wrap;
   min-height: 24px;
   font-size: 0.86rem;
   font-variant-numeric: tabular-nums;
 }
+.app-root .pchart-tip .pt-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
 .app-root .pchart-tip b {
   font-family: var(--font-display);
   font-size: 1rem;
 }
+.app-root .pchart-tip b em {
+  color: inherit;
+  font-style: normal;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
 .app-root .pchart-tip small {
+  color: var(--ink-soft);
+}
+.app-root .pchart-tip .pt-date {
+  margin-left: auto;
+}
+/* muestras de color: área = valor, punteada = invertido */
+.app-root .pt-key {
+  align-self: center;
+  width: 14px;
+  height: 0;
+  border-top: 2px solid var(--accent);
+}
+.app-root .pt-key.inv {
+  border-top: 1.5px dashed var(--ink-soft);
+}
+.app-root .pchart-note {
+  margin: -4px 0 8px;
+  font-size: 0.8rem;
   color: var(--ink-soft);
 }
 .app-root .pchart-canvas {
@@ -1866,6 +1908,28 @@
 .app-root .seg button.on.sell {
   background: var(--down);
   color: #fff;
+}
+.app-root .price-warn {
+  display: flex;
+  gap: 8px;
+  margin: -4px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--down) 9%, transparent);
+  color: var(--ink);
+  font-size: 0.84rem;
+  line-height: 1.4;
+  animation: warn-in 0.22s ease-out;
+}
+.app-root .price-warn i {
+  color: var(--down);
+  line-height: 1.4;
+}
+@keyframes warn-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
 }
 .app-root .field .hint {
   display: block;
