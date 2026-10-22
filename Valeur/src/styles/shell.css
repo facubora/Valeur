@@ -2286,7 +2286,11 @@
     display: none;
   }
   .app-root.shell .app-main {
-    padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: 64px;
+  }
+  /* el pie deja lugar para las pestañas de abajo */
+  .app-root .vx-foot {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   }
   .app-root .tabbar {
     position: fixed;
@@ -2945,5 +2949,183 @@
 @media (max-width: 600px) {
   .app-root .chart-controls .vx-tabs.sm button {
     padding: 0 7px;
+  }
+}
+
+/* ---------- PIE DE PÁGINA (todas las pantallas) ---------- */
+/* Un cierre tranquilo: la marca con una línea, cómo están los mercados y el
+   MEP, a dónde ir, y la letra chica. Abajo, "Valeur" gigante y apenas
+   marcado, que se corta con el borde */
+.app-root .vx-foot {
+  position: relative;
+  overflow: hidden;
+  padding-top: 56px;
+  border-top: 1px solid var(--line-soft);
+  background:
+    radial-gradient(900px 260px at 15% 0, color-mix(in srgb, var(--accent) 6%, transparent), transparent 70%),
+    color-mix(in srgb, var(--surface) 55%, var(--bg));
+}
+.app-root .vf-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.8fr);
+  gap: 48px;
+}
+.app-root .vf-brand {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+.app-root .vf-brand .brand {
+  width: fit-content;
+  color: var(--ink);
+  text-decoration: none;
+}
+.app-root .vf-brand > p {
+  max-width: 30ch;
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.app-root .vf-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.app-root .vf-status > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 11px;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.app-root .vf-status b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.app-root .vf-status i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 25%, transparent);
+}
+.app-root .vf-status .open {
+  color: var(--ink);
+}
+.app-root .vf-status .open i {
+  background: var(--up);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--up) 20%, transparent);
+}
+.app-root .vf-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+.app-root .vf-cols b {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.app-root .vf-cols ul {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+.app-root .vf-cols a,
+.app-root .vf-cols button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: 500 0.92rem var(--font-body);
+  text-decoration: none;
+  cursor: pointer;
+}
+/* la rayita azul del header, al pasar */
+.app-root .vf-cols a::after,
+.app-root .vf-cols button::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 14px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .vf-cols a:hover::after,
+.app-root .vf-cols button:hover::after {
+  transform: scaleX(1);
+}
+.app-root .vf-cols kbd {
+  font-size: 0.72rem;
+}
+.app-root .vf-cols button i {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.app-root .vf-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  margin-top: 48px;
+  padding: 18px 0 8px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.app-root .vf-word {
+  margin: 8px 0 -0.24em;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: clamp(5rem, 19vw, 17rem);
+  font-weight: 700;
+  letter-spacing: -0.06em;
+  line-height: 0.8;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 9%, transparent), transparent 85%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  user-select: none;
+  pointer-events: none;
+}
+@media (max-width: 860px) {
+  .app-root .vf-top {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+}
+@media (max-width: 600px) {
+  .app-root .vx-foot {
+    padding-top: 40px;
+  }
+  .app-root .vf-cols {
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 16px;
+  }
+  .app-root .vf-bottom {
+    flex-direction: column;
+    margin-top: 36px;
   }
 }

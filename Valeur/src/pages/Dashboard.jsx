@@ -7,7 +7,6 @@ import Onboarding from "../components/Onboarding";
 import Logo from "../components/Logo";
 import Donut from "../components/Donut";
 import Pill from "../components/Pill";
-import { CurrencyPick } from "../components/MarketBits";
 import { SectionNav, SectionHead } from "../components/Sections";
 import { useAuth } from "../context/AuthContext";
 import { useQuotes, useMep, useDisplayCurrency, assetCurrency, fmtPrice, money, signed, pct, formatDate, tickerUrl } from "../lib/market";
@@ -214,7 +213,6 @@ export default function Dashboard() {
           )}
         </div>
         <div className="head-actions">
-          <CurrencyPick />
           <button type="button" className="btn btn-pink btn-sm" onClick={() => setModal({})}>
             <i className="bi bi-plus-lg" /> Registrar operación
           </button>

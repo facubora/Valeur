@@ -11,6 +11,7 @@ import { CurrencyPick } from "./MarketBits";
 import { adoptAccountCurrency } from "../lib/market";
 import MarketTape from "./MarketTape";
 import CommandPalette from "./CommandPalette";
+import AppFooter from "./AppFooter";
 import { ConfirmHost, ToastHost } from "./Feedback";
 import "../styles/app.css";
 import "../styles/social.css";
@@ -393,6 +394,7 @@ export default function AppShell({ children }) {
       <div className={"vx-scrim" + (panel ? " on" : "")} onClick={close} aria-hidden="true" />
 
       <main className="wrap app-main">{children}</main>
+      <AppFooter username={user?.username} onSearch={() => setSearch(true)} />
 
       {/* Mobile: pestañas abajo, al alcance del pulgar */}
       <nav className="tabbar" aria-label="Secciones de la app">

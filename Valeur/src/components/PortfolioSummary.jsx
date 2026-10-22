@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import Logo from "./Logo";
-import { CurrencyPick } from "./MarketBits";
 import { money, signed, pct, tickerUrl } from "../lib/market";
 
 /* Tu portfolio en el Inicio: lo justo para el que entra a ver qué onda su
@@ -16,7 +15,6 @@ export default function PortfolioSummary({ positions, totals, cur }) {
       <div className="pfx-main">
         <div className="pfx-top">
           <span className="lbl">Valor total</span>
-          <CurrencyPick />
         </div>
         <Link to="/dashboard" className="pfx-num">
           {money(totals.value, undefined, cur)}
