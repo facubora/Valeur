@@ -878,16 +878,14 @@
 .app-root .vx-sub button.on {
   color: var(--ink);
 }
-/* la ficha que sigue al mouse (y vuelve a la sección actual), con su
-   barrita de acento abajo, como en la navegación de arriba */
+/* la barrita de acento que sigue al mouse y vuelve a la sección actual
+   (sin ficha de fondo: con la barrita alcanza) */
 .app-root .vx-sub-ind {
   position: absolute;
   z-index: -1;
   top: 2px;
   left: 0;
   height: 30px;
-  border-radius: 8px;
-  background: color-mix(in oklch, var(--ink) 6%, transparent);
   opacity: 0;
   pointer-events: none;
   transition:
