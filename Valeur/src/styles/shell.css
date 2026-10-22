@@ -908,6 +908,101 @@
   box-shadow: 0 0 8px color-mix(in oklch, var(--accent) 60%, transparent);
 }
 
+/* ---------- SELECTOR DE MONEDA ---------- */
+/* una palanca chica US$ / AR$ con una ficha que se desliza; nada de color
+   de acento, para que no compita con las acciones principales */
+.app-root .cur-seg {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 3px;
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--ink) 6%, transparent);
+}
+.app-root .cur-thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 7px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px oklch(0.25 0.03 265 / 0.14), 0 2px 6px -2px oklch(0.25 0.03 265 / 0.16);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-theme="dark"] .app-root .cur-thumb {
+  background: oklch(0.32 0 0);
+}
+.app-root .cur-seg[data-cur="ARS"] .cur-thumb {
+  transform: translateX(100%);
+}
+.app-root .cur-seg button {
+  position: relative;
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.app-root .cur-seg button:hover,
+.app-root .cur-seg button.on {
+  color: var(--ink);
+}
+.app-root .cur-lbl {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+/* ---------- BOTONES ---------- */
+/* Principal ("tinta"): negro (blanco en oscuro) con el ícono en acento. El
+   color queda para los datos. Mismo radio que el resto de los controles */
+.app-root.shell .btn-pink {
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--bg);
+  box-shadow:
+    0 1px 2px oklch(0 0 0 / 0.25),
+    inset 0 1px 0 oklch(1 0 0 / 0.08);
+}
+.app-root.shell .btn-pink > i:first-child {
+  color: color-mix(in oklch, var(--accent) 55%, var(--bg));
+}
+[data-theme="dark"] .app-root.shell .btn-pink > i:first-child {
+  color: var(--accent);
+}
+.app-root.shell .btn-pink:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 10px 22px -12px oklch(0 0 0 / 0.6),
+    inset 0 1px 0 oklch(1 0 0 / 0.08);
+}
+.app-root.shell .btn-pink:active {
+  transform: translateY(0);
+}
+/* Secundario ("tinte de vidrio"): el vidrio de la barra con el acento tenue
+   y el texto en color (mezcla en srgb: en oklch con un gris tira a rosa) */
+.app-root.shell .btn-line {
+  border: 1px solid color-mix(in oklch, var(--accent) 26%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 9%, color-mix(in srgb, var(--surface) 60%, transparent));
+  backdrop-filter: saturate(1.8) blur(14px);
+  -webkit-backdrop-filter: saturate(1.8) blur(14px);
+  color: var(--accent-text);
+}
+.app-root.shell .btn-line:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in oklch, var(--accent) 45%, transparent);
+  background: color-mix(in srgb, var(--accent) 15%, color-mix(in srgb, var(--surface) 60%, transparent));
+  color: var(--accent-text);
+}
+
 /* ---------- BUSCADOR GLOBAL (⌘K) ---------- */
 .app-root .cmdk-bg {
   align-items: flex-start;

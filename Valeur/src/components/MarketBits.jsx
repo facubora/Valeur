@@ -18,27 +18,28 @@ export function Delta({ value }) {
 }
 
 /* Dólar MEP | Pesos — la preferencia es la misma en toda la app */
-export function CurrencyPick({ label = "Precios en" }) {
+export function CurrencyPick({ label = "" }) {
   const [cur, setCur] = useDisplayCurrency();
   const fx = useMep();
+  // tranquilo a propósito: una palanca chica, no un botón principal. El MEP
+  // con el que se convierte va en el tooltip (también está en la cinta)
+  const hint = fx.mep
+    ? `Se convierte al dólar MEP: ${money(fx.mep.rate, 0, "ARS")} (cierre ${formatDate(fx.mep.date)})`
+    : "Los precios en otra moneda se convierten al dólar MEP";
   return (
-    <div className="cur-pick" title="Los precios en otra moneda se convierten al dólar MEP">
+    <div className="cur-pick" title={hint}>
       {label && <span className="cur-lbl">{label}</span>}
-      <div className="seg" role="radiogroup" aria-label="Moneda">
+      <div className="cur-seg" data-cur={cur} role="radiogroup" aria-label="Moneda">
+        <span className="cur-thumb" aria-hidden="true" />
         {[
-          ["USD", "Dólar MEP"],
-          ["ARS", "Pesos"],
-        ].map(([c, text]) => (
-          <button key={c} type="button" role="radio" aria-checked={c === cur} className={c === cur ? "on" : ""} onClick={() => setCur(c)}>
+          ["USD", "US$", "Dólares (MEP)"],
+          ["ARS", "AR$", "Pesos"],
+        ].map(([c, text, name]) => (
+          <button key={c} type="button" role="radio" aria-checked={c === cur} aria-label={name} className={c === cur ? "on" : ""} onClick={() => setCur(c)}>
             {text}
           </button>
         ))}
       </div>
-      {fx.mep && (
-        <small title={`Dólar MEP implícito en los CEDEARs, cierre ${formatDate(fx.mep.date)}`}>
-          MEP {money(fx.mep.rate, 0, "ARS")}
-        </small>
-      )}
     </div>
   );
 }

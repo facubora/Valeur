@@ -6,6 +6,7 @@ import Sparkline from "../components/Sparkline";
 import SymbolSearch from "../components/SymbolSearch";
 import TradeModal from "../components/TradeModal";
 import Onboarding from "../components/Onboarding";
+import { CurrencyPick } from "../components/MarketBits";
 import { useAuth } from "../context/AuthContext";
 import {
   useQuotes,
@@ -187,7 +188,7 @@ export default function Dashboard() {
   const [tradeSide, setTradeSide] = useState("all");
   const [tradeQuery, setTradeQuery] = useState("");
   const [busy, setBusy] = useState("");
-  const [cur, setCur] = useDisplayCurrency();
+  const [cur] = useDisplayCurrency();
   const fx = useMep();
 
   // Ruta protegida
@@ -348,23 +349,7 @@ export default function Dashboard() {
           <p className="date-line">{dateLabel}</p>
         </div>
         <div className="head-actions">
-          <div className="cur-pick">
-            <div className="seg" role="group" aria-label="Moneda del portfolio">
-              {[
-                ["USD", "Dólar MEP"],
-                ["ARS", "Pesos"],
-              ].map(([c, label]) => (
-                <button key={c} type="button" className={c === cur ? "on" : ""} onClick={() => setCur(c)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-            {fx.mep && (
-              <small title={`Dólar MEP implícito en los CEDEARs, cierre ${formatDate(fx.mep.date)}`}>
-                MEP {money(fx.mep.rate, 0, "ARS")}
-              </small>
-            )}
-          </div>
+          <CurrencyPick />
           <button type="button" className="btn btn-pink btn-sm" onClick={() => setModal({})}>
             <i className="bi bi-plus-lg" /> Registrar operación
           </button>

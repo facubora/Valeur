@@ -3,11 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import Onboarding from "../components/Onboarding";
 import Logo from "../components/Logo";
-import Sparkline from "../components/Sparkline";
 import TradeModal from "../components/TradeModal";
+import PortfolioSummary, { PortfolioSummaryEmpty } from "../components/PortfolioSummary";
 import { PostTile } from "../components/Social";
 import { SectionNav, SectionHead } from "../components/Sections";
-import { Delta, CurrencyPick, AssetRow, ForYouCards, ForYouStart } from "../components/MarketBits";
+import { Delta, AssetRow, ForYouCards, ForYouStart } from "../components/MarketBits";
 import { useAuth } from "../context/AuthContext";
 import {
   useBatch,
@@ -24,14 +24,11 @@ import {
 } from "../lib/market";
 import { POPULAR } from "../lib/onboarding";
 import { SECTORS, SECTOR, lookup } from "../lib/catalog";
-import { useTrades, useWatchlist, computePositions, useHistory, addWatch, removeWatch } from "../lib/portfolio";
+import { useTrades, useWatchlist, computePositions, addWatch, removeWatch } from "../lib/portfolio";
 import { useAlerts, alertText } from "../lib/alerts";
 import { useMyProfile, updateProfile, useFollowGraph, useFeed } from "../lib/social";
 import { useForYou } from "../lib/foryou";
 import { toast, attempt } from "../lib/feedback";
-
-/* Paleta de la composición (misma que el portfolio) */
-const HUES = [230, 300, 150, 30, 190, 60, 340, 100];
 
 const abs = (n) => Math.abs(n).toLocaleString("es-AR", { maximumFractionDigits: 2 }) + "%";
 
@@ -108,7 +105,6 @@ export default function Home() {
   const { quotes, sparks } = mkt;
   const ago = useAgo(mkt.updatedAt);
   const { positions, totals } = useMemo(() => computePositions(trades.rows, quotes, cur, fx.mep), [trades.rows, quotes, cur, fx.mep]);
-  const history = useHistory(trades.rows, "1m", cur, fx.mep);
 
   // lo tuyo (seguidos + posiciones) ordenado por cómo le fue hoy
   const movers = useMemo(() => {
@@ -163,8 +159,6 @@ export default function Home() {
   const mepRecent = fx.mep?.recent || [];
   const mepDay = mepRecent.length > 1 ? (mepRecent.at(-1) / mepRecent.at(-2) - 1) * 100 : null;
 
-  const pts = history.points.map((p) => p.value).filter(Number.isFinite);
-  const monthChange = pts.length > 1 ? (pts.at(-1) / pts[0] - 1) * 100 : null;
 
   return (
     <AppShell>
@@ -226,91 +220,16 @@ export default function Home() {
 
       {/* Portfolio */}
       <section id="resumen" className="block">
-        <SectionHead kicker="Hoy" title="Tu portfolio" desc="Cuánto vale, cómo viene el día y cómo te fue en el último mes.">
-          <CurrencyPick />
+        <SectionHead kicker="Hoy" title="Tu portfolio" desc="Cuánto vale y cómo viene el día.">
           <button type="button" className="btn btn-pink btn-sm" onClick={() => setTrade(true)}>
             <i className="bi bi-plus-lg" /> Registrar operación
           </button>
         </SectionHead>
 
         {positions.length ? (
-          <div className="card pf-card">
-            <div className="pf-main">
-              <span className="lbl">Valor total</span>
-              <Link to="/dashboard" className="pf-val">
-                {money(totals.value, undefined, cur)}
-              </Link>
-              <div className="pf-deltas">
-                <div>
-                  <small>Hoy</small>
-                  <b className={totals.dayChange >= 0 ? "txt-up" : "txt-down"}>
-                    {signed(totals.dayChange, undefined, cur)} ({pct(totals.dayPct)})
-                  </b>
-                </div>
-                <div>
-                  <small>Ganancia total</small>
-                  <b className={totals.pnl >= 0 ? "txt-up" : "txt-down"}>
-                    {signed(totals.pnl, undefined, cur)} ({pct(totals.pnlPct)})
-                  </b>
-                </div>
-                {monthChange != null && (
-                  <div>
-                    <small>Último mes</small>
-                    <b className={monthChange >= 0 ? "txt-up" : "txt-down"}>{pct(monthChange)}</b>
-                  </div>
-                )}
-              </div>
-              <div className="pf-evo">
-                {pts.length > 1 ? (
-                  <Sparkline values={pts} up={monthChange >= 0} width={480} height={84} stretch />
-                ) : (
-                  <span className="gh-ln w90" />
-                )}
-              </div>
-              <Link to="/dashboard" className="btn btn-line btn-sm pf-go">
-                Ver portfolio completo <i className="bi bi-arrow-right" />
-              </Link>
-            </div>
-            <div className="pf-comp">
-              <span className="lbl">Composición</span>
-              <div className="alloc-bar">
-                {positions.map((p, i) => (
-                  <span key={p.symbol} style={{ flex: Math.max(p.weight, 0.5), background: `oklch(0.62 0.16 ${HUES[i % HUES.length]})` }} />
-                ))}
-              </div>
-              <ul className="pf-legend">
-                {positions.slice(0, 6).map((p, i) => (
-                  <li key={p.symbol}>
-                    <i style={{ background: `oklch(0.62 0.16 ${HUES[i % HUES.length]})` }} />
-                    <Logo symbol={p.symbol} size={24} />
-                    <Link to={tickerUrl(p.symbol)}>
-                      <b>{p.symbol}</b>
-                    </Link>
-                    <span className="w">{p.weight.toFixed(1)}%</span>
-                    <span className={"r " + (p.pnlPct >= 0 ? "txt-up" : "txt-down")}>{pct(p.pnlPct)}</span>
-                  </li>
-                ))}
-                {positions.length > 6 && <li className="muted more">y {positions.length - 6} más</li>}
-              </ul>
-            </div>
-          </div>
+          <PortfolioSummary positions={positions} totals={totals} cur={cur} />
         ) : (
-          <button type="button" className="card pf-card empty" onClick={() => setTrade(true)}>
-            <div className="pf-main">
-              <span className="lbl">Valor total</span>
-              <span className="gh-ln w40 big" />
-              <span className="pf-cta">
-                <span className="gh-box">+</span> Registrá tu primera operación
-              </span>
-            </div>
-            <div className="pf-comp">
-              <div className="gh-alloc" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-              </div>
-            </div>
-          </button>
+          <PortfolioSummaryEmpty onTrade={() => setTrade(true)} />
         )}
       </section>
 

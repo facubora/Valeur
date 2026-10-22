@@ -601,7 +601,7 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
           <i className="bi bi-arrow-left" /> Mercado
         </button>
         <div className="crumb-right">
-          <CurrencyPick label="" />
+          <CurrencyPick />
           <div className="crumb-search">
             <SymbolSearch onPick={({ symbol: s }) => onOpen(s)} placeholder="Buscar otro activo…" />
           </div>

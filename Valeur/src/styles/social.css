@@ -539,32 +539,154 @@
   background: transparent;
 }
 
-/* evolución del mes dentro de la tarjeta del portfolio */
-.app-root .pf-evo {
-  height: 84px;
-  margin: 2px 0;
-  display: flex;
-  align-items: flex-end;
-}
 .app-root .spark.stretch {
   display: block;
 }
-.app-root .pf-comp .lbl {
-  font-size: 0.78rem;
-  font-weight: 600;
+/* ---------- TU PORTFOLIO (Inicio) ---------- */
+/* simple: el número y el día a la izquierda, cada activo y cómo se mueve hoy
+   a la derecha. Sin gráficos ni colores de composición */
+.app-root .pfx {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  overflow: hidden;
+}
+.app-root .pfx .lbl {
+  font-size: 0.74rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.1em;
   color: var(--ink-soft);
 }
-.app-root .pf-legend a:hover b {
+.app-root .pfx-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 26px 28px;
+}
+.app-root .pfx-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  align-self: stretch;
+}
+.app-root .pfx-num {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 4.6vw, 3.3rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.2s;
+}
+.app-root .pfx-num:hover {
   color: var(--accent-text);
 }
-.app-root button.pf-card.empty {
-  width: 100%;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
+.app-root .pfx-day {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .pfx-day i {
+  font-size: 0.66rem;
+}
+.app-root .pfx-day.up {
+  color: var(--up);
+  background: color-mix(in oklch, var(--up) 12%, transparent);
+}
+.app-root .pfx-day.down {
+  color: var(--down);
+  background: color-mix(in oklch, var(--down) 12%, transparent);
+}
+.app-root .pfx-gain {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.app-root .pfx-gain b {
+  font-variant-numeric: tabular-nums;
+}
+
+.app-root .pfx-side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 14px 16px 12px;
+  border-left: 1px solid var(--line-soft);
+}
+.app-root .pfx-list {
+  list-style: none;
+}
+.app-root .pfx-list li + li {
+  border-top: 1px solid var(--line-soft);
+}
+.app-root .pfx-list a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto 72px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px;
+  border-radius: 10px;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.15s;
+}
+.app-root .pfx-list a:hover {
+  background: color-mix(in oklch, var(--ink) 4%, transparent);
+}
+.app-root .pfx-name {
+  display: grid;
+  min-width: 0;
+  line-height: 1.2;
+}
+.app-root .pfx-name b {
+  font-size: 0.92rem;
+}
+.app-root .pfx-name small {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .pfx-val {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.app-root .pfx-chg {
+  text-align: right;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+.app-root .pfx-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0 0 8px;
+  padding: 4px 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+.app-root .pfx-go i {
+  transition: transform 0.2s;
+}
+.app-root .pfx-go:hover i {
+  transform: translateX(3px);
+}
+/* sin operaciones: filas fantasma y el botón para arrancar */
+.app-root .pfx.empty .pfx-side {
+  justify-content: center;
+  gap: 14px;
+  padding: 22px 24px;
+  opacity: 0.8;
 }
 
 /* movimientos: subieron / bajaron */
@@ -744,137 +866,6 @@
 .app-root .near-foot small {
   font-size: 0.78rem;
   color: var(--ink-soft);
-}
-
-/* tarjeta de portfolio: valor a la izquierda, composición a la derecha */
-.app-root .pf-card {
-  position: relative;
-  overflow: hidden;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-  gap: 28px 44px;
-  padding: 26px 28px;
-}
-.app-root .pf-card::after {
-  content: "";
-  position: absolute;
-  width: 340px;
-  height: 340px;
-  left: -140px;
-  top: -190px;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in oklch, var(--accent) 45%, transparent), transparent 62%);
-  filter: blur(40px);
-  opacity: 0.26;
-  pointer-events: none;
-}
-.app-root .pf-main {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-.app-root .pf-main .lbl {
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--ink-soft);
-}
-.app-root .pf-val {
-  font-family: var(--font-display);
-  font-size: clamp(2.2rem, 4.6vw, 3.1rem);
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  align-self: flex-start;
-}
-.app-root .pf-val:hover {
-  color: var(--accent-text);
-}
-.app-root .pf-deltas {
-  display: flex;
-  gap: 14px 32px;
-  flex-wrap: wrap;
-}
-.app-root .pf-deltas small {
-  display: block;
-  font-size: 0.76rem;
-  color: var(--ink-soft);
-}
-.app-root .pf-deltas b {
-  font-size: 0.98rem;
-  font-variant-numeric: tabular-nums;
-}
-.app-root .pf-go {
-  align-self: flex-start;
-  margin-top: auto;
-}
-.app-root .pf-comp {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 16px;
-  min-width: 0;
-}
-.app-root .pf-legend {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-}
-.app-root .pf-legend li {
-  display: grid;
-  grid-template-columns: 8px auto 1fr auto 76px;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  border-top: 1px solid var(--line-soft);
-  font-size: 0.9rem;
-  font-variant-numeric: tabular-nums;
-}
-.app-root .pf-legend li:first-child {
-  border-top: 0;
-}
-.app-root .pf-legend i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-.app-root .pf-legend .w {
-  font-weight: 700;
-}
-.app-root .pf-legend .r {
-  text-align: right;
-  font-size: 0.84rem;
-  font-weight: 600;
-}
-.app-root .pf-legend .more {
-  display: block;
-  font-size: 0.82rem;
-}
-.app-root .pf-card.empty {
-  border-style: dashed;
-  border-color: color-mix(in oklch, var(--ink) 16%, transparent);
-  background: transparent;
-  transition: border-color 0.2s;
-}
-.app-root .pf-card.empty:hover {
-  border-color: color-mix(in oklch, var(--accent) 45%, transparent);
-}
-.app-root .gh-ln.big {
-  height: 34px;
-  border-radius: 10px;
-}
-.app-root .pf-cta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--accent-text);
 }
 
 /* ============================================================
@@ -2888,8 +2879,12 @@
     flex-direction: column;
     align-items: stretch;
   }
-  .app-root .pf-card {
+  .app-root .pfx {
     grid-template-columns: 1fr;
+  }
+  .app-root .pfx-side {
+    border-left: 0;
+    border-top: 1px solid var(--line-soft);
   }
   .app-root .fy-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2946,8 +2941,15 @@
   .app-root .pulse-tile {
     flex-basis: 42%;
   }
-    .app-root .pf-card {
-    padding: 20px 16px;
+  .app-root .pfx-main {
+    padding: 20px 18px;
+  }
+  .app-root .pfx-side {
+    padding: 8px 8px 12px;
+  }
+  .app-root .pfx-list a {
+    grid-template-columns: auto minmax(0, 1fr) auto 60px;
+    gap: 10px;
   }
   .app-root .mv-px {
     display: none;
