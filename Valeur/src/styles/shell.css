@@ -621,52 +621,476 @@
   background: var(--bg);
 }
 
-/* notificaciones */
-.app-root .dr-notifs {
-  padding: 14px 12px 12px;
+/* notificaciones: pestañas por tipo, grupos por día y filas de borde a borde */
+.app-root .nf {
+  padding-top: 14px;
 }
-.app-root .dn-head {
+.app-root .nf-head {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 10px;
-  padding: 0 4px;
+  min-height: 28px;
+  padding: 0 16px;
   margin-bottom: 10px;
 }
-.app-root .dn-head > b {
+.app-root .nf-head > b {
   font-family: var(--font-display);
   font-size: 1.05rem;
   letter-spacing: -0.02em;
 }
-.app-root .dn-head .lnk-btn {
-  margin-left: auto;
+.app-root .nf-head .lnk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 0.8rem;
 }
-.app-root .dr-notifs .notif-filter {
-  order: 3;
-  width: 100%;
-  margin: 0;
+.app-root .nf-tabs {
+  margin: 0 16px 6px;
 }
-.app-root .dr-notifs .notif-filter button {
-  flex: 1;
-  justify-content: center;
+.app-root .nf-tabs button {
+  padding: 0 6px;
+  white-space: nowrap;
 }
-.app-root .dr-notifs .notif-list {
-  display: grid;
-  gap: 4px;
-  max-height: min(52vh, 400px);
-  padding: 0;
+.app-root .nf-count {
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.64rem;
+  font-weight: 800;
+}
+.app-root .nf-scroll {
+  max-height: min(56vh, 440px);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 6px;
 }
-.app-root .dr-notifs .notif.new {
-  background: color-mix(in srgb, var(--accent) 6%, transparent);
+.app-root .nf-group h4 {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 10px 16px 6px;
+  background: var(--bg);
+  font: 700 0.68rem var(--font-body);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
 }
-.app-root .dr-notifs .notif-none,
-.app-root .dr-notifs .notif-empty {
-  padding: 6px 4px 8px;
+.app-root .nf-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
-.app-root .dr-notifs .notif-foot {
-  padding: 8px 4px 0;
+.app-root .nf-row {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  padding: 10px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.app-root .nf-row:hover,
+.app-root .nf-row:focus-visible {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  outline: none;
+}
+/* sin leer: una rayita de acento a la izquierda y el punto al lado de la hora */
+.app-root .nf-row.new::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+}
+.app-root .nf-lead {
+  position: relative;
+  display: block;
+  width: 36px;
+  height: 36px;
+}
+.app-root .nf-ic {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+  color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.app-root .nf-lead.verified .nf-ic {
+  color: var(--up);
+  background: color-mix(in srgb, var(--up) 14%, transparent);
+}
+.app-root .nf-kind {
+  position: absolute;
+  right: -4px;
+  bottom: -3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.56rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+.app-root .nf-lead.alert .nf-kind {
+  background: var(--ink);
+  color: var(--bg);
+}
+.app-root .nf-lead.like .nf-kind,
+.app-root .nf-lead.follow .nf-kind {
+  background: var(--up);
+  color: #fff;
+}
+.app-root .nf-txt {
+  min-width: 0;
+  padding-top: 1px;
+}
+.app-root .nf-txt b {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+.app-root .nf-row.new .nf-txt b {
+  font-weight: 600;
+  color: var(--ink);
+}
+.app-root .nf-txt em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--ink);
+}
+.app-root .nf-txt span {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.79rem;
+  color: var(--ink-soft);
+}
+.app-root .nf-row small {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-top: 3px;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.app-root .nf-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* acciones de cada aviso: aparecen sobre la hora al pasar el mouse */
+.app-root .nf-li {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s,
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .nf-li > .nf-row {
+  min-height: 0;
+  overflow: hidden;
+}
+.app-root .nf-li.out {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateX(24px);
+  pointer-events: none;
+}
+.app-root .nf-acts {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  background: var(--bg);
+  box-shadow: 0 2px 10px -4px oklch(0.25 0.03 265 / 0.3);
+  opacity: 0;
+  transform: translateY(-2px);
+  pointer-events: none;
+  transition:
+    opacity 0.18s,
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .nf-li:hover .nf-acts,
+.app-root .nf-li:focus-within .nf-acts,
+.app-root .nf-li.editing .nf-acts {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.app-root .nf-acts button {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    color 0.18s;
+}
+.app-root .nf-acts button:hover,
+.app-root .nf-acts button.on {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent-text);
+}
+.app-root .nf-acts button.danger:hover {
+  background: color-mix(in srgb, var(--down) 12%, transparent);
+  color: var(--down);
+}
+/* en pantallas táctiles no hay mouse: quedan siempre a mano, abajo */
+@media (hover: none) {
+  .app-root .nf-acts {
+    top: auto;
+    bottom: 6px;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    box-shadow: none;
+    background: transparent;
+  }
+  .app-root .nf-row {
+    padding-bottom: 34px;
+  }
+}
+.app-root .nf-edit {
+  margin: 0 12px 10px;
+  padding: 12px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
+  animation: nf-edit-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes nf-edit-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+.app-root .nf-edit > p {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.app-root .nf-edit > p b {
+  color: var(--ink);
+}
+.app-root .nf-head-acts {
+  margin-left: auto;
+}
+.app-root .nf-head .nf-clear {
+  color: var(--ink-soft);
+  transition: color 0.2s;
+}
+.app-root .nf-head .nf-clear:hover,
+.app-root .nf-head .nf-clear.sure {
+  color: var(--down);
+}
+
+/* editor de alertas (panel de avisos y pantalla del activo) */
+.app-root .ae {
+  display: grid;
+  gap: 10px;
+}
+.app-root .ae-kinds button {
+  padding: 0 4px;
+  white-space: nowrap;
+}
+.app-root .ae-in {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.app-root .ae-in:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.app-root .ae-in.bad {
+  border-color: var(--down);
+}
+.app-root .ae-in > span {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.app-root .ae-in input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font: 600 0.95rem var(--font-body);
+}
+.app-root .ae-in small {
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.app-root .ae-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.app-root .ae-quick button {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--accent-text);
+  font: 600 0.76rem var(--font-body);
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.app-root .ae-quick button:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.app-root .ae-err {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--down);
+}
+.app-root .ae-btns {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+.app-root .ae-del {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-soft);
+  font: 600 0.8rem var(--font-body);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.app-root .ae-del:hover,
+.app-root .ae-del.sure {
+  color: var(--down);
+}
+
+/* vacío: qué te va a avisar, con las cajitas punteadas */
+.app-root .nf-empty {
+  padding: 8px 16px 6px;
+}
+.app-root .nf-empty > p {
+  margin: 0 0 12px;
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+}
+.app-root .nf-empty ul {
+  list-style: none;
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+}
+.app-root .nf-empty li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.app-root .nf-empty li .gh-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  font-size: 0.9rem;
+}
+.app-root .nf-empty li > span:last-child {
+  display: grid;
+  gap: 1px;
+}
+.app-root .nf-empty b {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.app-root .nf-empty small {
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+}
+.app-root .nf-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent-text);
+  text-decoration: none;
+}
+.app-root .nf-go i {
+  transition: transform 0.25s;
+}
+.app-root .nf-go:hover i {
+  transform: translateX(3px);
+}
+.app-root .nf-foot {
+  padding: 4px 16px 14px;
+  border-top: 1px solid var(--line-soft);
+}
+.app-root .nf-foot:empty {
+  display: none;
+}
+.app-root .nf-foot .notify-ask {
+  margin-top: 8px;
+}
+.app-root .nf:has(.nf-foot:empty) {
+  padding-bottom: 10px;
 }
 
 /* cuenta: un botón, todas las acciones */
@@ -1702,13 +2126,6 @@
   color: var(--ink);
 }
 
-.app-root .notif-filter {
-  margin: 0 16px 6px;
-  width: auto;
-}
-.app-root .notif-none {
-  padding: 14px 16px 18px;
-}
 .app-root .alert-filter {
   align-self: flex-start;
   margin-bottom: 12px;

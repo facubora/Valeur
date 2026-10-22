@@ -302,7 +302,7 @@ export default function AppShell({ children }) {
               </div>
               <div className={"vx-pop notif-pop" + (panel === "notif" ? " open" : "")} inert={panel !== "notif"}>
                 <div className="vx-pop-in">
-                  <NotificationsPanel {...notifs} onGo={close} />
+                  <NotificationsPanel {...notifs} uid={user?.id} onGo={close} />
                 </div>
               </div>
               <div

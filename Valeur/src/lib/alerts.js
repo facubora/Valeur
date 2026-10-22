@@ -208,5 +208,10 @@ export function useNotifications(uid) {
     },
     [uid],
   );
-  return { rows: res.data, loaded: res.loaded, unread, markRead };
+  const remove = useCallback(async (ids) => {
+    const { error } = await supabase.from("notifications").delete().in("id", ids);
+    if (!error) changed("notifications");
+    return error?.message || "";
+  }, []);
+  return { rows: res.data, loaded: res.loaded, unread, markRead, remove };
 }
