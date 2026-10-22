@@ -448,17 +448,7 @@
   height: 180px;
 }
 
-/* hero: fecha + mercados, saludo y resumen escrito del día */
-.app-root .home-hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px 40px;
-  flex-wrap: wrap;
-}
-.app-root .hh-main {
-  max-width: 760px;
-}
+/* hero: fecha + mercados, saludo y el día en cuatro cifras */
 .app-root .home-hero .kicker {
   flex-wrap: wrap;
   gap: 8px 14px;
@@ -481,33 +471,76 @@
   background: var(--up);
 }
 .app-root .home-hero h1 {
-  font-size: clamp(2.2rem, 4.6vw, 3.4rem);
+  font-size: clamp(2rem, 3.6vw, 2.9rem);
   line-height: 1;
 }
-.app-root .hh-brief {
-  margin-top: 16px;
-  font-size: clamp(1.02rem, 1.6vw, 1.18rem);
-  line-height: 1.55;
-  color: var(--ink-soft);
+.app-root .home-hero {
+  display: flex;
+  flex-direction: column;
 }
-.app-root .hh-brief b {
+/* el día en pastillas: se lee de un vistazo */
+.app-root .hpills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+.app-root .hp {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--sh-1);
   color: var(--ink);
-  font-weight: 700;
+  font-family: var(--font-body);
+  font-size: 0.84rem;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s,
+    border-color 0.2s;
 }
-.app-root .hh-brief b.txt-up {
+.app-root a.hp:hover,
+.app-root button.hp:hover {
+  border-color: var(--line);
+  transform: translateY(-1px);
+  box-shadow: var(--sh-2);
+}
+.app-root .hp-l {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.app-root .hp b {
+  font-weight: 700;
+}
+.app-root .hp em {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-style: normal;
+  font-weight: 700;
+}
+.app-root .hp em i {
+  font-size: 0.62rem;
+}
+.app-root .hp em.up {
   color: var(--up);
 }
-.app-root .hh-brief b.txt-down {
+.app-root .hp em.down {
   color: var(--down);
 }
-.app-root .hh-brief a:hover b {
+.app-root .hp-add {
+  cursor: pointer;
   color: var(--accent-text);
-}
-.app-root .hh-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  font-weight: 600;
+  border-style: dashed;
+  box-shadow: none;
+  background: transparent;
 }
 
 /* evolución del mes dentro de la tarjeta del portfolio */
@@ -1669,12 +1702,8 @@
 /* ============================================================
    NOTIFICACIONES (campanita del header)
    ============================================================ */
-/* el panel se alinea con el borde derecho del header, no con la campanita */
 .app-root .top .right {
   position: relative;
-}
-.app-root .bell-wrap {
-  position: static;
 }
 .app-root .icon-btn.bell {
   position: relative;
@@ -1702,22 +1731,6 @@
   place-items: center;
   box-shadow: 0 0 0 2px var(--bg);
   animation: done-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.app-root .notif-panel {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 10px);
-  width: min(380px, calc(100vw - 32px));
-  max-height: min(520px, calc(100vh - 110px));
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface);
-  box-shadow: 0 30px 60px -28px oklch(0 0 0 / 0.45);
-  overflow: hidden;
-  z-index: 150;
-  animation: modal-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .app-root .notif-head {
   display: flex;
@@ -2916,6 +2929,20 @@
 }
 
 @media (max-width: 600px) {
+  /* las pastillas en una sola fila que se desliza */
+  .app-root .hpills {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 12px -16px 0;
+    padding: 4px 16px 10px;
+    scrollbar-width: none;
+  }
+  .app-root .hpills::-webkit-scrollbar {
+    display: none;
+  }
+  .app-root .hp {
+    flex-shrink: 0;
+  }
   .app-root .pulse {
     margin: 0 -16px;
     padding: 2px 16px 4px;
@@ -2925,18 +2952,6 @@
   }
     .app-root .pf-card {
     padding: 20px 16px;
-  }
-  .app-root .hh-actions {
-    width: 100%;
-  }
-  .app-root .hh-actions .btn {
-    flex: 1;
-    justify-content: center;
-    white-space: nowrap;
-    padding-inline: 10px;
-  }
-  .app-root .hh-actions .btn i {
-    display: none;
   }
   .app-root .mv-px {
     display: none;
@@ -3110,13 +3125,6 @@
   .app-root .composer-foot .seg button {
     flex: 1;
     justify-content: center;
-  }
-  .app-root .bell-wrap .notif-panel {
-    position: fixed;
-    left: 16px;
-    right: 16px;
-    top: 76px;
-    width: auto;
   }
 }
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import PortfolioChart from "../components/PortfolioChart";
 import Sparkline from "../components/Sparkline";
@@ -182,6 +182,7 @@ export default function Dashboard() {
   const watch = useWatchlist(uid);
   const [range, setRange] = useState("6m");
   const [modal, setModal] = useState(null); // null | { symbol?, name?, side? }
+  const [params, setParams] = useSearchParams();
   const [showAll, setShowAll] = useState(false);
   const [tradeSide, setTradeSide] = useState("all");
   const [tradeQuery, setTradeQuery] = useState("");
@@ -273,7 +274,7 @@ export default function Dashboard() {
 
   /* Seguidos: se muestra real aunque no haya operaciones */
   const watchSection = (
-    <section>
+    <section id="seguidos">
       <div className="sec-head">
         <h2>Seguidos</h2>
         <div className="sec-tools">
@@ -397,7 +398,7 @@ export default function Dashboard() {
       {ready && !empty && (
         <>
           {/* Resumen + evolución + distribución */}
-          <section className="dash-grid">
+          <section id="resumen" className="dash-grid">
             <div className="card overview">
               <div className="ov-top">
                 <div>
@@ -493,7 +494,7 @@ export default function Dashboard() {
 
           {/* Posiciones */}
           {positions.length > 0 && (
-            <section>
+            <section id="posiciones">
               <div className="sec-head">
                 <h2>Mis posiciones</h2>
                 <span className="sub">{quotesLoading ? "actualizando precios…" : "precios en vivo"}</span>
@@ -552,7 +553,7 @@ export default function Dashboard() {
 
           {/* Operaciones */}
           {trades.rows.length > 0 && (
-            <section>
+            <section id="operaciones">
               <div className="sec-head">
                 <h2>Operaciones</h2>
                 {filteredTrades.length > 6 && (
@@ -622,9 +623,13 @@ export default function Dashboard() {
         </>
       )}
 
+      {/* ?operar=1 (desde el cajón del header) abre el registro directo */}
       <TradeModal
-        open={modal !== null}
-        onClose={() => setModal(null)}
+        open={modal !== null || params.has("operar")}
+        onClose={() => {
+          setModal(null);
+          if (params.has("operar")) setParams({}, { replace: true });
+        }}
         uid={uid}
         initial={modal || {}}
         held={held}

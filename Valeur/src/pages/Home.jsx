@@ -35,13 +35,28 @@ const HUES = [230, 300, 150, 30, 190, 60, 340, 100];
 
 const abs = (n) => Math.abs(n).toLocaleString("es-AR", { maximumFractionDigits: 2 }) + "%";
 
-/* Un número con color y signo para el resumen escrito */
-function Move({ value, verb = ["sube", "baja"] }) {
-  const up = value >= 0;
-  return (
+/* Una cifra del día en una pastilla: etiqueta, valor y variación con flecha.
+   Con `to` es un link. */
+function Pill({ to, label, value, delta }) {
+  const up = delta >= 0;
+  const body = (
     <>
-      {up ? verb[0] : verb[1]} <b className={up ? "txt-up" : "txt-down"}>{abs(value)}</b>
+      <span className="hp-l">{label}</span>
+      {value && <b>{value}</b>}
+      {delta != null && Number.isFinite(delta) && (
+        <em className={up ? "up" : "down"}>
+          <i className={up ? "bi bi-caret-up-fill" : "bi bi-caret-down-fill"} />
+          {abs(delta)}
+        </em>
+      )}
     </>
+  );
+  return to ? (
+    <Link to={to} className="hp">
+      {body}
+    </Link>
+  ) : (
+    <span className="hp">{body}</span>
   );
 }
 
@@ -142,14 +157,11 @@ export default function Home() {
   const today = fecha.charAt(0).toUpperCase() + fecha.slice(1);
   const ready = watch.loaded && trades.loaded;
 
-  // resumen escrito del día con lo que haya disponible
+  // lo que más se mueve de lo tuyo, para un lado o para el otro
   const merv = quotes["^MERV"];
-  const top = movers[0];
-  const brief = [];
-  if (positions.length && Number.isFinite(totals.dayPct)) brief.push(<span key="pf">Tu portfolio <Move value={totals.dayPct} /> hoy</span>);
-  if (merv) brief.push(<span key="mv">el Merval <Move value={merv.change_pct} verb={["sube", "cae"]} /></span>);
-  if (fx.mep) brief.push(<span key="mep">el dólar MEP está en <b>{money(fx.mep.rate, 0, "ARS")}</b></span>);
-  const sentence = brief.flatMap((b, i) => (i === 0 ? [b] : [i === brief.length - 1 ? " y " : ", ", b]));
+  const top = movers.reduce((m, x) => (!m || Math.abs(x.q.change_pct) > Math.abs(m.q.change_pct) ? x : m), null);
+  const mepRecent = fx.mep?.recent || [];
+  const mepDay = mepRecent.length > 1 ? (mepRecent.at(-1) / mepRecent.at(-2) - 1) * 100 : null;
 
   const pts = history.points.map((p) => p.value).filter(Number.isFinite);
   const monthChange = pts.length > 1 ? (pts.at(-1) / pts[0] - 1) * 100 : null;
@@ -169,31 +181,20 @@ export default function Home() {
           <h1>
             {greeting}, <em>{user.username}</em>.
           </h1>
-          {sentence.length > 0 ? (
-            <p className="hh-brief">
-              {sentence}.
-              {top && (
-                <>
-                  {" "}
-                  De lo tuyo, lo que más se mueve es{" "}
-                  <Link to={tickerUrl(top.symbol)}>
-                    <b>{top.symbol}</b>
-                  </Link>{" "}
-                  (<b className={top.q.change_pct >= 0 ? "txt-up" : "txt-down"}>{pct(top.q.change_pct)}</b>).
-                </>
-              )}
-            </p>
-          ) : (
-            <p className="hh-brief muted">Qué se mueve hoy en lo que seguís y en el mercado.</p>
-          )}
         </div>
-        <div className="hh-actions">
-          <button type="button" className="btn btn-pink btn-sm" onClick={() => setTrade(true)}>
-            <i className="bi bi-plus-lg" /> Registrar operación
-          </button>
-          <Link to="/tickersearch" className="btn btn-line btn-sm">
-            <i className="bi bi-graph-up-arrow" /> Ir al mercado
-          </Link>
+
+        <div className="hpills" aria-label="Resumen del día">
+          {positions.length ? (
+            // hasta que llegan los precios no hay variación que mostrar
+            posSymbols.some((sym) => quotes[sym]) && <Pill to="/dashboard" label="Tu portfolio" value={signed(totals.dayChange, undefined, cur)} delta={totals.dayPct} />
+          ) : (
+            <button type="button" className="hp hp-add" onClick={() => setTrade(true)}>
+              <i className="bi bi-plus-lg" /> Registrá tu primera operación
+            </button>
+          )}
+          {top && <Pill to={tickerUrl(top.symbol)} label={top.symbol} delta={top.q.change_pct} />}
+          {merv && <Pill to={tickerUrl("^MERV")} label="Merval" delta={merv.change_pct} />}
+          {fx.mep && <Pill label="MEP" value={money(fx.mep.rate, 0, "ARS")} delta={mepDay} />}
         </div>
       </section>
 
@@ -227,6 +228,9 @@ export default function Home() {
       <section id="resumen" className="block">
         <SectionHead kicker="Hoy" title="Tu portfolio" desc="Cuánto vale, cómo viene el día y cómo te fue en el último mes.">
           <CurrencyPick />
+          <button type="button" className="btn btn-pink btn-sm" onClick={() => setTrade(true)}>
+            <i className="bi bi-plus-lg" /> Registrar operación
+          </button>
         </SectionHead>
 
         {positions.length ? (

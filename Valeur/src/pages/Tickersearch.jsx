@@ -205,13 +205,6 @@ function Explore({ uid, user, ctx, recent, onOpen }) {
 
   const fy = useForYou({ uid, profile: profile.data, watchRows: watch.rows, tradeRows: trades.rows, posts: feed.data, limit: 8 });
 
-  // links con ancla (p. ej. "Ver más ideas" desde Inicio) → bajar a esa sección
-  useEffect(() => {
-    const id = window.location.hash.slice(1);
-    if (!id) return;
-    const t = setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 400);
-    return () => clearTimeout(t);
-  }, []);
   const interests = fy.interests;
 
   const lq = listQuery.trim().toUpperCase();

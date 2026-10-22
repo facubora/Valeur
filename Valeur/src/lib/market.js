@@ -407,7 +407,8 @@ function buildMep(d) {
     }
     return rates[lo];
   };
-  return { rate: d.rate, date: d.date, at };
+  // últimos cierres, para la curva del mes
+  return { rate: d.rate, date: d.date, at, recent: rates.slice(-23) };
 }
 
 export function getMep() {
@@ -422,7 +423,7 @@ export function getMep() {
   return promise;
 }
 
-/* → { mep: { rate, date, at } | null, loaded, error } */
+/* → { mep: { rate, date, at, recent } | null, loaded, error } */
 export function useMep() {
   const [res, setRes] = useState({ mep: null, loaded: false, error: false });
   const [tick, setTick] = useState(0);

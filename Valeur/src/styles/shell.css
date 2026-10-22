@@ -136,6 +136,29 @@
   }
 }
 
+/* ---------- PROFUNDIDAD ---------- */
+/* La página no es una hoja: fondo apenas gris con un halo de acento arriba,
+   y tarjetas blancas que flotan con sombras en capas. */
+.app-root.shell {
+  --bg: oklch(0.974 0.004 265);
+  --sh-1: 0 1px 2px oklch(0.25 0.03 265 / 0.06), 0 8px 24px -12px oklch(0.25 0.03 265 / 0.16);
+  --sh-2: 0 2px 4px oklch(0.25 0.03 265 / 0.06), 0 22px 48px -20px oklch(0.25 0.03 265 / 0.28);
+  --bar-h: 64px;
+  background:
+    radial-gradient(1100px 440px at 12% -140px, color-mix(in oklch, var(--accent) 10%, transparent), transparent 70%),
+    radial-gradient(900px 380px at 95% -160px, color-mix(in oklch, oklch(0.7 0.18 305) 8%, transparent), transparent 70%),
+    var(--bg);
+}
+[data-theme="dark"] .app-root.shell {
+  --bg: #0a0a0a;
+  --sh-1: inset 0 1px 0 oklch(1 0 0 / 0.05), 0 12px 30px -14px oklch(0 0 0 / 0.85);
+  --sh-2: inset 0 1px 0 oklch(1 0 0 / 0.06), 0 26px 60px -20px oklch(0 0 0 / 0.9);
+}
+.app-root.shell .card {
+  border-color: var(--line-soft);
+  box-shadow: var(--sh-1);
+}
+
 /* ---------- BARRA PRINCIPAL ---------- */
 .app-root .shell-sentinel {
   display: block;
@@ -145,32 +168,43 @@
 .app-root .vx-top {
   position: sticky;
   top: 0;
-  z-index: var(--z-sticky);
-  background: color-mix(in oklch, var(--bg) 84%, transparent);
-  backdrop-filter: saturate(1.5) blur(16px);
-  -webkit-backdrop-filter: saturate(1.5) blur(16px);
-  border-bottom: 1px solid transparent;
+  z-index: calc(var(--z-sticky) + 2);
+  background: color-mix(in oklch, var(--bg) 70%, transparent);
+  backdrop-filter: saturate(1.8) blur(20px);
+  -webkit-backdrop-filter: saturate(1.8) blur(20px);
+  border-bottom: 1px solid var(--line-soft);
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.5) inset;
   transition:
-    border-color 0.3s,
+    background 0.35s,
     box-shadow 0.3s;
 }
 .app-root .vx-top.scrolled {
-  border-bottom-color: var(--line);
-  box-shadow: 0 12px 30px -26px oklch(0 0 0 / 0.5);
+  box-shadow: 0 16px 36px -24px oklch(0.25 0.03 265 / 0.35);
+}
+[data-theme="dark"] .app-root .vx-top {
+  box-shadow: 0 1px 0 oklch(1 0 0 / 0.04) inset;
+}
+[data-theme="dark"] .app-root .vx-top.scrolled {
+  box-shadow: 0 20px 44px -22px oklch(0 0 0 / 0.9);
 }
 .app-root .vx-bar {
   display: flex;
   align-items: center;
-  gap: 30px;
-  height: 68px;
+  gap: 28px;
+  height: var(--bar-h);
 }
 .app-root .vx-bar .brand {
   flex-shrink: 0;
 }
+.app-root .vx-bar .mark::after {
+  background: var(--bg);
+}
 
-/* navegación numerada con un trazo de acento abajo */
+/* navegación: una ficha se desliza detrás de la activa (y de la que
+   está bajo el mouse) con un trazo de acento sobre el borde de la barra */
 .app-root .vx-nav {
   position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   gap: 2px;
@@ -178,95 +212,79 @@
 }
 .app-root .vx-nav a {
   position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 40px;
-  padding: 0 12px;
-  border-radius: 10px;
+  gap: 7px;
+  height: 38px;
+  padding: 0 14px;
   color: var(--ink-soft);
   font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 600;
   letter-spacing: -0.015em;
-  transition:
-    color 0.2s,
-    background 0.2s;
+  transition: color 0.2s;
 }
 .app-root .vx-nav a i {
   display: none;
 }
-.app-root .vx-nav a .n {
-  align-self: flex-start;
-  margin-top: 8px;
-  font-family: var(--font-body);
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: color-mix(in oklch, var(--ink-soft) 70%, transparent);
-  font-variant-numeric: tabular-nums;
-  transition: color 0.2s;
-}
-.app-root .vx-nav a:hover {
-  color: var(--ink);
-  background: color-mix(in oklch, var(--ink) 4%, transparent);
-}
+.app-root .vx-nav a:hover,
 .app-root .vx-nav a.active {
   color: var(--ink);
 }
-.app-root .vx-nav a.active .n {
-  color: var(--accent-text);
-}
 .app-root .vx-ind {
   position: absolute;
+  z-index: 0;
   left: 0;
-  bottom: -1px;
+  top: calc(50% - 19px);
+  height: 38px;
+  border: 1px solid var(--line-soft);
+  border-radius: 9px;
+  background: color-mix(in oklch, var(--ink) 4%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.25s;
+}
+.app-root .vx-ind::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc((var(--bar-h) - 38px) / -2 - 1px);
   height: 3px;
   border-radius: 3px 3px 0 0;
   background: var(--accent);
   box-shadow: 0 -2px 14px color-mix(in oklch, var(--accent) 55%, transparent);
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
-    width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.25s;
 }
 
+/* derecha: buscador hundido, campanita y la cuenta como piezas sueltas */
 .app-root .vx-right {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   margin-left: auto;
-}
-/* botonera recta: buscador | campanita | usuario, en un solo bloque */
-.app-root .vx-tools {
-  display: flex;
-  align-items: stretch;
-  height: 42px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: color-mix(in oklch, var(--surface) 70%, transparent);
-}
-.app-root .vx-tools > * + * {
-  border-left: 1px solid var(--line);
 }
 .app-root .vx-search {
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 270px;
-  padding: 0 8px 0 14px;
-  border: 0;
-  border-radius: 11px 0 0 11px;
-  background: transparent;
+  width: 260px;
+  height: 40px;
+  padding: 0 7px 0 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--surface) 55%, transparent);
+  box-shadow: inset 0 1px 2px oklch(0.25 0.03 265 / 0.06);
   color: var(--ink-soft);
   font-family: var(--font-body);
   font-size: 0.86rem;
   cursor: pointer;
   transition:
-    background 0.2s,
+    border-color 0.2s,
     color 0.2s;
 }
 .app-root .vx-search span {
@@ -277,67 +295,447 @@
   text-overflow: ellipsis;
 }
 .app-root .vx-search:hover {
-  background: color-mix(in oklch, var(--ink) 4%, transparent);
+  border-color: var(--line);
   color: var(--ink);
 }
-.app-root .vx-tools .bell-wrap {
-  display: flex;
+.app-root .vx-right .icon-btn.bell {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+  color: var(--ink-soft);
+  transition:
+    color 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s;
 }
-.app-root .vx-tools .icon-btn.bell {
-  width: 44px;
-  height: 100%;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  transform: none;
+.app-root .vx-right .icon-btn.bell:hover,
+.app-root .vx-right .icon-btn.bell.on {
+  color: var(--ink);
+  border-color: var(--line);
+  transform: translateY(-1px);
+  box-shadow: var(--sh-2);
 }
-.app-root .vx-tools .icon-btn.bell:hover {
-  background: color-mix(in oklch, var(--ink) 4%, transparent);
-}
-.app-root .vx-tools .icon-btn.bell.has {
+.app-root .vx-right .icon-btn.bell.has {
   color: var(--accent-text);
 }
-.app-root .vx-tools .icon-btn.bell .badge {
-  top: 5px;
-  left: calc(50% + 3px);
-  right: auto;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 5px;
-  font-size: 0.62rem;
+.app-root .vx-right .icon-btn.bell .badge {
+  top: -6px;
+  right: -6px;
+  left: auto;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.64rem;
   box-shadow: 0 0 0 2px var(--surface);
 }
-.app-root .vx-tools .user-wrap {
+.app-root .vx-me {
   display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  max-width: 220px;
+  padding: 0 10px 0 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+  color: var(--ink);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s,
+    border-color 0.2s;
 }
-.app-root .vx-tools .user-chip {
-  height: 100%;
-  max-width: 190px;
-  gap: 9px;
-  padding: 0 12px 0 7px;
+.app-root .vx-me {
+  font: inherit;
+  cursor: pointer;
+}
+.app-root .vx-me:hover,
+.app-root .vx-me.on {
+  border-color: var(--line);
+  transform: translateY(-1px);
+  box-shadow: var(--sh-2);
+}
+.app-root .vx-me-txt {
+  display: grid;
+  min-width: 0;
+  text-align: right;
+  line-height: 1.15;
+}
+.app-root .vx-me-txt b {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 0.84rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .vx-me-txt small {
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .vx-me > i {
+  font-size: 1.2rem;
+  color: var(--ink-soft);
+  transition: color 0.2s;
+}
+.app-root .vx-me:hover > i,
+.app-root .vx-me.on > i {
+  color: var(--accent-text);
+}
+/* "Más": una pestaña más de la navegación que estira la barra */
+.app-root .vx-more {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 12px;
   border: 0;
-  border-radius: 0 11px 11px 0;
   background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: -0.015em;
+  cursor: pointer;
+  transition: color 0.2s;
 }
-.app-root .vx-tools .user-chip:hover,
-.app-root .vx-tools .user-chip[aria-expanded="true"] {
-  background: color-mix(in oklch, var(--ink) 4%, transparent);
+.app-root .vx-more i {
+  display: grid;
+  font-size: 0.72rem;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.app-root .vx-tools .avatar {
-  width: 28px;
-  height: 28px;
+.app-root .vx-more:hover,
+.app-root .vx-more.on {
+  color: var(--ink);
+}
+.app-root .vx-more.on i {
+  transform: rotate(180deg);
+  color: var(--accent-text);
+}
+.app-root .vx-more-m {
+  display: none;
+}
+/* ---------- SECCIONES ("Más") ---------- */
+.app-root .vx-dr-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 12px;
+}
+.app-root .vx-dr-grid > * {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity 0.3s,
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .vx-pop.open .vx-dr-grid > * {
+  opacity: 1;
+  transform: none;
+}
+.app-root .vx-pop.open .vx-dr-grid > :nth-child(2) { transition-delay: 0.04s; }
+.app-root .vx-pop.open .vx-dr-grid > :nth-child(3) { transition-delay: 0.08s; }
+.app-root .vx-pop.open .vx-dr-grid > :nth-child(4) { transition-delay: 0.12s; }
+
+.app-root .dr-col {
+  position: relative;
+  overflow: hidden;
+  padding: 14px 12px 12px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+}
+.app-root .dr-col.here {
+  border-color: var(--line-soft);
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+}
+.app-root .dr-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 6px 10px;
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.app-root .dr-title i {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+}
+.app-root .dr-title:hover i {
+  opacity: 1;
+  transform: none;
+}
+.app-root .dr-col ul {
+  position: relative;
+  z-index: 1;
+  list-style: none;
+}
+.app-root .dr-col li a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 6px;
   border-radius: 8px;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
-/* si es el primer o el último botón del bloque, que respete las esquinas */
-.app-root .vx-tools > :only-child,
-.app-root .vx-tools > .vx-search:only-child {
-  border-radius: 11px;
+.app-root .dr-col li a i {
+  font-size: 0.85rem;
 }
-.app-root .vx-tools .user-menu,
-.app-root .vx-tools .notif-panel {
-  top: calc(100% + 8px);
-  border-radius: 12px;
+.app-root .dr-col li a:hover {
+  color: var(--ink);
+  background: color-mix(in oklch, var(--ink) 5%, transparent);
+}
+.app-root .dr-col li a:hover i {
+  color: var(--accent-text);
+}
+/* ---------- RECUADROS (notificaciones y cuenta) ---------- */
+/* Salen de la barra misma: tapan su borde de abajo, tienen su mismo fondo y
+   se unen a ella con dos curvas cóncavas, como una pestaña que se estira */
+.app-root .vx-bar {
+  position: relative;
+}
+.app-root .vx-pop {
+  --pop-bg: var(--bg);
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-rows: 0fr;
+  width: min(380px, calc(100vw - 32px));
+  border-radius: 0 0 22px 22px;
+  background: var(--pop-bg);
+  box-shadow: 0 24px 50px -24px oklch(0.25 0.03 265 / 0.45);
+  opacity: 0;
+  transition:
+    grid-template-rows 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.25s;
+}
+[data-theme="dark"] .app-root .vx-pop {
+  box-shadow: 0 24px 50px -20px oklch(0 0 0 / 0.9);
+}
+.app-root .vx-pop.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.app-root .vx-pop::before,
+.app-root .vx-pop::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+}
+.app-root .vx-pop::before {
+  left: -22px;
+  background: radial-gradient(circle at 0 100%, transparent 21.5px, var(--pop-bg) 22px);
+}
+.app-root .vx-pop::after {
+  right: -22px;
+  background: radial-gradient(circle at 100% 100%, transparent 21.5px, var(--pop-bg) 22px);
+}
+.app-root .vx-pop.me-pop {
+  width: min(290px, calc(100vw - 32px));
+}
+/* el de secciones arranca donde arranca la navegación */
+.app-root .vx-pop.more-pop {
+  left: var(--nav-x, 0);
+  right: auto;
+  width: min(840px, calc(100vw - 32px));
+}
+.app-root .vx-pop-in {
+  min-height: 0;
+  overflow: hidden;
+}
+.app-root .vx-pop-in > * {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity 0.3s 0.05s,
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .vx-pop.open .vx-pop-in > * {
+  opacity: 1;
+  transform: none;
+}
+/* con un recuadro abierto la barra se vuelve sólida, del mismo color que él */
+.app-root .vx-top:has(.vx-pop.open) {
+  background: var(--bg);
+}
+
+/* notificaciones */
+.app-root .dr-notifs {
+  padding: 14px 12px 12px;
+}
+.app-root .dn-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 4px;
+  margin-bottom: 10px;
+}
+.app-root .dn-head > b {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+.app-root .dn-head .lnk-btn {
+  margin-left: auto;
+  font-size: 0.8rem;
+}
+.app-root .dr-notifs .notif-filter {
+  order: 3;
+  width: 100%;
+  margin: 0;
+}
+.app-root .dr-notifs .notif-filter button {
+  flex: 1;
+  justify-content: center;
+}
+.app-root .dr-notifs .notif-list {
+  display: grid;
+  gap: 4px;
+  max-height: min(52vh, 400px);
+  padding: 0;
+  overflow-y: auto;
+}
+.app-root .dr-notifs .notif.new {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.app-root .dr-notifs .notif-none,
+.app-root .dr-notifs .notif-empty {
+  padding: 6px 4px 8px;
+}
+.app-root .dr-notifs .notif-foot {
+  padding: 8px 4px 0;
+}
+
+/* cuenta: un botón, todas las acciones */
+.app-root .mp {
+  padding: 8px;
+}
+.app-root .mp-who {
+  display: grid;
+  gap: 1px;
+  padding: 8px 10px 12px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.app-root .mp-who b {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-display);
+  font-size: 1rem;
+}
+.app-root .mp-who small {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .mp-who:hover b {
+  color: var(--accent-text);
+}
+.app-root .mp-list {
+  display: grid;
+}
+.app-root .mp-list a,
+.app-root .mp-out {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.89rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.app-root .mp-list a i,
+.app-root .mp-out i {
+  width: 16px;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  transition: color 0.15s;
+}
+.app-root .mp-list a:hover {
+  background: color-mix(in oklch, var(--ink) 5%, transparent);
+}
+.app-root .mp-list a:hover i {
+  color: var(--accent-text);
+}
+.app-root .mp-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 8px 2px 0;
+  border-top: 1px solid var(--line-soft);
+}
+.app-root .mp-out {
+  height: 34px;
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+}
+.app-root .mp-out:hover {
+  color: var(--down);
+  background: color-mix(in oklch, var(--down) 8%, transparent);
+}
+.app-root .mp-out:hover i {
+  color: var(--down);
+}
+
+.app-root .vx-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-sticky) + 1);
+  background: oklch(0.2 0.03 265 / 0.12);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s;
+}
+.app-root .vx-scrim.on {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .app-root kbd {
@@ -360,7 +758,7 @@
 /* Franja a todo el ancho; al scrollear se acopla debajo del header */
 .app-root .sub-nav {
   position: sticky;
-  top: 68px;
+  top: var(--bar-h);
   z-index: calc(var(--z-sticky) - 1);
   margin: -14px calc(50% - 50vw) -8px;
   padding: 0 calc(50vw - 50%);
@@ -776,7 +1174,7 @@
 /* ---------- RESPONSIVE ---------- */
 @media (max-width: 1180px) {
   .app-root .vx-search {
-    width: 44px;
+    width: 40px;
     padding: 0;
     justify-content: center;
   }
@@ -789,19 +1187,22 @@
   .app-root .vx-bar {
     gap: 16px;
   }
-  .app-root .vx-nav a .n {
-    display: none;
-  }
-  .app-root .vx-nav a {
+  .app-root .vx-nav a,
+  .app-root .vx-more {
     padding: 0 10px;
     font-size: 0.94rem;
   }
-  .app-root .user-chip .uname,
-  .app-root .user-chip .caret {
+  .app-root .vx-me-txt {
     display: none;
   }
-  .app-root .vx-tools .user-chip {
-    padding: 0 7px;
+  .app-root .vx-me {
+    padding: 0 9px;
+  }
+  .app-root .vx-dr-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .app-root .vx-pop.more-pop {
+    width: min(480px, calc(100vw - 32px));
   }
 }
 @media (max-width: 600px) {
@@ -819,8 +1220,8 @@
   .app-root .tp-item {
     padding: 0 14px;
   }
-  .app-root .vx-bar {
-    height: 58px;
+  .app-root.shell {
+    --bar-h: 58px;
   }
   .app-root .vx-nav {
     display: none;
@@ -833,17 +1234,47 @@
     width: 20px;
     height: 20px;
   }
-  .app-root .vx-tools {
+  .app-root .vx-right {
+    gap: 8px;
+  }
+  .app-root .vx-me {
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+  .app-root .vx-more-m {
+    display: grid;
+    place-items: center;
+    width: 40px;
     height: 40px;
+    border: 1px solid var(--line-soft);
+    border-radius: 10px;
+    background: var(--surface);
+    box-shadow: var(--sh-1);
+    color: var(--ink);
+    font-size: 1rem;
+    cursor: pointer;
   }
-  .app-root .vx-search {
-    width: 42px;
+  .app-root .vx-more-m.on {
+    color: var(--accent-text);
   }
-  .app-root .vx-tools .icon-btn.bell {
-    width: 42px;
+  .app-root .vx-pop.more-pop {
+    left: auto;
+    right: 0;
+  }
+  .app-root .vx-dr-grid {
+    max-height: calc(100dvh - var(--bar-h) - 140px);
+    overflow-y: auto;
+    padding: 8px;
+  }
+  .app-root .dr-col {
+    padding: 10px 6px 8px;
+  }
+  .app-root .dr-col li a {
+    padding: 7px 6px;
+    font-size: 0.86rem;
   }
   .app-root .sub-nav {
-    top: 58px;
     margin-top: -6px;
   }
   .app-root .sub-nav-in {
@@ -851,13 +1282,6 @@
   }
   .app-root .sub-nav-lbl {
     display: none;
-  }
-  .app-root .bell-wrap .notif-panel {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: auto;
-    right: 0;
-    width: calc(100vw - 32px);
   }
   .app-root .sub-nav button {
     padding: 0 10px;
@@ -878,10 +1302,11 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
-    background: color-mix(in oklch, var(--bg) 88%, transparent);
+    background: color-mix(in oklch, var(--surface) 90%, transparent);
     backdrop-filter: saturate(1.5) blur(16px);
     -webkit-backdrop-filter: saturate(1.5) blur(16px);
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--line-soft);
+    box-shadow: 0 -10px 28px -22px oklch(0.25 0.03 265 / 0.4);
   }
   .app-root .tabbar a {
     position: relative;
@@ -912,6 +1337,7 @@
     height: 3px;
     border-radius: 0 0 3px 3px;
     background: var(--accent);
+    box-shadow: 0 3px 14px color-mix(in oklch, var(--accent) 55%, transparent);
   }
   .app-root .cmdk-bg {
     align-items: flex-start;

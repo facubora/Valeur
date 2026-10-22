@@ -227,7 +227,7 @@ export default function Community() {
           </div>
         </SectionHead>
 
-        <PostComposer key={composerKey} uid={uid} username={user.username} autoOpen={composerKey > 0} onDone={() => setTab("following")} />
+        <PostComposer key={composerKey} uid={uid} username={user.username} autoOpen={composerKey > 0 || params.has("publicar")} onDone={() => setTab("following")} />
 
         {highlighted && (
           <div className="post-hl">
