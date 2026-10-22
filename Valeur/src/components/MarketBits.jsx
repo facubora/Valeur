@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "./Logo";
 import Sparkline from "./Sparkline";
-import { useDisplayCurrency, useMep, money, priceIn, formatDate, tickerUrl } from "../lib/market";
+import { useDisplayCurrency, useMep, money, pct, priceIn, formatDate, tickerUrl } from "../lib/market";
 import { KIND_LABEL } from "../lib/catalog";
 
 /* Piezas de mercado compartidas entre Inicio y Mercado */
@@ -188,9 +189,12 @@ export function ForYouStart({ sectors, busy, disabled, onPick, wide = false }) {
 }
 
 /* "Para vos" en tarjetas, para secciones a lo ancho */
-export function ForYouCards({ recs, quotes, sparks = {}, cur, rate, followed, busy, onStar, onHide }) {
+/* Con `compact` (Inicio): sin mini gráfico y la variación como texto */
+export function ForYouCards({ recs, quotes, sparks = {}, cur, rate, followed, busy, onStar, onHide, compact = false }) {
+  // dejar de seguir se confirma ahí mismo, en la tarjeta
+  const [asking, setAsking] = useState(null);
   return (
-    <div className="fy-cards">
+    <div className={"fy-cards" + (compact ? " compact" : "")}>
       {recs.map((r) => {
         const q = quotes[r.symbol];
         const closes = sparks[r.symbol] || [];
@@ -220,7 +224,11 @@ export function ForYouCards({ recs, quotes, sparks = {}, cur, rate, followed, bu
                 {q ? (
                   <>
                     <b>{priceIn(r.symbol, q.price, cur, rate)}</b>
-                    <Delta value={q.change_pct} />
+                    {compact ? (
+                      <span className={"fy-chg " + (q.change_pct >= 0 ? "txt-up" : "txt-down")}>{pct(q.change_pct)}</span>
+                    ) : (
+                      <Delta value={q.change_pct} />
+                    )}
                   </>
                 ) : (
                   <>
@@ -229,17 +237,36 @@ export function ForYouCards({ recs, quotes, sparks = {}, cur, rate, followed, bu
                   </>
                 )}
               </div>
-              {closes.length > 1 && <Sparkline values={closes} up={q ? q.change_pct >= 0 : true} width={96} height={34} />}
+              {!compact && closes.length > 1 && <Sparkline values={closes} up={q ? q.change_pct >= 0 : true} width={96} height={34} />}
             </div>
-            <button
-              type="button"
-              className={"btn btn-line btn-sm fy-follow" + (isF ? " on" : "")}
-              disabled={busy === r.symbol}
-              onClick={() => onStar(r)}
-            >
-              <i className={isF ? "bi bi-star-fill" : "bi bi-star"} />
-              {isF ? "Siguiendo" : "Seguir"}
-            </button>
+            {asking === r.symbol && isF ? (
+              <div className="fy-ask" onKeyDown={(e) => e.key === "Escape" && setAsking(null)}>
+                <span>¿Dejar de seguir?</span>
+                <button type="button" className="btn btn-line btn-sm" autoFocus onClick={() => setAsking(null)}>
+                  No
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={() => {
+                    setAsking(null);
+                    onStar(r);
+                  }}
+                >
+                  Sí
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className={"btn btn-line btn-sm fy-follow" + (isF ? " on" : "")}
+                disabled={busy === r.symbol}
+                onClick={() => (isF ? setAsking(r.symbol) : onStar(r))}
+              >
+                <i className={isF ? "bi bi-star-fill" : "bi bi-star"} />
+                {isF ? "Siguiendo" : "Seguir"}
+              </button>
+            )}
           </article>
         );
       })}

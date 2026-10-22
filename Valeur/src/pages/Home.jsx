@@ -28,7 +28,7 @@ import { useTrades, useWatchlist, computePositions, addWatch, removeWatch } from
 import { useAlerts } from "../lib/alerts";
 import { useMyProfile, updateProfile, useFollowGraph, useFeed } from "../lib/social";
 import { useForYou } from "../lib/foryou";
-import { toast, attempt, confirmDialog } from "../lib/feedback";
+import { toast, attempt } from "../lib/feedback";
 
 const abs = (n) => Math.abs(n).toLocaleString("es-AR", { maximumFractionDigits: 2 }) + "%";
 
@@ -69,6 +69,8 @@ export default function Home() {
   const feed = useFeed({ uid, mode: "following", following: graph.loaded ? graph.following : null, limit: 30 });
   const [busy, setBusy] = useState("");
   const [leaving, setLeaving] = useState("");
+  // ficha que está preguntando "¿dejar de seguir?" (la confirmación va en la ficha)
+  const [asking, setAsking] = useState("");
   // cuántas fichas entran por fila en el tablero de seguidos (para completar
   // la primera fila con fichas punteadas)
   const wltRef = useRef(null);
@@ -155,14 +157,7 @@ export default function Home() {
   };
   // la ficha se va (animación) y recién después se deja de seguir
   const dropTile = async (symbol) => {
-    const yes = await confirmDialog({
-      title: `¿Dejar de seguir ${symbol}?`,
-      body: "Sale de tus seguidos y de la cinta de arriba. Lo podés volver a seguir cuando quieras.",
-      confirmText: "Dejar de seguir",
-      danger: true,
-      icon: "bi-star",
-    });
-    if (!yes) return;
+    setAsking("");
     setLeaving(symbol);
     await new Promise((r) => setTimeout(r, 300));
     // si salió bien, la ficha ya no vuelve (se va con el reload); si falló, reaparece
@@ -361,9 +356,22 @@ export default function Home() {
                       {q ? pct(q.change_pct) : "sin datos"}
                     </span>
                   </Link>
-                  <button type="button" className="wlt-x" disabled={busy === w.symbol} onClick={() => dropTile(w.symbol)} aria-label={`Dejar de seguir ${w.symbol}`} title="Dejar de seguir">
+                  <button type="button" className="wlt-x" disabled={busy === w.symbol} onClick={() => setAsking(w.symbol)} aria-label={`Dejar de seguir ${w.symbol}`} title="Dejar de seguir">
                     <i className="bi bi-x" />
                   </button>
+                  {asking === w.symbol && (
+                    <div className="wlt-ask" role="group" aria-label={`¿Dejar de seguir ${w.symbol}?`} onKeyDown={(e) => e.key === "Escape" && setAsking("")}>
+                      <b>¿Dejar de seguir {w.symbol}?</b>
+                      <div>
+                        <button type="button" className="btn btn-line btn-sm" autoFocus onClick={() => setAsking("")}>
+                          No
+                        </button>
+                        <button type="button" className="btn btn-danger btn-sm" onClick={() => dropTile(w.symbol)}>
+                          Sí
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -397,14 +405,15 @@ export default function Home() {
         </SectionHead>
         {fy.recs.length ? (
           <ForYouCards
-            recs={fy.recs}
+            compact
+            recs={fy.recs.slice(0, 4)}
             quotes={quotes}
             sparks={sparks}
             cur={cur}
             rate={rate}
             followed={followed}
             busy={busy}
-            onStar={(r) => (followed.has(r.symbol) ? unfollow(r.symbol) : follow(r))}
+            onStar={(r) => (followed.has(r.symbol) ? dropTile(r.symbol) : follow(r))}
             onHide={fy.hide}
           />
         ) : (

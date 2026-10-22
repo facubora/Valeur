@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Logo from "./Logo";
 import { ALERT_KINDS, ALERT_KIND, alertText, alertError, addAlert, updateAlert, deleteAlert } from "../lib/alerts";
 import { fmtPrice, pct, tickerUrl } from "../lib/market";
-import { toast, attempt, confirmDialog } from "../lib/feedback";
+import { toast, attempt } from "../lib/feedback";
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const abs = (n) => Math.abs(n).toLocaleString("es-AR", { maximumFractionDigits: 2 }) + "%";
@@ -29,6 +29,8 @@ function AlertRow({ a, q, existing }) {
   const [busy, setBusy] = useState(false);
   // animaciones: "out" se va (al borrar), "back" vuelve de editar, "saved" destella
   const [fx, setFx] = useState("");
+  // confirmar el borrado en la misma fila, sin tapar la pantalla
+  const [asking, setAsking] = useState(false);
   const gap = alertGap(a, q);
   const close = (next) => {
     setEditing(false);
@@ -57,14 +59,7 @@ function AlertRow({ a, q, existing }) {
   // primero la fila se va (se desliza y se cierra) y después se borra; si
   // falla, vuelve
   const remove = async () => {
-    const yes = await confirmDialog({
-      title: `¿Borrar la alerta de ${a.symbol}?`,
-      body: `${alertText(a)}. Ya no te va a avisar.`,
-      confirmText: "Borrar",
-      danger: true,
-      icon: "bi-trash3",
-    });
-    if (!yes) return;
+    setAsking(false);
     setBusy(true);
     setFx("out");
     await wait(320);
@@ -77,6 +72,26 @@ function AlertRow({ a, q, existing }) {
       });
     }
   };
+
+  if (asking) {
+    return (
+      <li className="nrx-ask" onKeyDown={(e) => e.key === "Escape" && setAsking(false)}>
+        <Logo symbol={a.symbol} size={28} />
+        <span className="nrx-ask-txt">
+          <b>¿Borrar la alerta de {a.symbol}?</b>
+          <small>{alertText(a)}. Ya no te va a avisar.</small>
+        </span>
+        <div className="nrx-btns">
+          <button type="button" className="btn btn-line btn-sm" autoFocus onClick={() => setAsking(false)}>
+            Cancelar
+          </button>
+          <button type="button" className="btn btn-danger btn-sm" onClick={remove}>
+            <i className="bi bi-trash3" /> Borrar
+          </button>
+        </div>
+      </li>
+    );
+  }
 
   if (editing) {
     const unit = ALERT_KIND[kind].unit;
@@ -139,7 +154,7 @@ function AlertRow({ a, q, existing }) {
         <button type="button" onClick={open} disabled={busy} aria-label={`Editar la alerta de ${a.symbol}`} title="Editar">
           <i className="bi bi-pencil" />
         </button>
-        <button type="button" className="danger" onClick={remove} disabled={busy} aria-label={`Borrar la alerta de ${a.symbol}`} title="Borrar">
+        <button type="button" className="danger" onClick={() => setAsking(true)} disabled={busy} aria-label={`Borrar la alerta de ${a.symbol}`} title="Borrar">
           <i className="bi bi-trash3" />
         </button>
       </span>

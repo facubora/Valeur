@@ -1178,13 +1178,18 @@
   flex: 1;
   justify-content: center;
 }
+/* peligro: mismo formato que el principal, en rojo */
 .app-root .btn-danger {
+  border-radius: 10px;
   background: var(--down);
   color: #fff;
+  box-shadow:
+    0 1px 2px oklch(0 0 0 / 0.2),
+    inset 0 1px 0 oklch(1 0 0 / 0.12);
 }
 .app-root .btn-danger:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 30px -10px color-mix(in oklch, var(--down) 60%, transparent);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px -12px color-mix(in oklch, var(--down) 80%, transparent);
 }
 .app-root .toasts {
   position: fixed;

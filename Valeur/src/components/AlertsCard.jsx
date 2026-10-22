@@ -4,7 +4,7 @@ import Logo from "./Logo";
 import { FormError } from "./AuthLayout";
 import { assetCurrency, fmtPrice } from "../lib/market";
 import { ALERT_KINDS, ALERT_KIND, alertText, alertError, addAlert, deleteAlert, setAlertActive } from "../lib/alerts";
-import { toast, attempt, confirmDialog } from "../lib/feedback";
+import { toast, attempt } from "../lib/feedback";
 
 /* Pedir permiso para avisos del navegador (solo si todavía no se respondió) */
 export function BrowserNotifyAsk() {
@@ -29,16 +29,10 @@ function AlertRow({ a, showSymbol }) {
     await attempt(setAlertActive(a.id, true), { ok: `Alerta de ${a.symbol} reactivada`, fail: "No se pudo reactivar la alerta" });
     setBusy(false);
   };
-  // borrar es rápido, pero se puede deshacer desde el aviso
+  // se confirma en la misma fila y después se puede deshacer desde el aviso
+  const [asking, setAsking] = useState(false);
   const remove = async () => {
-    const yes = await confirmDialog({
-      title: `¿Borrar la alerta de ${a.symbol}?`,
-      body: `${alertText(a)}. Ya no te va a avisar.`,
-      confirmText: "Borrar",
-      danger: true,
-      icon: "bi-trash3",
-    });
-    if (!yes) return;
+    setAsking(false);
     setBusy(true);
     const ok = await attempt(deleteAlert(a.id), { fail: "No se pudo borrar la alerta" });
     setBusy(false);
@@ -48,6 +42,24 @@ function AlertRow({ a, showSymbol }) {
       });
     }
   };
+  if (asking) {
+    return (
+      <li className="alert-row alert-ask" onKeyDown={(e) => e.key === "Escape" && setAsking(false)}>
+        <div className="alert-what">
+          <b>¿Borrar esta alerta?</b>
+          <span>{alertText(a)}. Ya no te va a avisar.</span>
+        </div>
+        <div className="alert-act">
+          <button type="button" className="btn btn-line btn-sm" autoFocus onClick={() => setAsking(false)}>
+            No
+          </button>
+          <button type="button" className="btn btn-danger btn-sm" onClick={remove}>
+            Borrar
+          </button>
+        </div>
+      </li>
+    );
+  }
   return (
     <li className={"alert-row" + (a.active ? "" : " off")}>
       {showSymbol ? (
@@ -77,7 +89,7 @@ function AlertRow({ a, showSymbol }) {
             <i className="bi bi-arrow-repeat" />
           </button>
         )}
-        <button type="button" className="icon-btn sm danger" title="Borrar" aria-label="Borrar alerta" disabled={busy} onClick={remove}>
+        <button type="button" className="icon-btn sm danger" title="Borrar" aria-label="Borrar alerta" disabled={busy} onClick={() => setAsking(true)}>
           <i className="bi bi-x-lg" />
         </button>
       </div>
