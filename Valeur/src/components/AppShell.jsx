@@ -180,10 +180,10 @@ export default function AppShell({ children }) {
 
   return (
     <div className="app-root shell">
-      {/* la cinta se puede ocultar (y se recuerda); se vuelve a prender desde Tu cuenta */}
+      {/* la cinta se prende y se apaga desde Tu cuenta (y se recuerda) */}
       <div className={"tape-wrap" + (tapeOff ? " off" : "")} inert={tapeOff}>
         <div className="tape-clip">
-          <MarketTape watch={watch.rows} onHide={() => setTape(false)} />
+          <MarketTape watch={watch.rows} />
         </div>
       </div>
       <span ref={topRef} className="shell-sentinel" aria-hidden="true" />

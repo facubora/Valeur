@@ -13,7 +13,7 @@ const BASE = [
 
 /* Cinta de mercado: estado de BYMA/NYSE y precios en loop. Se pausa al pasar
    el mouse; con "reducir movimiento" queda quieta y se puede deslizar. */
-export default function MarketTape({ watch = [], onHide }) {
+export default function MarketTape({ watch = [] }) {
   const status = useMarketStatus();
   const fx = useMep();
   const extra = watch.filter((w) => !BASE.some(([s]) => s === w.symbol)).slice(0, 8);
@@ -66,11 +66,6 @@ export default function MarketTape({ watch = [], onHide }) {
           </div>
         </div>
       </div>
-      {onHide && (
-        <button type="button" className="tape-hide" onClick={onHide} aria-label="Ocultar la cinta de cotizaciones" title="Ocultar la cinta">
-          <i className="bi bi-chevron-up" />
-        </button>
-      )}
     </div>
   );
 }

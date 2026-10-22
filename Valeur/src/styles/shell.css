@@ -19,25 +19,6 @@
   min-height: 0;
   overflow: hidden;
 }
-.app-root .tape-hide {
-  flex-shrink: 0;
-  width: 36px;
-  display: grid;
-  place-items: center;
-  border: 0;
-  border-left: 1px solid var(--tape-line);
-  background: transparent;
-  color: var(--tape-soft);
-  font-size: 0.78rem;
-  cursor: pointer;
-  transition:
-    color 0.2s,
-    background 0.2s;
-}
-.app-root .tape-hide:hover {
-  color: var(--tape-ink);
-  background: oklch(1 0 0 / 0.06);
-}
 .app-root .tape {
   --tape-bg: oklch(0.17 0 0);
   --tape-ink: oklch(0.96 0 0);
