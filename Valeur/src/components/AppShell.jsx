@@ -104,17 +104,36 @@ export default function AppShell({ children }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [panel]);
 
-  // Links con ancla (/tickersearch#alertas): bajar a la sección cuando aparezca
+  // Links con ancla (/tickersearch#alertas): ir a la sección cuando aparezca.
+  // Llegando de otra pantalla va directo y se reacomoda un rato mientras
+  // carga lo de arriba (salvo que la persona ya esté scrolleando); dentro de
+  // la misma pantalla, baja suave.
+  const mountedAt = useRef(0);
+  useEffect(() => {
+    mountedAt.current = Date.now();
+  }, []);
   useEffect(() => {
     const id = hash.slice(1);
     if (!id) return;
-    let tries = 0;
+    const arriving = Date.now() - mountedAt.current < 1500;
+    let found = 0;
+    let stop = false;
+    const quit = () => (stop = true);
     const t = setInterval(() => {
       const el = document.getElementById(id);
-      if (el || ++tries > 20) clearInterval(t);
-      el?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 150);
-    return () => clearInterval(t);
+      if (el && !stop) el.scrollIntoView({ behavior: arriving ? "instant" : "smooth", block: "start" });
+      if (el) found += 1;
+      if (stop || (el && (!arriving || found > 12)) || (!el && found === 0 && Date.now() - mountedAt.current > 4000)) clearInterval(t);
+    }, 60);
+    window.addEventListener("wheel", quit, { passive: true });
+    window.addEventListener("touchstart", quit, { passive: true });
+    window.addEventListener("keydown", quit);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener("wheel", quit);
+      window.removeEventListener("touchstart", quit);
+      window.removeEventListener("keydown", quit);
+    };
   }, [hash, key]);
 
   // Buscador global: ⌘K / Ctrl+K desde cualquier lado, "/" si no se está escribiendo
