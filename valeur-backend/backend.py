@@ -6,6 +6,8 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import yfinance as yf
 import os
+import re
+import threading
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,14 +19,35 @@ _origins = [r"^http://localhost(:\d+)?$", r"^http://127\.0\.0\.1(:\d+)?$"]
 _origins += [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
 CORS(app, origins=_origins)
 
+# Símbolos como los entiende Yahoo: AAPL, MELI.BA, BTC-USD, ^MERV, USDARS=X
+SYMBOL_RE = re.compile(r"^[A-Z0-9.=^-]{1,15}$")
+
+
+def valid_symbol(symbol):
+    return bool(SYMBOL_RE.match((symbol or "").upper()))
+
+
+def bad_symbol():
+    return jsonify({"error": "Invalid symbol"}), 400
+
+
+def int_arg(name, default, lo, hi):
+    """Entero acotado desde la query string (si es inválido, el default)"""
+    try:
+        return max(lo, min(hi, int(request.args.get(name, default))))
+    except (TypeError, ValueError):
+        return default
+
 
 # ─── Velas japonesas (OHLCV) ─────────────────────────────────────────────────
 
 @app.route("/api/candles/<symbol>")
 def get_candles(symbol):
+    if not valid_symbol(symbol):
+        return bad_symbol()
     interval = request.args.get("interval", "daily").lower()
     rng      = request.args.get("range", "").lower()
-    limit    = int(request.args.get("limit", 5000))
+    limit    = int_arg("limit", 5000, 1, 5000)
 
     interval_map = {
         "daily":   "1d",
@@ -57,6 +80,10 @@ def get_candles(symbol):
         if df.empty:
             return jsonify({"error": "Symbol not found or no data"}), 404
 
+        # sin velas incompletas (la del día puede venir con NaN, que no es JSON válido)
+        df = df.dropna(subset=["Open", "High", "Low", "Close"])
+        if df.empty:
+            return jsonify({"error": "Symbol not found or no data"}), 404
         df = df.tail(limit)
         candles = []
         for date, row in df.iterrows():
@@ -74,7 +101,7 @@ def get_candles(symbol):
                 "high":   round(float(row["High"]), 4),
                 "low":    round(float(row["Low"]), 4),
                 "close":  round(float(row["Close"]), 4),
-                "volume": int(row["Volume"]),
+                "volume": int(row["Volume"]) if row["Volume"] == row["Volume"] else 0,
             })
 
         return jsonify({
@@ -94,6 +121,8 @@ def get_candles(symbol):
 
 @app.route("/api/quote/<symbol>")
 def get_quote(symbol):
+    if not valid_symbol(symbol):
+        return bad_symbol()
     try:
         ticker = yf.Ticker(symbol)
 
@@ -109,7 +138,7 @@ def get_quote(symbol):
 
         last       = hist.iloc[-1]
         price      = round(float(last["Close"]), 4)
-        volume     = int(last["Volume"])
+        volume     = int(last["Volume"]) if last["Volume"] == last["Volume"] else 0
         # Cierre del día anterior; si solo hay una vela, usamos su apertura
         prev_close = round(float(hist.iloc[-2]["Close"]), 4) if len(hist) >= 2 else round(float(last["Open"]), 4)
         change     = round(price - prev_close, 4)
@@ -127,6 +156,76 @@ def get_quote(symbol):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 502
+
+
+# ─── Lote de cotizaciones + sparkline ─────────────────────────────────────────
+# Para las listas del mercado: una sola descarga para muchos símbolos en vez
+# de un pedido por activo. Devuelve el mismo formato que /quote más los
+# cierres del último mes. Caché corto por símbolo.
+
+BATCH_TTL = 60
+_batch_cache = {}  # symbol → (at, data)
+# yf.download guarda estado global: dos descargas a la vez se pisan los resultados
+_download_lock = threading.Lock()
+
+
+@app.route("/api/batch")
+def get_batch():
+    import time
+
+    symbols = [s.strip().upper() for s in request.args.get("symbols", "").split(",") if s.strip()]
+    symbols = list(dict.fromkeys(symbols))[:60]
+    if not symbols:
+        return jsonify({"error": "Param 'symbols' required"}), 400
+    # los inválidos ni se consultan: vuelven como "sin datos"
+    invalid = [s for s in symbols if not valid_symbol(s)]
+    symbols = [s for s in symbols if valid_symbol(s)]
+    if not symbols:
+        return jsonify({"quotes": {s: None for s in invalid}})
+
+    now = time.time()
+    out = {s: _batch_cache[s][1] for s in symbols if s in _batch_cache and now - _batch_cache[s][0] < BATCH_TTL}
+    missing = [s for s in symbols if s not in out]
+    if missing:
+        try:
+            with _download_lock:
+                df = yf.download(missing, period="1mo", interval="1d", progress=False,
+                                 auto_adjust=False, group_by="ticker", threads=True)
+        except Exception as e:
+            if not out:
+                return jsonify({"error": str(e)}), 502
+            df = None
+        for s in missing:
+            data = None
+            try:
+                # con group_by="ticker" las columnas son (símbolo, campo), salvo
+                # en algunas versiones de yfinance cuando se pide uno solo
+                multi = df is not None and df.columns.nlevels > 1
+                sub = df[s] if multi else df
+                hist = sub.dropna(subset=["Close"]) if sub is not None else None
+                if hist is not None and not hist.empty:
+                    last = hist.iloc[-1]
+                    price = round(float(last["Close"]), 4)
+                    prev = round(float(hist.iloc[-2]["Close"]), 4) if len(hist) >= 2 else round(float(last["Open"]), 4)
+                    change = round(price - prev, 4)
+                    vol = last.get("Volume")
+                    data = {
+                        "symbol": s,
+                        "price": price,
+                        "change": change,
+                        "change_pct": round(change / prev * 100, 4) if prev else 0,
+                        "volume": int(vol) if vol == vol and vol is not None else 0,
+                        "prev_close": prev,
+                        "latest_date": last.name.strftime("%Y-%m-%d"),
+                        "closes": [round(float(v), 4) for v in hist["Close"].tolist()],
+                    }
+            except (KeyError, IndexError, ValueError):
+                data = None
+            if data:  # lo que falló se vuelve a pedir la próxima vez
+                _batch_cache[s] = (now, data)
+            out[s] = data
+    out.update({s: None for s in invalid})
+    return jsonify({"quotes": out})
 
 
 # ─── Dólar MEP ────────────────────────────────────────────────────────────────
@@ -148,7 +247,8 @@ def get_mep():
         return jsonify(_mep_cache["data"])
     try:
         tickers = [p + ".BA" for p in MEP_PAIRS] + [p + "D.BA" for p in MEP_PAIRS]
-        df = yf.download(tickers, period="max", interval="1d", progress=False, auto_adjust=False)["Close"]
+        with _download_lock:
+            df = yf.download(tickers, period="max", interval="1d", progress=False, auto_adjust=False)["Close"]
         ratios = pd.concat([df[p + ".BA"] / df[p + "D.BA"] for p in MEP_PAIRS], axis=1)
         mep = ratios.median(axis=1, skipna=True).dropna()
         if mep.empty:
@@ -168,7 +268,7 @@ def get_mep():
 
 @app.route("/api/search")
 def search_symbol():
-    q = request.args.get("q", "")
+    q = request.args.get("q", "").strip()[:64]
     if not q:
         return jsonify({"error": "Param 'q' required"}), 400
     try:

@@ -77,6 +77,20 @@ const chrono = (trades) =>
         : 1,
   );
 
+/* ¿Las operaciones cierran? Las recorre en orden y busca una venta mayor a lo
+   que se tenía a esa fecha → null | { symbol, date, have, sell } */
+export function findOversell(trades) {
+  const qty = new Map();
+  for (const t of chrono(trades)) {
+    const have = qty.get(t.symbol) || 0;
+    const n = Number(t.qty);
+    if (t.side === "buy") qty.set(t.symbol, have + n);
+    else if (n > have + 1e-9) return { symbol: t.symbol, date: t.executed_at, have, sell: n };
+    else qty.set(t.symbol, have - n);
+  }
+  return null;
+}
+
 /* Aplica una operación al estado por símbolo. Costo promedio ponderado: la
    venta saca costo en proporción y no cambia el promedio. El costo se lleva
    en la moneda del activo y en la de visualización (convertido con el MEP
@@ -196,6 +210,9 @@ export function useHistory(trades, range = "6m", cur = "USD", mep = null) {
     const sorted = chrono(trades);
     const state = new Map();
     const last = {}; // último cierre conocido por símbolo (días sin vela)
+    // primer cierre de cada símbolo en el rango: cubre los días iniciales en
+    // que un mercado todavía no operó (feriados, BYMA vs. NYSE)
+    const first = Object.fromEntries(syms.map((s) => [s, res.candles[s].find((c) => c.close != null)?.close]));
     let ti = 0;
     return dates.map((d) => {
       while (ti < sorted.length && sorted[ti].executed_at <= d) applyTrade(state, sorted[ti++], cur, mep);
@@ -206,8 +223,8 @@ export function useHistory(trades, range = "6m", cur = "USD", mep = null) {
         if (row[p.symbol] != null) last[p.symbol] = row[p.symbol];
         if (p.qty <= 1e-9) continue;
         invested += p.cost;
-        // sin cierre todavía (compró hoy, papel sin operaciones): vale lo que costó
-        const px = last[p.symbol] ?? p.costNative / p.qty;
+        // sin cierre en el rango (compró hoy, papel sin operaciones): vale lo que costó
+        const px = last[p.symbol] ?? first[p.symbol] ?? p.costNative / p.qty;
         value += convert(p.qty * px, p.native, cur, mep?.at(d));
       }
       return { time: d, value, invested };

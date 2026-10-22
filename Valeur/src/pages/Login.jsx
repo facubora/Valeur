@@ -3,6 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import AuthLayout, { PasswordField, FormError, SubmitButton } from "../components/AuthLayout";
 import { useAuth } from "../context/AuthContext";
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 export default function Login() {
   const navigate = useNavigate();
   const { user, signIn, configured } = useAuth();
@@ -22,9 +24,12 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const email = form.email.trim();
+    if (!email || !form.password) return setError("Completá el email y la contraseña");
+    if (!EMAIL_RE.test(email)) return setError("El email no es válido");
     setLoading(true);
     setError("");
-    const { error: err } = await signIn(form.email.trim(), form.password);
+    const { error: err } = await signIn(email, form.password);
     setLoading(false);
     if (err) setError(err);
     // si salió bien, onAuthStateChange setea el user y el efecto redirige

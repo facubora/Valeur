@@ -60,7 +60,12 @@ Valeur/
 ### 1. Supabase (auth + base de datos)
 
 1. Creá un proyecto en Supabase.
-2. En **SQL Editor**, pegá y ejecutá `supabase/migrations/0001_profiles.sql`. Crea la tabla `profiles`, sus políticas RLS y el trigger que da de alta el perfil al registrarse.
+2. En **SQL Editor**, pegá y ejecutá en orden los archivos de `supabase/migrations/`:
+   - `0001_profiles.sql`: tabla `profiles`, sus políticas RLS y el trigger que da de alta el perfil al registrarse.
+   - `0002_portfolio.sql`: operaciones (`trades`) y activos seguidos (`watchlist`).
+   - `0003_community.sql`: comunidad — seguir/amigos, recomendaciones, portfolio compartido sin montos, verificados, alertas de precio y notificaciones.
+
+   **Aprobar un verificado:** en *Table Editor → verification_requests*, cambiá `status` a `approved` (o `rejected`). Un trigger marca el perfil como verificado y le avisa al usuario.
 3. En **Authentication → Providers → Email** dejá habilitado *Email*. Si desactivás *Confirm email*, el registro inicia sesión al instante; si lo dejás activo, el usuario recibe un mail y la app le avisa que lo confirme.
 4. Copiá la **Project URL** y la **anon public key** de *Project Settings → API*: van en el `.env` del frontend (paso 3).
 

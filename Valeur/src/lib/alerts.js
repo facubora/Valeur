@@ -1,0 +1,190 @@
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { supabase } from "./supabase";
+import { useSupa, changed } from "./social";
+import { useQuotes, fmtPrice } from "./market";
+
+/* ── Alertas de precio ──────────────────────────────────────────────────────
+   above / below: el precio cruza un valor → avisa una vez y se apaga.
+   up_pct / down_pct: el día sube/baja más de X% → avisa una vez por rueda.
+   Se evalúan en la app (cada 60 s mientras Valeur está abierto). */
+export const ALERT_KINDS = [
+  ["above", "Sube a", "bi-arrow-up", "precio"],
+  ["below", "Baja a", "bi-arrow-down", "precio"],
+  ["up_pct", "Sube +%", "bi-graph-up-arrow", "pct"],
+  ["down_pct", "Cae −%", "bi-graph-down-arrow", "pct"],
+];
+export const ALERT_KIND = Object.fromEntries(
+  ALERT_KINDS.map(([k, label, icon, unit]) => [k, { key: k, label, icon, unit }]),
+);
+
+export function alertText(a) {
+  const v = Number(a.value);
+  switch (a.kind) {
+    case "above":
+      return `Si llega a ${fmtPrice(a.symbol, v)}`;
+    case "below":
+      return `Si baja a ${fmtPrice(a.symbol, v)}`;
+    case "up_pct":
+      return `Si sube más de ${v.toLocaleString("es-AR")}% en el día`;
+    default:
+      return `Si cae más de ${v.toLocaleString("es-AR")}% en el día`;
+  }
+}
+
+export function useAlerts(uid) {
+  return useSupa((db) => db.from("alerts").select("*").order("created_at", { ascending: false }), [uid], {
+    channel: "alerts",
+    enabled: Boolean(uid),
+    initial: [],
+  });
+}
+
+const done = (res, channel) => {
+  if (!res.error) changed(channel);
+  return res.error?.message || "";
+};
+
+export async function addAlert(uid, { symbol, kind, value }) {
+  return done(await supabase.from("alerts").insert({ user_id: uid, symbol: symbol.toUpperCase(), kind, value }), "alerts");
+}
+
+export async function deleteAlert(id) {
+  return done(await supabase.from("alerts").delete().eq("id", id), "alerts");
+}
+
+/* Reactivar una alerta de precio ya disparada (o pausarla) */
+export async function setAlertActive(id, active) {
+  return done(await supabase.from("alerts").update({ active, triggered_at: null }).eq("id", id), "alerts");
+}
+
+/* Fecha local "YYYY-MM-DD" de un timestamp */
+const localDay = (ts) => new Date(ts).toLocaleDateString("sv");
+
+function check(a, q) {
+  if (!q || !a.active) return false;
+  const v = Number(a.value);
+  switch (a.kind) {
+    case "above":
+      return q.price >= v;
+    case "below":
+      return q.price <= v;
+    case "up_pct":
+    case "down_pct":
+      // una vez por rueda: si ya avisó por esta sesión, no repetir
+      if (a.triggered_at && localDay(a.triggered_at) >= q.latest_date) return false;
+      return a.kind === "up_pct" ? q.change_pct >= v : q.change_pct <= -v;
+    default:
+      return false;
+  }
+}
+
+function message(a, q) {
+  const pctTxt = `${Math.abs(q.change_pct).toLocaleString("es-AR", { maximumFractionDigits: 2 })}%`;
+  switch (a.kind) {
+    case "above":
+      return [`${a.symbol} llegó a ${fmtPrice(a.symbol, Number(a.value))}`, `Ahora cotiza a ${fmtPrice(a.symbol, q.price)}.`];
+    case "below":
+      return [`${a.symbol} bajó a ${fmtPrice(a.symbol, Number(a.value))}`, `Ahora cotiza a ${fmtPrice(a.symbol, q.price)}.`];
+    case "up_pct":
+      return [`${a.symbol} sube ${pctTxt} hoy`, `Cotiza a ${fmtPrice(a.symbol, q.price)}.`];
+    default:
+      return [`${a.symbol} cae ${pctTxt} hoy`, `Cotiza a ${fmtPrice(a.symbol, q.price)}.`];
+  }
+}
+
+export function browserNotify(title, body, tag) {
+  try {
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification(title, { body, tag, icon: "/favicon.svg" });
+    }
+  } catch {
+    /* algunos navegadores no permiten crear notificaciones desde la página */
+  }
+}
+
+/* Vigila las alertas activas del usuario. Va en la cáscara de la app, así
+   corre en cualquier pantalla. El update condicional evita avisos dobles si
+   hay dos pestañas abiertas. */
+export function useAlertWatcher(uid) {
+  const alerts = useAlerts(uid);
+  const active = useMemo(() => alerts.data.filter((a) => a.active), [alerts.data]);
+  const { quotes } = useQuotes(active.map((a) => a.symbol));
+  const firing = useRef(new Set());
+
+  useEffect(() => {
+    if (!uid) return;
+    for (const a of active) {
+      const q = quotes[a.symbol];
+      if (!check(a, q) || firing.current.has(a.id)) continue;
+      firing.current.add(a.id);
+      const oneShot = a.kind === "above" || a.kind === "below";
+      let upd = supabase
+        .from("alerts")
+        .update({ triggered_at: new Date().toISOString(), ...(oneShot ? { active: false } : {}) })
+        .eq("id", a.id)
+        .eq("active", true);
+      upd = a.triggered_at ? upd.eq("triggered_at", a.triggered_at) : upd.is("triggered_at", null);
+      upd.select("id").then(async ({ data }) => {
+        if (data?.length) {
+          const [title, body] = message(a, q);
+          await supabase.from("notifications").insert({
+            user_id: uid,
+            kind: "alert",
+            title,
+            body,
+            symbol: a.symbol,
+            link: `/tickersearch?symbol=${encodeURIComponent(a.symbol)}`,
+          });
+          browserNotify(title, body, a.id);
+          changed("notifications");
+        }
+        firing.current.delete(a.id);
+        changed("alerts");
+      });
+    }
+  }, [uid, active, quotes]);
+}
+
+/* ── Notificaciones ─────────────────────────────────────────────────────── */
+export function useNotifications(uid) {
+  const res = useSupa(
+    (db) => db.from("notifications").select("*").order("created_at", { ascending: false }).limit(40),
+    [uid],
+    { channel: "notifications", enabled: Boolean(uid), initial: [] },
+  );
+  const { reload } = res;
+
+  // tiempo real (si está habilitado en Supabase) + un repaso cada 60 s
+  useEffect(() => {
+    if (!supabase || !uid) return;
+    const ch = supabase
+      .channel(`notifs-${uid}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${uid}` },
+        (payload) => {
+          const n = payload.new;
+          if (n.kind !== "alert" && document.visibilityState !== "visible") browserNotify(n.title, n.body || "", n.id);
+          reload();
+        },
+      )
+      .subscribe();
+    const id = setInterval(() => document.visibilityState === "visible" && reload(), 60_000);
+    return () => {
+      clearInterval(id);
+      supabase.removeChannel(ch);
+    };
+  }, [uid, reload]);
+
+  const unread = res.data.filter((n) => !n.read_at).length;
+  const markRead = useCallback(
+    async (ids) => {
+      let q = supabase.from("notifications").update({ read_at: new Date().toISOString() }).is("read_at", null);
+      q = ids ? q.in("id", ids) : q.eq("user_id", uid);
+      await q;
+      changed("notifications");
+    },
+    [uid],
+  );
+  return { rows: res.data, loaded: res.loaded, unread, markRead };
+}

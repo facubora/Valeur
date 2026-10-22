@@ -27,7 +27,9 @@ import {
   addWatch,
   removeWatch,
   deleteTrade,
+  findOversell,
 } from "../lib/portfolio";
+import { confirmDialog, toast, attempt } from "../lib/feedback";
 
 const RANGES = [
   ["1m", "1M"],
@@ -181,6 +183,8 @@ export default function Dashboard() {
   const [range, setRange] = useState("6m");
   const [modal, setModal] = useState(null); // null | { symbol?, name?, side? }
   const [showAll, setShowAll] = useState(false);
+  const [tradeSide, setTradeSide] = useState("all");
+  const [tradeQuery, setTradeQuery] = useState("");
   const [busy, setBusy] = useState("");
   const [cur, setCur] = useDisplayCurrency();
   const fx = useMep();
@@ -219,23 +223,53 @@ export default function Dashboard() {
 
   const follow = async ({ symbol, name }) => {
     setBusy(symbol);
-    await addWatch(uid, symbol, name);
+    await attempt(addWatch(uid, symbol, name), { ok: `Seguís ${symbol}`, fail: `No se pudo seguir ${symbol}` });
     setBusy("");
     watch.reload();
   };
   const unfollow = async (symbol) => {
+    const row = watch.rows.find((w) => w.symbol === symbol);
     setBusy(symbol);
-    await removeWatch(uid, symbol);
+    const ok = await attempt(removeWatch(uid, symbol), { fail: `No se pudo dejar de seguir ${symbol}` });
     setBusy("");
     watch.reload();
+    if (ok) {
+      toast(`Dejaste de seguir ${symbol}`, {
+        action: { label: "Deshacer", run: () => addWatch(uid, symbol, row?.name || null).then(() => watch.reload()) },
+      });
+    }
   };
   const removeTrade = async (t) => {
-    if (!window.confirm(`¿Borrar la ${t.side === "buy" ? "compra" : "venta"} de ${t.qty} ${t.symbol}?`)) return;
-    await deleteTrade(t.id);
-    trades.reload();
+    const what = `${t.side === "buy" ? "compra" : "venta"} de ${Number(t.qty)} ${t.symbol}`;
+    // borrar una compra no puede dejar ventas posteriores sin respaldo
+    const bad = findOversell(trades.rows.filter((x) => x.id !== t.id));
+    if (bad) {
+      await confirmDialog({
+        title: "No se puede borrar esta compra",
+        body: `Sin ella, la venta de ${bad.sell} ${bad.symbol} del ${formatDate(bad.date)} quedaría sin respaldo. Borrá primero esa venta.`,
+        confirmText: "Entendido",
+        icon: "bi-shield-exclamation",
+        info: true,
+      });
+      return;
+    }
+    const ok = await confirmDialog({
+      title: `¿Borrar la ${what}?`,
+      body: `Del ${formatDate(t.executed_at)}. Se recalculan tus posiciones y la evolución del portfolio. No se puede deshacer.`,
+      confirmText: "Borrar",
+      danger: true,
+    });
+    if (!ok) return;
+    if (await attempt(deleteTrade(t.id), { ok: `Borraste la ${what}`, fail: "No se pudo borrar la operación" })) trades.reload();
   };
 
-  const shownTrades = showAll ? trades.rows : trades.rows.slice(0, 6);
+  // operaciones filtradas por tipo y por ticker
+  const tq = tradeQuery.trim().toUpperCase();
+  const filteredTrades = trades.rows.filter(
+    (t) => (tradeSide === "all" || t.side === tradeSide) && (!tq || t.symbol.includes(tq) || (t.name || "").toUpperCase().includes(tq)),
+  );
+
+  const shownTrades = showAll ? filteredTrades : filteredTrades.slice(0, 6);
 
   /* Seguidos: se muestra real aunque no haya operaciones */
   const watchSection = (
@@ -521,13 +555,36 @@ export default function Dashboard() {
             <section>
               <div className="sec-head">
                 <h2>Operaciones</h2>
-                {trades.rows.length > 6 && (
+                {filteredTrades.length > 6 && (
                   <button type="button" className="lnk-btn" onClick={() => setShowAll((v) => !v)}>
-                    {showAll ? "Ver menos" : `Ver todas (${trades.rows.length})`}
+                    {showAll ? "Ver menos" : `Ver todas (${filteredTrades.length})`}
                   </button>
                 )}
               </div>
+              <div className="list-filters">
+                <div className="seg" role="radiogroup" aria-label="Tipo de operación">
+                  {[
+                    ["all", "Todas"],
+                    ["buy", "Compras"],
+                    ["sell", "Ventas"],
+                  ].map(([k, label]) => (
+                    <button key={k} type="button" role="radio" aria-checked={tradeSide === k} className={tradeSide === k ? "on" : ""} onClick={() => setTradeSide(k)}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className="search-form compact filter-in">
+                  <i className="bi bi-funnel ico" aria-hidden="true" />
+                  <input value={tradeQuery} onChange={(e) => setTradeQuery(e.target.value)} placeholder="Filtrar por ticker o nombre" aria-label="Filtrar operaciones" />
+                  {tradeQuery && (
+                    <button type="button" className="filter-x" onClick={() => setTradeQuery("")} aria-label="Limpiar filtro">
+                      <i className="bi bi-x" />
+                    </button>
+                  )}
+                </div>
+              </div>
               <div className="card trade-list">
+                {!shownTrades.length && <p className="asset-none muted">No hay operaciones que coincidan con el filtro.</p>}
                 {shownTrades.map((t) => (
                   <div key={t.id} className={"trade-row " + t.side}>
                     <span className="side-ic" aria-hidden="true">
@@ -571,6 +628,7 @@ export default function Dashboard() {
         uid={uid}
         initial={modal || {}}
         held={held}
+        trades={trades.rows}
         onSaved={() => trades.reload()}
       />
     </AppShell>
