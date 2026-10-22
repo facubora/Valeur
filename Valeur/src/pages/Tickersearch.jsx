@@ -339,9 +339,16 @@ function Explore({ uid, user, ctx, recent, onOpen }) {
           title="Explorar"
           desc={list.updatedAt ? `Precios ${list.error ? "sin conexión" : `actualizados ${ago}`} · ${sorted.length} activos` : "CEDEARs, acciones, cripto, monedas e índices."}
         >
-          <div className="seg sort-seg" role="radiogroup" aria-label="Ordenar">
+          {/* mismo control que las pestañas: ficha que se desliza, sin color de acento */}
+          <div
+            className="vx-tabs sm sort-seg"
+            role="radiogroup"
+            aria-label="Ordenar"
+            style={{ "--n": SORTS.length, "--i": Math.max(0, SORTS.findIndex(([k]) => k === sort)) }}
+          >
+            <span className="vx-tabs-thumb" aria-hidden="true" />
             {SORTS.map(([k, label, icon]) => (
-              <button key={k} type="button" role="radio" aria-checked={sort === k} className={sort === k ? "on" : ""} onClick={() => setSort(k)}>
+              <button key={k} type="button" role="radio" aria-checked={sort === k} className={(sort === k ? "on " : "") + k} onClick={() => setSort(k)}>
                 {icon && <i className={"bi " + icon} />} {label}
               </button>
             ))}

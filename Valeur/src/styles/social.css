@@ -1956,15 +1956,17 @@
   flex-shrink: 0;
 }
 
+/* explorar: filas de borde a borde (el hover pinta la fila entera), el
+   precio con la variación del día abajo y la estrella discreta */
 .app-root .asset-list {
   overflow: hidden;
 }
 .app-root .asset-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 70px 96px minmax(150px, auto) auto;
+  grid-template-columns: minmax(0, 1fr) 70px 96px 130px 36px;
   align-items: center;
   gap: 18px;
-  padding: 12px 16px;
+  padding: 12px 24px;
   border-bottom: 1px solid var(--line-soft);
   transition: background 0.2s;
 }
@@ -1972,7 +1974,7 @@
   border-bottom: 0;
 }
 .app-root .asset-row:hover {
-  background: color-mix(in oklch, var(--ink) 2.5%, transparent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
 }
 .app-root .asset-id {
   display: flex;
@@ -1980,33 +1982,41 @@
   gap: 12px;
   min-width: 0;
 }
+.app-root .asset-id > :first-child {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .asset-row:hover .asset-id > :first-child {
+  transform: scale(1.08);
+}
 .app-root .asset-id > div {
   min-width: 0;
 }
 .app-root .asset-id b {
   display: block;
-  font-size: 0.96rem;
+  font-size: 0.95rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.app-root .asset-id:hover b {
-  color: var(--accent-text);
-}
 .app-root .asset-id span {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
+  gap: 5px;
+  font-size: 0.78rem;
   color: var(--ink-soft);
   white-space: nowrap;
 }
+/* el rubro como texto, no como chip */
 .app-root .asset-id .tag {
-  height: 20px;
-  padding: 0 7px;
-  font-size: 0.68rem;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-size: inherit;
+  font-weight: 500;
+  font-style: normal;
   color: var(--ink-soft);
-  background: color-mix(in oklch, var(--ink) 5%, transparent);
 }
 .app-root .asset-month {
   display: flex;
@@ -2028,37 +2038,77 @@
   height: 30px;
 }
 .app-root .asset-px {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
+  display: grid;
+  justify-items: end;
+  gap: 3px;
   font-variant-numeric: tabular-nums;
 }
 .app-root .asset-px b {
   font-family: var(--font-display);
-  font-size: 1.02rem;
+  font-size: 1rem;
   letter-spacing: -0.015em;
   white-space: nowrap;
 }
-.app-root .asset-px .delta {
-  align-self: center;
-  min-width: 74px;
-  justify-content: center;
+.app-root .asset-px small {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.app-root .asset-px small i {
+  font-size: 0.6rem;
 }
 .app-root .asset-act {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: flex-end;
+  gap: 4px;
 }
+/* estrella: casi invisible hasta pasar por la fila; llena si lo seguís */
 .app-root .asset-act .star {
-  width: 34px;
-  height: 34px;
-}
-.app-root .has-alert {
-  width: 26px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
-  font-size: 0.85rem;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  cursor: pointer;
+  opacity: 0.35;
+  transition:
+    opacity 0.2s,
+    color 0.2s,
+    background 0.2s,
+    transform 0.2s;
+}
+.app-root .asset-row:hover .asset-act .star {
+  opacity: 1;
+}
+.app-root .asset-act .star:hover {
+  color: var(--accent-text);
+  background: color-mix(in oklch, var(--accent) 10%, transparent);
+}
+.app-root .asset-act .star.on {
+  opacity: 1;
+  color: var(--accent-text);
+}
+.app-root .asset-act .star:active {
+  transform: scale(0.88);
+}
+@media (hover: none) {
+  .app-root .asset-act .star {
+    opacity: 1;
+  }
+}
+.app-root .has-alert {
+  width: 22px;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
   color: var(--accent-text);
 }
 .app-root .asset-none {
@@ -3701,7 +3751,7 @@
     grid-template-columns: 1fr;
   }
   .app-root .asset-row {
-    grid-template-columns: minmax(0, 1fr) 90px auto auto;
+    grid-template-columns: minmax(0, 1fr) 90px 120px auto;
   }
   .app-root .asset-month {
     display: none;
@@ -3854,18 +3904,10 @@
   .app-root .asset-row {
     grid-template-columns: minmax(0, 1fr) auto auto;
     gap: 10px;
-    padding: 12px;
+    padding: 12px 16px;
   }
   .app-root .asset-spark {
     display: none;
-  }
-  .app-root .asset-px {
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-  }
-  .app-root .asset-px .delta {
-    min-width: 0;
   }
   .app-root .asset-id .tag {
     display: none;

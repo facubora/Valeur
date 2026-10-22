@@ -55,7 +55,7 @@ export function AssetRow({ symbol, name, tag, quote, closes = [], cur, rate, fol
           <b>{name || symbol}</b>
           <span>
             {symbol}
-            {tag && <em className="tag">{tag}</em>}
+            {tag && <em className="tag">· {tag}</em>}
           </span>
         </div>
       </Link>
@@ -81,7 +81,10 @@ export function AssetRow({ symbol, name, tag, quote, closes = [], cur, rate, fol
         {quote ? (
           <>
             <b>{priceIn(symbol, quote.price, cur, rate)}</b>
-            <Delta value={quote.change_pct} />
+            <small className={quote.change_pct >= 0 ? "txt-up" : "txt-down"}>
+              <i className={quote.change_pct >= 0 ? "bi bi-caret-up-fill" : "bi bi-caret-down-fill"} />
+              {Math.abs(quote.change_pct).toFixed(2).replace(".", ",")}% hoy
+            </small>
           </>
         ) : quote === null ? (
           <small className="muted">sin datos</small>
