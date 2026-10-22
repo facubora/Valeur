@@ -6,6 +6,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Tickersearch from "./pages/Tickersearch";
+import Community from "./pages/Community";
+import Profile from "./pages/Profile";
 
 /* Al cambiar de ruta, arrancar arriba (React Router conserva el scroll) */
 function ScrollToTop() {
@@ -27,6 +29,8 @@ function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/tickersearch" element={<Tickersearch />} />
+        <Route path="/comunidad" element={<Community />} />
+        <Route path="/u/:username" element={<Profile />} />
       </Routes>
     </BrowserRouter>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { getQuote, useSuggestions, money, today } from "../lib/market";
-import { addTrade } from "../lib/portfolio";
+import { getQuote, useSuggestions, money, fmtPrice, assetCurrency, today, formatDate } from "../lib/market";
+import { addTrade, findOversell } from "../lib/portfolio";
+import { toast } from "../lib/feedback";
 import { FormError, SubmitButton } from "./AuthLayout";
 
 const SYMBOL_RE = /^[A-Z0-9.=^-]{1,12}$/;
@@ -12,7 +13,7 @@ export default function TradeModal({ open, ...props }) {
   return open ? <TradeForm {...props} /> : null;
 }
 
-function TradeForm({ onClose, uid, initial = {}, held = {}, onSaved }) {
+function TradeForm({ onClose, uid, initial = {}, held = {}, trades = [], onSaved }) {
   const [symbol, setSymbol] = useState(initial.symbol || "");
   const [name, setName] = useState(initial.name || "");
   const [query, setQuery] = useState("");
@@ -21,7 +22,7 @@ function TradeForm({ onClose, uid, initial = {}, held = {}, onSaved }) {
   const [price, setPrice] = useState("");
   const [date, setDate] = useState(today());
   const [note, setNote] = useState("");
-  const [quote, setQuote] = useState(null);
+  const [quote, setQuote] = useState(undefined); // undefined: sin consultar · null: no existe
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const firstInput = useRef(null);
@@ -36,11 +37,15 @@ function TradeForm({ onClose, uid, initial = {}, held = {}, onSaved }) {
   useEffect(() => {
     if (!symbol) return;
     let alive = true;
-    getQuote(symbol).then((q) => {
-      if (!alive) return;
-      setQuote(q);
-      if (q) setPrice((p) => (p === "" ? String(q.price) : p));
-    });
+    // null = el ticker no existe; undefined = no se pudo consultar (sin red)
+    getQuote(symbol).then(
+      (q) => {
+        if (!alive) return;
+        setQuote(q);
+        if (q) setPrice((p) => (p === "" ? String(q.price) : p));
+      },
+      () => alive && setQuote(undefined),
+    );
     return () => {
       alive = false;
     };
@@ -58,7 +63,7 @@ function TradeForm({ onClose, uid, initial = {}, held = {}, onSaved }) {
     setName(s.name || "");
     setQuery("");
     setPrice("");
-    setQuote(null);
+    setQuote(undefined);
   };
 
   const commitQuery = () => {
@@ -70,16 +75,28 @@ function TradeForm({ onClose, uid, initial = {}, held = {}, onSaved }) {
   const p = Number(price);
   const total = q > 0 && p >= 0 ? q * p : 0;
   const heldQty = held[symbol] || 0;
+  const currency = assetCurrency(symbol);
+  // Precio muy lejos del actual: casi siempre es otra especie (AAPL vs AAPLD.BA) o la moneda equivocada
+  const offPrice = quote && p > 0 && Math.abs(p / quote.price - 1) > 0.5;
 
   const submit = async (e) => {
     e.preventDefault();
     if (!SYMBOL_RE.test(symbol)) return setError("Elegí un ticker válido");
+    if (quote === null) return setError(`No encontramos cotización de ${symbol}. Revisá el ticker.`);
     if (!(q > 0)) return setError("La cantidad tiene que ser mayor a cero");
-    if (!(p >= 0) || price === "") return setError("Ingresá el precio de la operación");
-    if (side === "sell" && q > heldQty + 1e-9) {
-      return setError(`Solo tenés ${heldQty} ${symbol} para vender`);
-    }
+    if (q > 1e9) return setError("La cantidad es demasiado grande");
+    if (price === "" || !(p > 0)) return setError("Ingresá el precio de la operación (mayor a cero)");
+    if (!date) return setError("Elegí la fecha de la operación");
     if (date > today()) return setError("La fecha no puede ser futura");
+    if (date < "1990-01-01") return setError("Revisá la fecha: es demasiado vieja");
+    if (side === "sell" && q > heldQty + 1e-9) {
+      return setError(heldQty > 0 ? `Solo tenés ${heldQty} ${symbol} para vender` : `No tenés ${symbol} para vender`);
+    }
+    // la venta tiene que tener respaldo también a esa fecha (no solo hoy)
+    if (side === "sell") {
+      const bad = findOversell([...trades, { symbol, side, qty: q, executed_at: date, created_at: new Date().toISOString() }]);
+      if (bad) return setError(`Al ${formatDate(bad.date)} tenías ${+bad.have.toFixed(6)} ${bad.symbol}: no alcanza para vender ${bad.sell}`);
+    }
     setSaving(true);
     const err = await addTrade(uid, {
       symbol,
@@ -91,7 +108,8 @@ function TradeForm({ onClose, uid, initial = {}, held = {}, onSaved }) {
       note: note.trim() || null,
     });
     setSaving(false);
-    if (err) return setError(err);
+    if (err) return setError(/failed to fetch|network/i.test(err) ? "Sin conexión con el servidor. Probá de nuevo." : err);
+    toast(`${side === "buy" ? "Compra" : "Venta"} de ${q} ${symbol} registrada`);
     onSaved?.();
     onClose();
   };
@@ -115,7 +133,9 @@ function TradeForm({ onClose, uid, initial = {}, held = {}, onSaved }) {
                 <span className="tk">{symbol.slice(0, 4)}</span>
                 <div>
                   <b>{symbol}</b>
-                  <span>{name || (quote ? money(quote.price) : "…")}</span>
+                  <span className={quote === null ? "txt-down" : ""}>
+                    {quote === null ? "No encontramos cotización" : name || (quote ? fmtPrice(symbol, quote.price) : "…")}
+                  </span>
                 </div>
                 <button
                   type="button"
@@ -124,7 +144,7 @@ function TradeForm({ onClose, uid, initial = {}, held = {}, onSaved }) {
                     setSymbol("");
                     setName("");
                     setPrice("");
-                    setQuote(null);
+                    setQuote(undefined);
                     setTimeout(() => firstInput.current?.focus(), 30);
                   }}
                 >
@@ -196,16 +216,23 @@ function TradeForm({ onClose, uid, initial = {}, held = {}, onSaved }) {
             </div>
             <div className="field">
               <label htmlFor="t-price">
-                Precio por unidad
+                Precio{symbol ? ` (${currency === "ARS" ? "ARS" : "US$"})` : " por unidad"}
                 {quote && (
                   <button type="button" className="link-btn" onClick={() => setPrice(String(quote.price))}>
-                    usar actual {money(quote.price)}
+                    usar actual {fmtPrice(symbol, quote.price)}
                   </button>
                 )}
               </label>
               <input id="t-price" type="number" min="0" step="any" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" />
             </div>
           </div>
+
+          {offPrice && (
+            <p className="price-warn" role="status">
+              <i className="bi bi-exclamation-circle" /> {symbol} cotiza a {fmtPrice(symbol, quote.price)}. Revisá que
+              el precio sea de esta especie y en {currency === "ARS" ? "pesos" : "dólares"}.
+            </p>
+          )}
 
           <div className="row-2">
             <div className="field">
@@ -220,7 +247,7 @@ function TradeForm({ onClose, uid, initial = {}, held = {}, onSaved }) {
 
           <div className="trade-total">
             <span>Total {side === "buy" ? "invertido" : "recibido"}</span>
-            <b>{money(total)}</b>
+            <b>{money(total, undefined, currency)}</b>
           </div>
 
           <FormError error={error} />

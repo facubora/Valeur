@@ -1,0 +1,3135 @@
+/* ============================================================
+   Mercado (explorador + detalle), comunidad, perfiles, alertas y
+   notificaciones. Scopeado bajo .app-root; usa los tokens de base.css.
+   ============================================================ */
+
+/* ---------- piezas comunes ---------- */
+/* <button class="btn-line"> heredaba el fondo del navegador (blanco en oscuro) */
+.app-root button.btn-line {
+  background: transparent;
+}
+.app-root .sec-title {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.app-root .lnk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.88rem;
+}
+.app-root .small {
+  font-size: 0.84rem;
+}
+.app-root .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  font-style: normal;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  color: var(--accent-text);
+  background: color-mix(in oklch, var(--accent) 12%, transparent);
+}
+.app-root .tag.soft {
+  color: var(--ink-soft);
+  background: color-mix(in oklch, var(--ink) 6%, transparent);
+}
+.app-root .side-card {
+  padding: 18px 18px 16px;
+}
+.app-root .side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.app-root .side-head h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.02rem;
+  letter-spacing: -0.015em;
+}
+.app-root .side-head h3 i {
+  color: var(--accent-text);
+  font-size: 0.95rem;
+}
+.app-root .side-head small {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.app-root .side-head .lnk {
+  font-size: 0.85rem;
+}
+.app-root .side-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+.app-root .side-empty p {
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+.app-root .field textarea,
+.app-root .field select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.45;
+  outline: none;
+  resize: vertical;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.app-root .field select {
+  height: 48px;
+  padding: 0 12px;
+  cursor: pointer;
+}
+.app-root .field textarea::placeholder {
+  color: color-mix(in oklch, var(--ink-soft) 70%, transparent);
+}
+.app-root .field textarea:focus,
+.app-root .field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent) 16%, transparent);
+}
+.app-root fieldset.field {
+  border: 0;
+  min-width: 0;
+}
+.app-root fieldset.field legend {
+  margin-bottom: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+/* fantasma liviano: líneas y cajas punteadas, sin animación de carga */
+.app-root .gh-ln {
+  display: block;
+  height: 9px;
+  border-radius: 999px;
+  border: 1px dashed color-mix(in oklch, var(--ink) 20%, transparent);
+}
+.app-root .gh-ln.w25 { width: 25%; }
+.app-root .gh-ln.w40 { width: 40%; }
+.app-root .gh-ln.w60 { width: 60%; }
+.app-root .gh-ln.w90 { width: 90%; }
+.app-root .gh-av {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.5px dashed color-mix(in oklch, var(--ink) 22%, transparent);
+}
+.app-root .gh-box {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  border: 1.5px dashed color-mix(in oklch, var(--accent) 45%, transparent);
+  display: grid;
+  place-items: center;
+  font-size: 0.95rem;
+  color: color-mix(in oklch, var(--accent-text) 70%, transparent);
+}
+.app-root .gh-pill {
+  width: 74px;
+  height: 24px;
+  margin-left: auto;
+  border-radius: 999px;
+  border: 1px dashed color-mix(in oklch, var(--ink) 20%, transparent);
+}
+.app-root .gh-asset {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ============================================================
+   SECCIONES: barra de subsecciones + encabezados
+   ============================================================ */
+.app-root .block {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding-top: 44px;
+  border-top: 1px solid var(--line-soft);
+  scroll-margin-top: 140px;
+}
+.app-root .sub-nav + .block {
+  border-top: 0;
+  padding-top: 12px;
+}
+.app-root .s-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+  flex-wrap: wrap;
+}
+.app-root .s-title {
+  max-width: 640px;
+}
+.app-root .kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent-text);
+}
+.app-root .kicker::before {
+  content: "";
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+}
+.app-root .s-head h2 {
+  font-size: clamp(1.5rem, 2.6vw, 1.95rem);
+  line-height: 1.08;
+}
+.app-root .s-head p {
+  margin-top: 6px;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+.app-root .s-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* grillas a lo ancho */
+.app-root .fy-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.app-root .fy-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  min-width: 0;
+  transition:
+    border-color 0.25s,
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s;
+  animation: auth-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.app-root .fy-card:nth-child(4n + 2) { animation-delay: 0.04s; }
+.app-root .fy-card:nth-child(4n + 3) { animation-delay: 0.08s; }
+.app-root .fy-card:nth-child(4n + 4) { animation-delay: 0.12s; }
+.app-root .fy-card:hover {
+  border-color: color-mix(in oklch, var(--accent) 45%, transparent);
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px -26px color-mix(in oklch, var(--accent) 70%, transparent);
+}
+.app-root .fy-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.app-root .fy-card .fy-why {
+  margin: 0;
+}
+.app-root .fy-card .fy-x {
+  height: 22px;
+  margin: -2px -4px 0 0;
+}
+.app-root .fy-card:hover .fy-x {
+  opacity: 1;
+}
+.app-root .fy-card .fy-id b {
+  font-size: 1rem;
+}
+.app-root .fy-card .fy-id span {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.app-root .fy-card-bot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+}
+.app-root .fy-card-px {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .fy-card-px b {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.app-root .fy-follow {
+  justify-content: center;
+}
+.app-root .fy-start.wide {
+  padding: 22px;
+  border: 1px dashed color-mix(in oklch, var(--accent) 40%, transparent);
+  border-radius: 20px;
+  background: color-mix(in oklch, var(--accent) 4%, transparent);
+}
+.app-root .fy-start.wide .fy-ghost {
+  flex-direction: row;
+  gap: 24px;
+}
+.app-root .fy-start.wide .gh-row {
+  flex: 1;
+}
+
+.app-root .post-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.app-root .post-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  min-width: 0;
+  transition:
+    border-color 0.25s,
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: auth-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.app-root a.post-tile:hover {
+  border-color: color-mix(in oklch, var(--accent) 45%, transparent);
+  transform: translateY(-3px);
+}
+.app-root .pt-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.app-root .pt-head > div {
+  min-width: 0;
+}
+.app-root .pt-head > div > b {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+}
+.app-root .pt-head > div > span {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .pt-what {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.92rem;
+}
+.app-root .pt-what em {
+  margin-left: auto;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .pt-body {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.app-root .post-grid.ghosted {
+  pointer-events: none;
+}
+.app-root .gh-tile {
+  min-height: 150px;
+  border-style: dashed;
+  border-color: color-mix(in oklch, var(--ink) 16%, transparent);
+  background: transparent;
+  animation: none;
+}
+
+/* ============================================================
+   INICIO
+   ============================================================ */
+.app-root .pulse {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+.app-root .pulse-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  font-variant-numeric: tabular-nums;
+  transition:
+    border-color 0.2s,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root a.pulse-tile:hover {
+  border-color: color-mix(in oklch, var(--accent) 45%, transparent);
+  transform: translateY(-2px);
+}
+.app-root .pulse-tile small {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.app-root .pulse-tile b {
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .pulse-tile .delta {
+  padding: 2px 8px;
+  font-size: 0.72rem;
+}
+.app-root .pulse-tile.mep {
+  background: var(--ink);
+  border-color: transparent;
+  color: var(--ink-invert);
+}
+.app-root .pulse-tile.mep small,
+.app-root .pulse-tile.mep .muted {
+  color: color-mix(in oklch, var(--ink-invert) 62%, transparent);
+}
+.app-root .pulse-tile.mep .muted {
+  font-size: 0.72rem;
+}
+.app-root .home-loading {
+  height: 180px;
+}
+
+/* hero: fecha + mercados, saludo y resumen escrito del día */
+.app-root .home-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px 40px;
+  flex-wrap: wrap;
+}
+.app-root .hh-main {
+  max-width: 760px;
+}
+.app-root .home-hero .kicker {
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-bottom: 14px;
+}
+.app-root .hh-mk {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-soft);
+  letter-spacing: 0.08em;
+}
+.app-root .hh-mk i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--ink) 30%, transparent);
+}
+.app-root .hh-mk.open i {
+  background: var(--up);
+}
+.app-root .home-hero h1 {
+  font-size: clamp(2.2rem, 4.6vw, 3.4rem);
+  line-height: 1;
+}
+.app-root .hh-brief {
+  margin-top: 16px;
+  font-size: clamp(1.02rem, 1.6vw, 1.18rem);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+.app-root .hh-brief b {
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .hh-brief b.txt-up {
+  color: var(--up);
+}
+.app-root .hh-brief b.txt-down {
+  color: var(--down);
+}
+.app-root .hh-brief a:hover b {
+  color: var(--accent-text);
+}
+.app-root .hh-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* evolución del mes dentro de la tarjeta del portfolio */
+.app-root .pf-evo {
+  height: 84px;
+  margin: 2px 0;
+  display: flex;
+  align-items: flex-end;
+}
+.app-root .spark.stretch {
+  display: block;
+}
+.app-root .pf-comp .lbl {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--ink-soft);
+}
+.app-root .pf-legend a:hover b {
+  color: var(--accent-text);
+}
+.app-root button.pf-card.empty {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* movimientos: subieron / bajaron */
+.app-root .movers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.app-root .movers-col {
+  padding: 16px 18px 8px;
+  min-width: 0;
+}
+.app-root .mc-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.app-root .mc-head b {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+.app-root .mc-head small {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.app-root .mc-ic {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+}
+.app-root .movers-col.up .mc-ic {
+  color: var(--up);
+  background: color-mix(in oklch, var(--up) 14%, transparent);
+}
+.app-root .movers-col.down .mc-ic {
+  color: var(--down);
+  background: color-mix(in oklch, var(--down) 14%, transparent);
+}
+.app-root .movers-col ul {
+  list-style: none;
+}
+.app-root .mv-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.app-root .movers-col li:last-child .mv-row {
+  border-bottom: 0;
+}
+.app-root .mv-row > div {
+  min-width: 0;
+}
+.app-root .mv-row b {
+  display: block;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .mv-row:hover b {
+  color: var(--accent-text);
+}
+.app-root .mv-row > div > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.app-root .mv-row .tag {
+  height: 18px;
+  padding: 0 6px;
+  font-size: 0.64rem;
+}
+.app-root .mv-px {
+  font-weight: 700;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.app-root .mv-row .delta {
+  align-self: center;
+  min-width: 70px;
+  justify-content: center;
+}
+.app-root .mc-none {
+  padding: 14px 0 10px;
+}
+.app-root .movers.ghosted {
+  pointer-events: none;
+}
+.app-root .gh-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-style: dashed;
+  border-color: color-mix(in oklch, var(--ink) 16%, transparent);
+  background: transparent;
+}
+
+/* alertas cercanas */
+.app-root .near-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.app-root .near {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 18px;
+  min-width: 0;
+  transition:
+    border-color 0.25s,
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .near:hover {
+  border-color: color-mix(in oklch, var(--accent) 45%, transparent);
+  transform: translateY(-3px);
+}
+.app-root .near-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.app-root .near-top > div {
+  min-width: 0;
+}
+.app-root .near-top b {
+  display: block;
+  font-size: 0.92rem;
+}
+.app-root .near-top span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .near-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--ink) 8%, transparent);
+  overflow: hidden;
+}
+.app-root .near-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .near-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .near-foot span {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+.app-root .near-foot small {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+/* tarjeta de portfolio: valor a la izquierda, composición a la derecha */
+.app-root .pf-card {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 28px 44px;
+  padding: 26px 28px;
+}
+.app-root .pf-card::after {
+  content: "";
+  position: absolute;
+  width: 340px;
+  height: 340px;
+  left: -140px;
+  top: -190px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in oklch, var(--accent) 45%, transparent), transparent 62%);
+  filter: blur(40px);
+  opacity: 0.26;
+  pointer-events: none;
+}
+.app-root .pf-main {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+.app-root .pf-main .lbl {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--ink-soft);
+}
+.app-root .pf-val {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 4.6vw, 3.1rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  align-self: flex-start;
+}
+.app-root .pf-val:hover {
+  color: var(--accent-text);
+}
+.app-root .pf-deltas {
+  display: flex;
+  gap: 14px 32px;
+  flex-wrap: wrap;
+}
+.app-root .pf-deltas small {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+}
+.app-root .pf-deltas b {
+  font-size: 0.98rem;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .pf-go {
+  align-self: flex-start;
+  margin-top: auto;
+}
+.app-root .pf-comp {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+  min-width: 0;
+}
+.app-root .pf-legend {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.app-root .pf-legend li {
+  display: grid;
+  grid-template-columns: 8px auto 1fr auto 76px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line-soft);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .pf-legend li:first-child {
+  border-top: 0;
+}
+.app-root .pf-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.app-root .pf-legend .w {
+  font-weight: 700;
+}
+.app-root .pf-legend .r {
+  text-align: right;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+.app-root .pf-legend .more {
+  display: block;
+  font-size: 0.82rem;
+}
+.app-root .pf-card.empty {
+  border-style: dashed;
+  border-color: color-mix(in oklch, var(--ink) 16%, transparent);
+  background: transparent;
+  transition: border-color 0.2s;
+}
+.app-root .pf-card.empty:hover {
+  border-color: color-mix(in oklch, var(--accent) 45%, transparent);
+}
+.app-root .gh-ln.big {
+  height: 34px;
+  border-radius: 10px;
+}
+.app-root .pf-cta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+/* ============================================================
+   MERCADO · explorador
+   ============================================================ */
+/* buscador + recientes en una franja */
+.app-root .mkt-searchbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: -26px;
+}
+.app-root .mkt-searchbar .search-form {
+  flex: 1;
+  min-width: 0;
+}
+.app-root .mkt-searchbar .recents {
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+.app-root .cur-lbl {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+/* "Para vos" en lista compacta */
+.app-root .fy-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.app-root .fy-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line-soft);
+  animation: auth-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.app-root .fy-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.app-root .fy-row:nth-child(2) { animation-delay: 0.04s; }
+.app-root .fy-row:nth-child(3) { animation-delay: 0.08s; }
+.app-root .fy-row:nth-child(n + 4) { animation-delay: 0.12s; }
+.app-root .fy-id {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.app-root .fy-id > div {
+  min-width: 0;
+}
+.app-root .fy-id b {
+  display: block;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .fy-id:hover b {
+  color: var(--accent-text);
+}
+.app-root .fy-why {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  margin-top: 2px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--accent-text);
+}
+.app-root .fy-why i {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  margin-top: 1px;
+}
+.app-root .fy-px {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .fy-px b {
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+.app-root .fy-px .delta {
+  align-self: flex-end;
+  padding: 2px 7px;
+  font-size: 0.7rem;
+}
+.app-root .fy-act {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.app-root .star.sm {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  font-size: 0.82rem;
+}
+.app-root .fy-x {
+  width: 22px;
+  height: 30px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+}
+.app-root .fy-row:hover .fy-x,
+.app-root .fy-x:focus-visible {
+  opacity: 1;
+}
+.app-root .fy-x:hover {
+  color: var(--ink);
+}
+.app-root .fy-start {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.app-root .fy-start > b {
+  font-size: 0.9rem;
+}
+.app-root .fy-start .chips {
+  gap: 6px;
+}
+.app-root .fy-start .chip {
+  height: 30px;
+  padding: 0 11px;
+  font-size: 0.78rem;
+}
+.app-root .fy-ghost {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  opacity: 0.8;
+}
+.app-root .gh-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.app-root .quiet-reset {
+  margin-top: 12px;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+/* Explorar */
+.app-root .explore-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.app-root .explore-bar .mkt-tabs {
+  flex-shrink: 0;
+}
+.app-root .icon-btn .spin {
+  animation: spin 0.9s linear infinite;
+}
+.app-root .lnk-btn.quiet {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.app-root .side-empty.wide {
+  align-items: center;
+  padding: 26px;
+  border: 1px dashed color-mix(in oklch, var(--ink) 16%, transparent);
+  border-radius: 20px;
+  text-align: center;
+}
+
+/* alertas a lo ancho */
+.app-root .alerts-card.wide {
+  padding: 18px 22px;
+}
+.app-root .alerts-card.wide .side-head {
+  display: none;
+}
+.app-root .alerts-card.wide .alert-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 28px;
+  margin-bottom: 4px;
+}
+.app-root .alerts-card.wide .alert-row:last-child {
+  border-bottom: 1px solid var(--line-soft);
+}
+
+/* lo más recomendado */
+.app-root .talk-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.app-root .talk-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  min-width: 0;
+  transition:
+    border-color 0.25s,
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: auth-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.app-root .talk-tile:hover {
+  border-color: color-mix(in oklch, var(--accent) 45%, transparent);
+  transform: translateY(-3px);
+}
+.app-root .tt-top {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+.app-root .tt-top b {
+  display: block;
+  font-size: 0.94rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .tt-top span {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+}
+.app-root .tt-top .delta {
+  align-self: center;
+}
+.app-root .talk-tile .cons-bar {
+  height: 8px;
+}
+.app-root .tt-foot {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.app-root .tt-foot b {
+  color: var(--ink);
+}
+.app-root .sector-follow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -2px 0 12px;
+  padding: 10px 12px 10px 16px;
+  border: 1px dashed color-mix(in oklch, var(--accent) 40%, transparent);
+  border-radius: 14px;
+  background: color-mix(in oklch, var(--accent) 4%, transparent);
+  font-size: 0.88rem;
+  animation: auth-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.app-root .sector-follow span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-soft);
+}
+.app-root .sector-follow span i {
+  color: var(--accent-text);
+}
+.app-root .sector-follow b {
+  color: var(--ink);
+}
+.app-root .sector-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  min-width: 0;
+}
+.app-root .chips.scroll {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  min-width: 0;
+  flex: 1;
+  padding: 3px 2px;
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+}
+.app-root .chips.scroll::-webkit-scrollbar {
+  display: none;
+}
+.app-root .chips.scroll .chip {
+  flex-shrink: 0;
+}
+
+.app-root .asset-list {
+  overflow: hidden;
+}
+.app-root .asset-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 70px 96px minmax(150px, auto) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line-soft);
+  transition: background 0.2s;
+}
+.app-root .asset-row:last-child {
+  border-bottom: 0;
+}
+.app-root .asset-row:hover {
+  background: color-mix(in oklch, var(--ink) 2.5%, transparent);
+}
+.app-root .asset-id {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.app-root .asset-id > div {
+  min-width: 0;
+}
+.app-root .asset-id b {
+  display: block;
+  font-size: 0.96rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .asset-id:hover b {
+  color: var(--accent-text);
+}
+.app-root .asset-id span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.app-root .asset-id .tag {
+  height: 20px;
+  padding: 0 7px;
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+  background: color-mix(in oklch, var(--ink) 5%, transparent);
+}
+.app-root .asset-month {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .asset-month small {
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+}
+.app-root .asset-month span {
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+.app-root .asset-spark {
+  display: flex;
+  align-items: center;
+  height: 30px;
+}
+.app-root .asset-px {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .asset-px b {
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+.app-root .asset-px .delta {
+  align-self: center;
+  min-width: 74px;
+  justify-content: center;
+}
+.app-root .asset-act {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.app-root .asset-act .star {
+  width: 34px;
+  height: 34px;
+}
+.app-root .has-alert {
+  width: 26px;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  color: var(--accent-text);
+}
+.app-root .asset-none {
+  padding: 22px 16px;
+  font-size: 0.9rem;
+}
+.app-root .list-more {
+  align-self: center;
+}
+
+/* comunidad en el costado del mercado */
+.app-root .talk-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.app-root .talk-list a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line-soft);
+}
+.app-root .talk-list li:first-child a {
+  border-top: 0;
+  padding-top: 0;
+}
+.app-root .talk-list b {
+  display: block;
+  font-size: 0.88rem;
+}
+.app-root .talk-list a span {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+}
+.app-root .talk-list a:hover b {
+  color: var(--accent-text);
+}
+.app-root .tag.up {
+  color: var(--up);
+  background: color-mix(in oklch, var(--up) 13%, transparent);
+}
+.app-root .tag.down {
+  color: var(--down);
+  background: color-mix(in oklch, var(--down) 13%, transparent);
+}
+
+/* ============================================================
+   MERCADO · detalle de un activo
+   ============================================================ */
+.app-root .crumbs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: -28px;
+}
+.app-root .lnk-btn.back {
+  color: var(--ink-soft);
+}
+.app-root .lnk-btn.back:hover {
+  color: var(--accent-text);
+  text-decoration: none;
+}
+.app-root .crumb-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.app-root .crumb-search {
+  position: relative;
+  width: 260px;
+}
+.app-root .asset-quote .native {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.app-root .asset-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px 32px;
+  flex-wrap: wrap;
+}
+.app-root .asset-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.app-root .asset-title h1 {
+  font-size: clamp(1.8rem, 3.6vw, 2.6rem);
+  line-height: 1.05;
+}
+.app-root .asset-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.app-root .asset-tags .sym {
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-right: 4px;
+}
+.app-root .asset-quote {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .asset-quote > b {
+  font-family: var(--font-display);
+  font-size: clamp(1.9rem, 3.6vw, 2.6rem);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.app-root .asset-quote > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.app-root .asset-quote .chg {
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+.app-root .ph-line.big {
+  width: 180px;
+  height: 30px;
+}
+.app-root .asset-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: -30px;
+}
+.app-root .asset-actions .btn-pink {
+  margin-left: auto;
+}
+.app-root .asset-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 22px;
+  align-items: start;
+  margin-top: -22px;
+}
+.app-root .asset-main {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  min-width: 0;
+}
+.app-root .asset-side {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.app-root #alertas {
+  scroll-margin-top: 96px;
+}
+.app-root .asset-talk .sec-head {
+  margin-bottom: 14px;
+}
+
+/* consenso de la comunidad */
+.app-root .consensus {
+  margin-bottom: 16px;
+}
+.app-root .cons-bar {
+  display: flex;
+  gap: 3px;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.app-root .cons-bar span {
+  transition: flex 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .cons-bar .buy,
+.app-root .cons-legend .buy i {
+  background: var(--up);
+}
+.app-root .cons-bar .hold,
+.app-root .cons-legend .hold i {
+  background: color-mix(in oklch, var(--ink) 30%, transparent);
+}
+.app-root .cons-bar .sell,
+.app-root .cons-legend .sell i {
+  background: var(--down);
+}
+.app-root .cons-legend {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+.app-root .cons-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.app-root .cons-legend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.app-root .cons-legend b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.app-root .talk-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+.app-root .talk-empty .ghost-posts {
+  width: 100%;
+}
+
+/* tu posición, similares */
+.app-root .pm-kv {
+  display: flex;
+  flex-direction: column;
+}
+.app-root .pm-kv > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid var(--line-soft);
+  font-size: 0.88rem;
+}
+.app-root .pm-kv > div:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.app-root .pm-kv dt {
+  color: var(--ink-soft);
+}
+.app-root .pm-kv dd {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.app-root .sim-list {
+  list-style: none;
+}
+.app-root .sim-list a {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line-soft);
+}
+.app-root .sim-list li:first-child a {
+  border-top: 0;
+  padding-top: 0;
+}
+.app-root .sim-list a > div {
+  min-width: 0;
+}
+.app-root .sim-list b {
+  display: block;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .sim-list span {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+}
+.app-root .sim-list a:hover b {
+  color: var(--accent-text);
+}
+.app-root .sim-list .delta {
+  align-self: center;
+}
+
+/* ============================================================
+   ALERTAS
+   ============================================================ */
+.app-root .alerts-card {
+  padding: 18px;
+}
+.app-root .alert-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 14px;
+}
+.app-root .alert-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+  animation: auth-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.app-root .alert-row:last-child {
+  border-bottom: 0;
+}
+.app-root .alert-row.off .alert-what b {
+  color: var(--ink-soft);
+}
+.app-root .alert-ic {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+}
+.app-root .alert-ic.above,
+.app-root .alert-ic.up_pct {
+  color: var(--up);
+  background: color-mix(in oklch, var(--up) 14%, transparent);
+}
+.app-root .alert-ic.below,
+.app-root .alert-ic.down_pct {
+  color: var(--down);
+  background: color-mix(in oklch, var(--down) 14%, transparent);
+}
+.app-root .alert-row.off .alert-ic {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+.app-root .alert-what {
+  min-width: 0;
+}
+.app-root .alert-what b {
+  display: block;
+  font-size: 0.87rem;
+  line-height: 1.3;
+}
+.app-root .alert-what span {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+}
+.app-root .alert-act {
+  display: flex;
+  gap: 4px;
+}
+.app-root .alert-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.app-root .alert-form .seg.full button {
+  padding: 0 4px;
+  font-size: 0.76rem;
+}
+.app-root .alert-in {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.app-root .alert-in:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent) 16%, transparent);
+}
+.app-root .alert-in .unit {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.app-root .alert-in input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+}
+.app-root .chips.quick .chip {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 0.76rem;
+}
+.app-root .notify-ask {
+  margin-top: 12px;
+  font-size: 0.8rem;
+}
+
+/* ============================================================
+   NOTIFICACIONES (campanita del header)
+   ============================================================ */
+/* el panel se alinea con el borde derecho del header, no con la campanita */
+.app-root .top .right {
+  position: relative;
+}
+.app-root .bell-wrap {
+  position: static;
+}
+.app-root .icon-btn.bell {
+  position: relative;
+  border-radius: 999px;
+  width: 40px;
+  height: 40px;
+}
+.app-root .icon-btn.bell.has {
+  color: var(--accent-text);
+  border-color: color-mix(in oklch, var(--accent) 40%, transparent);
+}
+.app-root .icon-btn.bell .badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 0.66rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 2px var(--bg);
+  animation: done-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .notif-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  width: min(380px, calc(100vw - 32px));
+  max-height: min(520px, calc(100vh - 110px));
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 30px 60px -28px oklch(0 0 0 / 0.45);
+  overflow: hidden;
+  z-index: 150;
+  animation: modal-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .notif-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 16px 10px;
+}
+.app-root .notif-head b {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+}
+.app-root .notif-head .lnk-btn {
+  font-size: 0.8rem;
+}
+.app-root .notif-list {
+  list-style: none;
+  overflow-y: auto;
+  padding: 0 6px 6px;
+}
+.app-root .notif {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 10px;
+  padding: 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.app-root .notif:hover {
+  background: color-mix(in oklch, var(--ink) 4%, transparent);
+}
+.app-root .notif.new {
+  background: color-mix(in oklch, var(--accent) 7%, transparent);
+}
+.app-root .notif.new:hover {
+  background: color-mix(in oklch, var(--accent) 11%, transparent);
+}
+.app-root .n-ic {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 0.85rem;
+  color: var(--accent-text);
+  background: color-mix(in oklch, var(--accent) 12%, transparent);
+}
+.app-root .n-ic.verified {
+  color: var(--up);
+  background: color-mix(in oklch, var(--up) 14%, transparent);
+}
+.app-root .n-txt {
+  min-width: 0;
+}
+.app-root .n-txt b {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.app-root .notif.new .n-txt b {
+  font-weight: 700;
+}
+.app-root .n-txt span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.app-root .notif small {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  padding-top: 2px;
+}
+.app-root .notif-empty {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 8px 16px 14px;
+  opacity: 0.8;
+}
+.app-root .gh-notif {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.app-root .notif-foot {
+  padding: 0 16px 14px;
+}
+.app-root .notif-foot:empty {
+  display: none;
+}
+.app-root .notif-foot .notify-ask {
+  margin-top: 4px;
+}
+
+/* ============================================================
+   COMUNIDAD · piezas
+   ============================================================ */
+.app-root .p-avatar {
+  --h: 250;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: oklch(0.32 0.1 var(--h));
+  background: linear-gradient(140deg, oklch(0.9 0.07 var(--h)), oklch(0.82 0.1 calc(var(--h) + 40)));
+}
+[data-theme="dark"] .app-root .p-avatar {
+  color: oklch(0.92 0.06 var(--h));
+  background: linear-gradient(140deg, oklch(0.42 0.11 var(--h)), oklch(0.32 0.1 calc(var(--h) + 40)));
+}
+.app-root .verified {
+  display: inline-grid;
+  place-items: center;
+  margin-left: 5px;
+  color: var(--accent-text);
+  font-size: 0.85em;
+  vertical-align: -0.05em;
+}
+.app-root .person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.app-root .person > div {
+  min-width: 0;
+}
+.app-root .person > div > b {
+  display: flex;
+  align-items: center;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .person > div > span {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root a.person:hover > div > b {
+  color: var(--accent-text);
+}
+.app-root .follow-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.app-root .follow-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+  transform: none;
+}
+.app-root .stance {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.app-root .stance.buy {
+  color: var(--up);
+  background: color-mix(in oklch, var(--up) 14%, transparent);
+}
+.app-root .stance.sell {
+  color: var(--down);
+  background: color-mix(in oklch, var(--down) 14%, transparent);
+}
+.app-root .stance.hold {
+  color: var(--ink-soft);
+  background: color-mix(in oklch, var(--ink) 7%, transparent);
+}
+
+/* post / recomendación */
+.app-root .post-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.app-root .card.post {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: auth-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.app-root .card.post.hl {
+  border-color: color-mix(in oklch, var(--accent) 55%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent) 10%, transparent);
+}
+.app-root .post-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.app-root .post-head .person {
+  flex: 1;
+}
+.app-root .post-head .aud {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+.app-root .post-asset {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: color-mix(in oklch, var(--ink) 3%, transparent);
+  border: 1px solid var(--line-soft);
+  transition: border-color 0.2s;
+}
+.app-root .post-asset:hover {
+  border-color: color-mix(in oklch, var(--accent) 40%, transparent);
+}
+.app-root .post-asset > div:not(.post-since) {
+  min-width: 0;
+  flex: 1;
+}
+.app-root .post-asset b {
+  display: block;
+  font-size: 0.92rem;
+}
+.app-root .post-asset > div > span {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .post-since {
+  text-align: right;
+  flex-shrink: 0;
+}
+.app-root .post-since small {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--ink-soft);
+}
+.app-root .post-since span {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  font-size: 0.92rem !important;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .post-body {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.app-root .post-foot {
+  display: flex;
+  gap: 4px;
+  margin: -4px 0 -6px -8px;
+}
+.app-root .react {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.app-root .react:hover {
+  background: color-mix(in oklch, var(--ink) 5%, transparent);
+  color: var(--ink);
+}
+.app-root .react.on {
+  color: var(--accent-text);
+}
+.app-root .react.on i {
+  animation: done-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .react b {
+  font-variant-numeric: tabular-nums;
+}
+.app-root .react.quiet {
+  margin-left: auto;
+}
+.app-root .ghost-posts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+  user-select: none;
+}
+.app-root .card.gh-post {
+  border-style: dashed;
+  border-color: color-mix(in oklch, var(--ink) 16%, transparent);
+  background: transparent;
+  gap: 14px;
+  animation: none;
+}
+.app-root .card.gh-post .post-head .gh-ln {
+  flex: none;
+}
+.app-root .card.gh-post .gh-asset {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px dashed color-mix(in oklch, var(--ink) 13%, transparent);
+}
+
+/* publicar */
+.app-root .composer-closed {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px 12px 12px;
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: 0.96rem;
+  text-align: left;
+  cursor: text;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.app-root .composer-closed .cc-txt {
+  flex: 1;
+}
+.app-root .composer-closed i {
+  font-size: 1.05rem;
+  color: var(--accent-text);
+}
+.app-root .composer-closed:hover {
+  border-color: color-mix(in oklch, var(--accent) 45%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent) 8%, transparent);
+}
+.app-root .composer {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: auth-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.app-root .composer-modal .composer {
+  margin-top: 16px;
+  padding: 0;
+  border: 0;
+  animation: none;
+}
+.app-root .composer-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.app-root .composer-row .picked {
+  flex: 1;
+  margin: 0;
+}
+.app-root .composer-pick {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+.app-root .stance-seg button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+}
+.app-root .stance-seg button.on.buy {
+  background: var(--up);
+  color: #fff;
+}
+.app-root .stance-seg button.on.sell {
+  background: var(--down);
+  color: #fff;
+}
+.app-root .stance-seg button.on.hold {
+  background: var(--ink);
+  color: var(--ink-invert);
+}
+.app-root .composer .field {
+  position: relative;
+}
+.app-root .composer .count {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.app-root .composer .count.warn {
+  color: var(--down);
+}
+.app-root .composer textarea {
+  padding-bottom: 26px;
+}
+.app-root .composer-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.app-root .composer-foot .seg button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.app-root .composer-btns {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+.app-root .disclaimer {
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+}
+
+/* ============================================================
+   COMUNIDAD · página
+   ============================================================ */
+.app-root .post-hl {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.app-root .post-hl .card {
+  width: 100%;
+}
+.app-root .feed-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.app-root .feed-empty .ghost-posts {
+  width: 100%;
+}
+.app-root .me-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.app-root .me-top > div {
+  min-width: 0;
+}
+.app-root .me-top > div > b {
+  display: flex;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+.app-root .me-top > div > span {
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+}
+.app-root .me-counts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+}
+.app-root .me-counts a {
+  padding: 10px 6px;
+  text-align: center;
+  border-right: 1px solid var(--line-soft);
+  transition: background 0.2s;
+}
+.app-root .me-counts a:last-child {
+  border-right: 0;
+}
+.app-root .me-counts a:hover {
+  background: color-mix(in oklch, var(--ink) 3%, transparent);
+}
+.app-root .me-counts b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .me-counts span {
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+}
+.app-root .me-vis small {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+}
+.app-root .seg.full {
+  width: 100%;
+}
+.app-root .seg.full button {
+  flex: 1;
+}
+.app-root .vis-seg button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 6px;
+}
+.app-root .verify-cta {
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  text-align: left;
+}
+.app-root .verify-cta i {
+  margin-top: 2px;
+}
+.app-root .people-search {
+  position: relative;
+  width: min(320px, 100%);
+}
+.app-root .people-drop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 60;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 24px 50px -24px oklch(0 0 0 / 0.4);
+  animation: modal-in 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .people-drop p {
+  padding: 8px;
+}
+.app-root .people-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 10px;
+}
+.app-root .people-row:hover {
+  background: color-mix(in oklch, var(--ink) 3%, transparent);
+}
+
+/* feed en grilla, personas y tu perfil a lo ancho */
+.app-root .feed-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.app-root .feed-grid .post-foot {
+  margin-top: auto;
+}
+.app-root .people-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.app-root .people-grid.compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.app-root .person-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px;
+  min-width: 0;
+  animation: auth-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.app-root .person-card.compact {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+}
+.app-root .pc-id {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.app-root .pc-id > div {
+  min-width: 0;
+}
+.app-root .pc-id > div > b {
+  display: flex;
+  align-items: center;
+  font-size: 0.98rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .pc-id > div > span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.app-root .pc-id:hover > div > b {
+  color: var(--accent-text);
+}
+.app-root .person-card.compact .pc-id > div > b {
+  font-size: 0.9rem;
+}
+.app-root .pc-bio {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  min-height: 2.9em;
+}
+.app-root .pc-vis {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.app-root .person-card .follow-btn {
+  margin-top: auto;
+}
+.app-root .person-card:not(.compact) .follow-btn {
+  width: 100%;
+  justify-content: center;
+}
+.app-root .sub-title {
+  margin-top: 12px;
+  font-size: 1.05rem;
+  letter-spacing: -0.015em;
+}
+.app-root .sub-title span {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.app-root .me-strip {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: 24px 36px;
+  padding: 24px 26px;
+}
+.app-root .me-strip::after {
+  content: "";
+  position: absolute;
+  width: 280px;
+  height: 280px;
+  right: -110px;
+  top: -150px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in oklch, var(--accent) 40%, transparent), transparent 62%);
+  filter: blur(34px);
+  opacity: 0.3;
+  pointer-events: none;
+}
+.app-root .me-bio {
+  margin-top: 6px;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+.app-root .me-strip .me-counts div {
+  padding: 12px 6px;
+  text-align: center;
+  border-right: 1px solid var(--line-soft);
+}
+.app-root .me-strip .me-counts div:last-child {
+  border-right: 0;
+}
+.app-root .me-strip .me-vis {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+.app-root .me-strip .me-vis small {
+  margin: 0;
+}
+
+/* ---------- modal de perfil ---------- */
+.app-root .profile-modal {
+  width: min(580px, 100%);
+}
+.app-root .pm-tabs {
+  margin-top: 16px;
+}
+.app-root .pm-tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+}
+.app-root .pm-form {
+  margin-top: 18px;
+}
+.app-root .vis-opts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.app-root .vis-opts .vis-opt {
+  position: relative;
+  margin: 0;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.app-root .vis-opts .vis-opt input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.app-root .vis-opts .vis-opt i {
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+}
+.app-root .vis-opts .vis-opt b {
+  font-size: 0.9rem;
+}
+.app-root .vis-opts .vis-opt span {
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+.app-root .vis-opts .vis-opt:hover {
+  border-color: color-mix(in oklch, var(--accent) 45%, transparent);
+}
+.app-root .vis-opts .vis-opt.on {
+  border-color: var(--accent);
+  background: color-mix(in oklch, var(--accent) 7%, transparent);
+}
+.app-root .vis-opts .vis-opt.on i {
+  color: var(--accent-text);
+}
+.app-root .vis-opt:has(input:focus-visible) {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+.app-root fieldset .hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.app-root .verify-box {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px dashed color-mix(in oklch, var(--accent) 40%, transparent);
+  border-radius: 16px;
+  background: color-mix(in oklch, var(--accent) 4%, transparent);
+  scroll-margin-top: 20px;
+}
+.app-root .verify-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.app-root .verify-top > div {
+  flex: 1;
+  min-width: 0;
+}
+.app-root .verify-top > div > b {
+  display: block;
+  font-size: 0.95rem;
+}
+.app-root .verify-top > div > span {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+.app-root .verify-ic {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 1.1rem;
+  color: var(--accent-text);
+  background: color-mix(in oklch, var(--accent) 12%, transparent);
+}
+.app-root .verify-form {
+  margin-top: 14px;
+}
+.app-root .row-btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ============================================================
+   PERFIL PÚBLICO
+   ============================================================ */
+.app-root .profile-head {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 26px;
+}
+.app-root .profile-head::after {
+  content: "";
+  position: absolute;
+  width: 360px;
+  height: 360px;
+  right: -120px;
+  top: -200px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in oklch, var(--accent) 45%, transparent), transparent 62%);
+  filter: blur(40px);
+  opacity: 0.3;
+  pointer-events: none;
+}
+.app-root .ph-main {
+  flex: 1;
+  min-width: 0;
+}
+.app-root .ph-main h1 {
+  display: flex;
+  align-items: center;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  line-height: 1.05;
+}
+.app-root .ph-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.app-root .ph-bio {
+  margin-top: 10px;
+  max-width: 60ch;
+  font-size: 0.96rem;
+}
+.app-root .ph-counts {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  font-size: 0.88rem;
+}
+.app-root .ph-counts b {
+  font-variant-numeric: tabular-nums;
+}
+.app-root .ph-act {
+  align-self: flex-start;
+  position: relative;
+  z-index: 1;
+}
+.app-root .ph-loading {
+  width: 100%;
+  height: 84px;
+  border-radius: 14px;
+}
+.app-root .profile-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 22px;
+  align-items: start;
+  margin-top: -20px;
+}
+.app-root .profile-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.app-root .profile-posts {
+  min-width: 0;
+}
+.app-root .profile-posts .sec-head {
+  margin-bottom: 14px;
+}
+.app-root .pf-share {
+  padding: 18px;
+}
+.app-root .pf-ret {
+  display: flex;
+  gap: 28px;
+  margin-bottom: 14px;
+}
+.app-root .pf-ret small {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+}
+.app-root .pf-ret b {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .pf-share .alloc-bar {
+  margin-bottom: 14px;
+}
+.app-root .share-list {
+  list-style: none;
+}
+.app-root .share-list li {
+  display: grid;
+  grid-template-columns: auto 1fr auto 76px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line-soft);
+  font-variant-numeric: tabular-nums;
+}
+.app-root .share-list li:first-child {
+  border-top: 0;
+}
+.app-root .share-list .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.app-root .share-id {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.app-root .share-id > div {
+  min-width: 0;
+}
+.app-root .share-id b {
+  display: block;
+  font-size: 0.9rem;
+}
+.app-root .share-id span {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .share-id:hover b {
+  color: var(--accent-text);
+}
+.app-root .share-list .w {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+.app-root .share-list .r {
+  text-align: right;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.app-root .foot-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 0.76rem;
+}
+.app-root .pf-locked {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.app-root .gh-alloc {
+  display: flex;
+  gap: 3px;
+  height: 10px;
+}
+.app-root .gh-alloc span {
+  border-radius: 999px;
+  border: 1px dashed color-mix(in oklch, var(--ink) 22%, transparent);
+}
+.app-root .gh-alloc span:nth-child(1) { flex: 5; }
+.app-root .gh-alloc span:nth-child(2) { flex: 3; }
+.app-root .gh-alloc span:nth-child(3) { flex: 2; }
+.app-root .pf-locked-msg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 0 6px;
+  text-align: center;
+}
+.app-root .pf-locked-msg > i {
+  font-size: 1.3rem;
+  color: var(--ink-soft);
+}
+.app-root .pf-locked-msg span {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+.app-root .pf-locked-msg .btn {
+  margin-top: 6px;
+}
+.app-root .moves {
+  list-style: none;
+}
+.app-root .moves li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  font-size: 0.88rem;
+}
+.app-root .moves .side-ic {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  font-size: 0.8rem;
+}
+.app-root .moves li.buy .side-ic {
+  color: var(--up);
+  background: color-mix(in oklch, var(--up) 14%, transparent);
+}
+.app-root .moves li.sell .side-ic {
+  color: var(--down);
+  background: color-mix(in oklch, var(--down) 14%, transparent);
+}
+.app-root .moves a:hover b {
+  color: var(--accent-text);
+}
+.app-root .moves small {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+}
+.app-root .record {
+  display: flex;
+  gap: 28px;
+  padding: 14px 18px;
+  margin-bottom: 12px;
+}
+.app-root .record small {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+}
+.app-root .record b {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1080px) {
+  .app-root .people-grid.compact {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .app-root .talk-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .app-root .talk-grid > :nth-child(n + 7) {
+    display: none;
+  }
+  .app-root .fy-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .app-root .fy-cards > :nth-child(n + 7) {
+    display: none;
+  }
+    .app-root .asset-grid {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+
+/* con la campanita y "Comunidad" el header se llena antes: solo íconos */
+@media (max-width: 860px) {
+  .app-root .top-in nav a span {
+    display: none;
+  }
+  .app-root .top-in nav a i {
+    font-size: 1.05rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-root .movers {
+    grid-template-columns: 1fr;
+  }
+  .app-root .near-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .app-root .me-strip {
+    grid-template-columns: 1fr;
+  }
+  .app-root .people-grid,
+  .app-root .people-grid.compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .app-root .talk-grid,
+  .app-root .alerts-card.wide .alert-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .app-root .explore-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .app-root .pf-card {
+    grid-template-columns: 1fr;
+  }
+  .app-root .fy-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .app-root .post-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .app-root .pulse {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    margin: 0 -20px;
+    padding: 2px 20px 4px;
+    scrollbar-width: none;
+  }
+  .app-root .pulse::-webkit-scrollbar {
+    display: none;
+  }
+  .app-root .pulse-tile {
+    flex: 0 0 160px;
+    scroll-snap-align: start;
+  }
+  .app-root .asset-grid,
+  .app-root .profile-grid {
+    grid-template-columns: 1fr;
+  }
+  .app-root .asset-row {
+    grid-template-columns: minmax(0, 1fr) 90px auto auto;
+  }
+  .app-root .asset-month {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-root .pulse {
+    margin: 0 -16px;
+    padding: 2px 16px 4px;
+  }
+  .app-root .pulse-tile {
+    flex-basis: 42%;
+  }
+    .app-root .pf-card {
+    padding: 20px 16px;
+  }
+  .app-root .hh-actions {
+    width: 100%;
+  }
+  .app-root .hh-actions .btn {
+    flex: 1;
+    justify-content: center;
+    white-space: nowrap;
+    padding-inline: 10px;
+  }
+  .app-root .hh-actions .btn i {
+    display: none;
+  }
+  .app-root .mv-px {
+    display: none;
+  }
+  .app-root .block {
+    padding-top: 32px;
+    gap: 18px;
+  }
+  .app-root .fy-cards {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    margin: 0 -16px;
+    padding: 2px 16px 6px;
+    scrollbar-width: none;
+  }
+  .app-root .fy-cards::-webkit-scrollbar {
+    display: none;
+  }
+  .app-root .fy-card {
+    flex: 0 0 78%;
+    scroll-snap-align: start;
+  }
+  .app-root .fy-card .fy-x {
+    opacity: 1;
+  }
+  .app-root .near-grid,
+  .app-root .post-grid,
+  .app-root .feed-grid,
+  .app-root .people-grid,
+  .app-root .people-grid.compact,
+  .app-root .talk-grid,
+  .app-root .alerts-card.wide .alert-list {
+    grid-template-columns: 1fr;
+  }
+  .app-root .fy-start.wide .fy-ghost {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .app-root .mkt-searchbar {
+    margin-top: -12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .app-root .mkt-searchbar .recents {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .app-root .fy-x {
+    opacity: 1;
+  }
+  .app-root .crumbs {
+    flex-wrap: wrap;
+  }
+  .app-root .crumb-right {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .app-root .crumb-search {
+    width: 100%;
+  }
+  .app-root .sort-seg {
+    width: 100%;
+  }
+  .app-root .sort-seg button {
+    flex: 1;
+  }
+  .app-root .explore-bar .mkt-tabs button {
+    font-size: 0.72rem;
+  }
+  .app-root .sector-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .app-root .chips.scroll {
+    margin-inline: -16px;
+    padding-inline: 16px;
+  }
+  .app-root .asset-row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 10px;
+    padding: 12px;
+  }
+  .app-root .asset-spark {
+    display: none;
+  }
+  .app-root .asset-px {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+  .app-root .asset-px .delta {
+    min-width: 0;
+  }
+  .app-root .asset-id .tag {
+    display: none;
+  }
+  .app-root .crumbs {
+    margin-bottom: -14px;
+  }
+  .app-root .asset-head {
+    align-items: flex-start;
+  }
+  .app-root .asset-quote {
+    align-items: flex-start;
+  }
+  .app-root .asset-actions {
+    margin-top: -14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .app-root .asset-actions .btn {
+    justify-content: center;
+  }
+  .app-root .asset-actions .btn-pink {
+    margin-left: 0;
+  }
+  .app-root .asset-grid {
+    margin-top: -12px;
+  }
+  .app-root .asset-title {
+    gap: 12px;
+  }
+  .app-root .asset-title .logo {
+    width: 44px !important;
+    height: 44px !important;
+  }
+  .app-root .people-search {
+    width: 100%;
+  }
+  .app-root .post-asset .post-since small {
+    display: none;
+  }
+  .app-root .vis-opts {
+    grid-template-columns: 1fr;
+  }
+  .app-root .profile-head {
+    flex-wrap: wrap;
+    padding: 20px;
+    gap: 14px;
+  }
+  .app-root .profile-head .p-avatar {
+    width: 64px !important;
+    height: 64px !important;
+  }
+  .app-root .ph-main {
+    flex-basis: calc(100% - 80px);
+  }
+  .app-root .ph-act {
+    width: 100%;
+  }
+  .app-root .ph-act .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .app-root .profile-grid {
+    margin-top: -10px;
+  }
+  .app-root .composer-btns {
+    width: 100%;
+  }
+  .app-root .composer-btns .btn {
+    flex: 1;
+    justify-content: center;
+  }
+  .app-root .composer-foot .seg {
+    width: 100%;
+  }
+  .app-root .composer-foot .seg button {
+    flex: 1;
+    justify-content: center;
+  }
+  .app-root .bell-wrap .notif-panel {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    top: 76px;
+    width: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .app-root .top .brand {
+    font-size: 0;
+    gap: 0;
+  }
+  .app-root .top-in nav a {
+    padding: 8px 9px;
+  }
+  .app-root .icon-btn.bell {
+    width: 36px;
+    height: 36px;
+  }
+}

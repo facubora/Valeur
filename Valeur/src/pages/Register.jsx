@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import AuthLayout, { PasswordField, FormError, SubmitButton } from "../components/AuthLayout";
 import { useAuth } from "../context/AuthContext";
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const USERNAME_RE = /^[a-zA-Z0-9_]{3,30}$/;
 
 export default function Register() {
@@ -32,6 +33,10 @@ export default function Register() {
     const username = form.username.trim();
     if (!USERNAME_RE.test(username)) {
       setError("El usuario debe tener 3 a 30 caracteres: letras, números o guión bajo");
+      return;
+    }
+    if (!EMAIL_RE.test(form.email.trim())) {
+      setError("El email no es válido");
       return;
     }
     if (form.password.length < 8) {

@@ -6,8 +6,9 @@ import {
   HistogramSeries,
 } from "lightweight-charts";
 import { useTheme } from "../context/ThemeContext";
+import { MARKET_API } from "../lib/supabase";
 
-const API_BASE = "http://localhost:5001/api";
+const API_BASE = MARKET_API;
 
 const SYMBOLS = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA"];
 

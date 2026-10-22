@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { MARKET_API } from "./supabase";
 
 /* ── Datos de mercado (backend Flask + yfinance) ─────────────────────────── */
@@ -6,38 +6,65 @@ import { MARKET_API } from "./supabase";
 const QUOTE_TTL = 60_000; // 1 min: mismo precio entre dashboard y mercado
 const quoteCache = new Map(); // symbol → { at, promise }
 
-export function getQuote(symbol) {
+/* Error de red (backend caído, sin conexión): distinto de "no hay datos" */
+export class NetworkError extends Error {}
+
+function fetchJson(url) {
+  return fetch(url).then(
+    (r) => (r.ok ? r.json() : null),
+    (e) => {
+      throw new NetworkError(e.message);
+    },
+  );
+}
+
+/* Cotización de un símbolo (null si no existe). Rechaza con NetworkError si
+   el backend no responde; los fallos no se cachean para poder reintentar. */
+export function getQuote(symbol, force = false) {
   const sym = symbol.toUpperCase();
   const hit = quoteCache.get(sym);
-  if (hit && Date.now() - hit.at < QUOTE_TTL) return hit.promise;
-  const promise = fetch(`${MARKET_API}/quote/${sym}`)
-    .then((r) => (r.ok ? r.json() : null))
+  if (!force && hit && Date.now() - hit.at < QUOTE_TTL) return hit.promise;
+  const promise = fetchJson(`${MARKET_API}/quote/${sym}`)
     .then((q) => (q && q.price != null ? { ...q, change_pct: parseFloat(q.change_pct) } : null))
-    .catch(() => null);
+    .catch((e) => {
+      quoteCache.delete(sym);
+      throw e;
+    });
   quoteCache.set(sym, { at: Date.now(), promise });
   return promise;
 }
 
-/* Cotizaciones de varios símbolos → { SYM: quote | null } */
-export async function getQuotes(symbols) {
+/* Cotizaciones de varios símbolos → { quotes: { SYM: quote | null }, error }.
+   Si algún pedido falla por red, `error` es true y ese símbolo no aparece. */
+export async function getQuotes(symbols, force = false) {
   const uniq = [...new Set(symbols.map((s) => s.toUpperCase()))];
-  const list = await Promise.all(uniq.map(getQuote));
-  return Object.fromEntries(uniq.map((s, i) => [s, list[i]]));
+  const list = await Promise.allSettled(uniq.map((s) => getQuote(s, force)));
+  const quotes = {};
+  let error = false;
+  list.forEach((r, i) => {
+    if (r.status === "fulfilled") quotes[uniq[i]] = r.value;
+    else error = true;
+  });
+  return { quotes, error };
 }
 
 const candleCache = new Map(); // key → { at, promise }
 const CANDLE_TTL = 5 * 60_000;
 
+/* Velas de un símbolo ([] si no hay). Rechaza con NetworkError si el backend
+   no responde; los fallos no se cachean. */
 export function getCandles(symbol, interval = "daily", range = "6m") {
   const key = `${symbol.toUpperCase()}|${interval}|${range}`;
   const hit = candleCache.get(key);
   if (hit && Date.now() - hit.at < CANDLE_TTL) return hit.promise;
-  const promise = fetch(
+  const promise = fetchJson(
     `${MARKET_API}/candles/${symbol.toUpperCase()}?interval=${interval}&range=${range}`,
   )
-    .then((r) => (r.ok ? r.json() : null))
     .then((d) => d?.candles || [])
-    .catch(() => []);
+    .catch((e) => {
+      candleCache.delete(key);
+      throw e;
+    });
   candleCache.set(key, { at: Date.now(), promise });
   return promise;
 }
@@ -68,30 +95,228 @@ export function useSuggestions(query) {
   return q.length < 2 ? [] : items;
 }
 
-/* Cotizaciones de una lista de símbolos; se refrescan cuando cambia la lista */
-export function useQuotes(symbols) {
+/* Cotizaciones de una lista de símbolos. Se refrescan cuando cambia la lista
+   y cada `every` ms (solo con la pestaña visible). Mientras refresca se siguen
+   mostrando las últimas; `error` avisa que el backend no respondió y
+   `refresh()` reintenta salteando el caché. */
+export function useQuotes(symbols, every = QUOTE_TTL) {
   const key = [...new Set(symbols)].sort().join(",");
-  const [res, setRes] = useState({ key: null, quotes: {} });
+  const [res, setRes] = useState({ key: null, quotes: {}, error: false, updatedAt: null });
+  const [tick, setTick] = useState(0);
+
   useEffect(() => {
     if (!key) return;
     let alive = true;
-    getQuotes(key.split(",")).then((quotes) => alive && setRes({ key, quotes }));
+    const force = tick > 0;
+    getQuotes(key.split(","), force).then(({ quotes, error }) => {
+      if (!alive) return;
+      setRes((prev) => ({
+        key,
+        // ante un fallo conservamos lo último que se pudo mostrar
+        quotes: error ? { ...prev.quotes, ...quotes } : quotes,
+        error,
+        updatedAt: error ? prev.updatedAt : Date.now(),
+      }));
+    });
     return () => {
       alive = false;
     };
-  }, [key]);
-  return { quotes: res.quotes, loading: Boolean(key) && res.key !== key };
+  }, [key, tick]);
+
+  // polling: cada `every` ms, y al volver a la pestaña si pasó el intervalo
+  useEffect(() => {
+    if (!key || !every) return;
+    let last = Date.now();
+    const bump = () => {
+      last = Date.now();
+      setTick((t) => t + 1);
+    };
+    const id = setInterval(() => document.visibilityState === "visible" && bump(), every);
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && Date.now() - last >= every) bump();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [key, every]);
+
+  const refresh = useCallback(() => setTick((t) => t + 1), []);
+  return {
+    quotes: res.quotes,
+    loading: Boolean(key) && res.key !== key,
+    error: res.error,
+    updatedAt: res.updatedAt,
+    refresh,
+  };
 }
 
-/* ── Formato ─────────────────────────────────────────────────────────────── */
-export const money = (n, digits = 2) =>
-  (n < 0 ? "-$" : "$") +
-  Math.abs(n).toLocaleString("es-AR", {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  });
+/* Cierres del último mes para sparklines. Caché por símbolo: al cambiar la
+   lista solo se piden los que faltan y los demás siguen visibles. */
+const sparkCache = new Map(); // symbol → closes[]
 
-export const signed = (n, digits = 2) => (n >= 0 ? "+" : "-") + money(Math.abs(n), digits).slice(1);
+export function useSparks(symbols, epoch = 0) {
+  const key = [...new Set(symbols)].sort().join(",");
+  const [data, setData] = useState(() => Object.fromEntries(sparkCache));
+  useEffect(() => {
+    if (!key) return;
+    let alive = true;
+    const missing = key.split(",").filter((s) => !sparkCache.has(s));
+    if (!missing.length) return;
+    Promise.allSettled(missing.map((s) => getCandles(s, "daily", "1m"))).then((results) => {
+      results.forEach((r, i) => {
+        if (r.status === "fulfilled") sparkCache.set(missing[i], r.value.map((c) => c.close));
+      });
+      if (alive) setData(Object.fromEntries(sparkCache));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [key, epoch]);
+  return data;
+}
+
+/* Cotización + cierres del mes de muchos símbolos en un solo pedido (para
+   las listas del mercado). Alimenta los mismos cachés que getQuote/useSparks,
+   así el resto de la app reusa lo que ya se trajo. */
+export async function getBatch(symbols) {
+  const uniq = [...new Set(symbols.map((s) => s.toUpperCase()))];
+  const chunks = [];
+  for (let i = 0; i < uniq.length; i += 40) chunks.push(uniq.slice(i, i + 40));
+  // en paralelo, y un tramo caído no tira abajo a los demás
+  const res = await Promise.allSettled(
+    chunks.map((c) => fetchJson(`${MARKET_API}/batch?symbols=${c.map(encodeURIComponent).join(",")}`)),
+  );
+  if (res.every((r) => r.status === "rejected")) throw res[0].reason;
+  const out = {};
+  res.forEach((r, i) => {
+    if (r.status !== "fulfilled") return;
+    for (const s of chunks[i]) {
+      const q = r.value?.quotes?.[s];
+      if (!q) {
+        out[s] = null;
+        continue;
+      }
+      const { closes, ...quote } = q;
+      out[s] = { ...quote, change_pct: parseFloat(quote.change_pct) };
+      quoteCache.set(s, { at: Date.now(), promise: Promise.resolve(out[s]) });
+      if (closes?.length) sparkCache.set(s, closes);
+    }
+  });
+  return out;
+}
+
+/* → { quotes, sparks, loading, error, updatedAt, refresh }. Mientras recarga conserva lo último. */
+export function useBatch(symbols, every = QUOTE_TTL) {
+  const key = [...new Set(symbols)].sort().join(",");
+  const [res, setRes] = useState({ key: null, quotes: {}, error: false, updatedAt: null });
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    if (!key) return;
+    let alive = true;
+    getBatch(key.split(",")).then(
+      (quotes) =>
+        alive && setRes((prev) => ({ key, quotes: { ...prev.quotes, ...quotes }, error: false, updatedAt: Date.now() })),
+      () => alive && setRes((prev) => ({ ...prev, key, error: true })),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [key, tick]);
+
+  useEffect(() => {
+    if (!key || !every) return;
+    const id = setInterval(() => document.visibilityState === "visible" && setTick((t) => t + 1), every);
+    return () => clearInterval(id);
+  }, [key, every]);
+
+  const refresh = useCallback(() => setTick((t) => t + 1), []);
+  return {
+    quotes: res.quotes,
+    sparks: Object.fromEntries(sparkCache),
+    loading: Boolean(key) && res.key !== key,
+    error: res.error,
+    updatedAt: res.updatedAt,
+    refresh,
+  };
+}
+
+/* "hace 2 min" — para mostrar cuándo se actualizaron los precios */
+export function useAgo(ts) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!ts) return;
+    const id = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(id);
+  }, [ts]);
+  if (!ts) return "";
+  const s = Math.max(0, Math.round((now - ts) / 1000));
+  if (s < 45) return "recién";
+  const m = Math.round(s / 60);
+  if (m < 60) return `hace ${m} min`;
+  const h = Math.round(m / 60);
+  return `hace ${h} h`;
+}
+
+/* ── Horario de los mercados ─────────────────────────────────────────────
+   BYMA 11 a 17 h (Buenos Aires) y NYSE 9:30 a 16 h (Nueva York), días
+   hábiles. No contempla feriados. Los horarios se muestran en hora argentina. */
+function clockIn(tz, date) {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat("en-US", { timeZone: tz, hour12: false, weekday: "short", hour: "2-digit", minute: "2-digit" })
+      .formatToParts(date)
+      .map((p) => [p.type, p.value]),
+  );
+  return { day: parts.weekday, mins: (Number(parts.hour) % 24) * 60 + Number(parts.minute) };
+}
+
+const hhmm = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+
+export function marketStatus(date = new Date()) {
+  const ar = clockIn("America/Argentina/Buenos_Aires", date);
+  const ny = clockIn("America/New_York", date);
+  const shift = (((ar.mins - ny.mins) % 1440) + 1440) % 1440; // minutos que AR va adelante de NY
+  const mk = (key, { day, mins }, open, close, toAr) => {
+    const weekday = !["Sat", "Sun"].includes(day);
+    const isOpen = weekday && mins >= open && mins < close;
+    return {
+      key,
+      open: isOpen,
+      hint: isOpen ? `cierra ${hhmm(close + toAr)}` : `abre ${hhmm(open + toAr)}`,
+    };
+  };
+  return [mk("BYMA", ar, 11 * 60, 17 * 60, 0), mk("NYSE", ny, 9 * 60 + 30, 16 * 60, shift)];
+}
+
+export function useMarketStatus() {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  return marketStatus(new Date(now));
+}
+
+/* Link al detalle de un activo en el mercado */
+export const tickerUrl = (s) => `/tickersearch?symbol=${encodeURIComponent(s)}`;
+
+/* ── Formato ─────────────────────────────────────────────────────────────── */
+/* Monto con moneda: "US$ 1.234,56" / "ARS 1.234.567". Los pesos van sin
+   decimales salvo que se pidan. No finito → "—". */
+export const money = (n, digits, cur = "USD") => {
+  if (n == null || !Number.isFinite(n)) return "—";
+  const d = digits ?? (cur === "ARS" ? 0 : 2);
+  return (
+    (n < 0 ? "-" : "") +
+    (cur === "ARS" ? "ARS " : "US$ ") +
+    Math.abs(n).toLocaleString("es-AR", { minimumFractionDigits: d, maximumFractionDigits: d })
+  );
+};
+
+export const signed = (n, digits, cur = "USD") =>
+  n == null || !Number.isFinite(n) ? "—" : (n >= 0 ? "+" : "-") + money(Math.abs(n), digits, cur);
 
 export const pct = (n) => (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
 
@@ -123,19 +348,136 @@ export function assetKind(symbol = "") {
   return "stock";
 }
 
+/* Moneda en la que cotiza un activo: CEDEARs en pesos y cripto contra el
+   peso → ARS; el resto (acciones de EE.UU., CEDEARs D, cripto en dólares) → USD */
+export function assetCurrency(symbol = "") {
+  const kind = assetKind(symbol);
+  if (kind === "cedear") return "ARS";
+  if (kind === "crypto" && symbol.toUpperCase().endsWith("-ARS")) return "ARS";
+  return "USD";
+}
+
 /* Precio con la moneda/unidad que corresponde al tipo de activo */
 export function fmtPrice(symbol, n) {
   if (n == null || Number.isNaN(n)) return "—";
   switch (assetKind(symbol)) {
-    case "cedear":
-      return "ARS " + n.toLocaleString("es-AR", { maximumFractionDigits: 0 });
-    case "cedear-usd":
-      return "US$ " + n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     case "fx":
       return n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
     case "index":
       return n.toLocaleString("es-AR", { maximumFractionDigits: 0 }) + " pts";
     default:
-      return money(n);
+      return money(n, undefined, assetCurrency(symbol));
   }
+}
+
+/* Precio en la moneda elegida por el usuario (dólar MEP o pesos). Monedas e
+   índices no se convierten: son cotizaciones/puntos, no precios de un activo. */
+export function priceIn(symbol, n, cur, rate) {
+  const kind = assetKind(symbol);
+  if (!cur || kind === "fx" || kind === "index") return fmtPrice(symbol, n);
+  const v = convert(n, assetCurrency(symbol), cur, rate);
+  return Number.isFinite(v) ? money(v, undefined, cur) : fmtPrice(symbol, n);
+}
+
+/* ¿El precio mostrado está convertido (no es la moneda en la que cotiza)? */
+export function isConverted(symbol, cur) {
+  const kind = assetKind(symbol);
+  return Boolean(cur) && kind !== "fx" && kind !== "index" && assetCurrency(symbol) !== cur;
+}
+
+/* ── Dólar MEP ───────────────────────────────────────────────────────────── */
+/* Serie diaria del MEP (derivado de CEDEARs en el backend). `at(fecha)` da
+   el MEP de ese día o del último día hábil anterior. */
+const MEP_TTL = 15 * 60_000;
+let mepCache = null; // { at, promise }
+
+function buildMep(d) {
+  const dates = d.series.map((r) => r[0]);
+  const rates = d.series.map((r) => r[1]);
+  const at = (date) => {
+    if (!date || date >= dates[dates.length - 1]) return d.rate;
+    // búsqueda binaria: última fecha <= date
+    let lo = 0;
+    let hi = dates.length - 1;
+    if (date < dates[0]) return rates[0];
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (dates[mid] <= date) lo = mid;
+      else hi = mid - 1;
+    }
+    return rates[lo];
+  };
+  return { rate: d.rate, date: d.date, at };
+}
+
+export function getMep() {
+  if (mepCache && Date.now() - mepCache.at < MEP_TTL) return mepCache.promise;
+  const promise = fetchJson(`${MARKET_API}/mep`)
+    .then((d) => (d?.series?.length ? buildMep(d) : null))
+    .catch((e) => {
+      mepCache = null;
+      throw e;
+    });
+  mepCache = { at: Date.now(), promise };
+  return promise;
+}
+
+/* → { mep: { rate, date, at } | null, loaded, error } */
+export function useMep() {
+  const [res, setRes] = useState({ mep: null, loaded: false, error: false });
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    getMep().then(
+      (mep) => alive && setRes({ mep, loaded: true, error: !mep }),
+      () => alive && setRes({ mep: null, loaded: true, error: true }),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [tick]);
+  // si falló (backend caído o reiniciándose), reintentar cada 30 s
+  useEffect(() => {
+    if (!res.error) return;
+    const t = setTimeout(() => setTick((n) => n + 1), 30_000);
+    return () => clearTimeout(t);
+  }, [res.error, tick]);
+  return res;
+}
+
+/* Pasa un monto de una moneda a otra con el MEP dado (NaN si falta el MEP) */
+export function convert(amount, from, to, rate) {
+  if (from === to) return amount;
+  if (!rate) return NaN;
+  return from === "USD" ? amount * rate : amount / rate;
+}
+
+/* Moneda en la que se muestra el portfolio (preferencia del usuario,
+   compartida entre pantallas y recordada en este navegador) */
+const CUR_KEY = "valeur-currency";
+const curListeners = new Set();
+let curValue = (() => {
+  try {
+    return localStorage.getItem(CUR_KEY) === "ARS" ? "ARS" : "USD";
+  } catch {
+    return "USD";
+  }
+})();
+
+export function useDisplayCurrency() {
+  const [cur, setLocal] = useState(curValue);
+  useEffect(() => {
+    curListeners.add(setLocal);
+    return () => curListeners.delete(setLocal);
+  }, []);
+  const setCur = useCallback((c) => {
+    curValue = c;
+    try {
+      localStorage.setItem(CUR_KEY, c);
+    } catch {
+      /* sin storage: queda solo en memoria */
+    }
+    curListeners.forEach((fn) => fn(c));
+  }, []);
+  return [cur, setCur];
 }

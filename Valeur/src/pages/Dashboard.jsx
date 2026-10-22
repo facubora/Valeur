@@ -7,7 +7,18 @@ import SymbolSearch from "../components/SymbolSearch";
 import TradeModal from "../components/TradeModal";
 import Onboarding from "../components/Onboarding";
 import { useAuth } from "../context/AuthContext";
-import { getCandles, useQuotes, money, signed, pct, formatDate } from "../lib/market";
+import {
+  useQuotes,
+  useSparks,
+  useMep,
+  useDisplayCurrency,
+  assetCurrency,
+  fmtPrice,
+  money,
+  signed,
+  pct,
+  formatDate,
+} from "../lib/market";
 import {
   useTrades,
   useWatchlist,
@@ -16,7 +27,9 @@ import {
   addWatch,
   removeWatch,
   deleteTrade,
+  findOversell,
 } from "../lib/portfolio";
+import { confirmDialog, toast, attempt } from "../lib/feedback";
 
 const RANGES = [
   ["1m", "1M"],
@@ -36,25 +49,6 @@ function Delta({ value, className = "" }) {
       {Math.abs(value).toFixed(2)}%
     </span>
   );
-}
-
-/* Cierres del último mes para los sparklines de seguidos */
-function useSparks(symbols) {
-  const key = [...new Set(symbols)].sort().join(",");
-  const [res, setRes] = useState({ key: null, data: {} });
-  useEffect(() => {
-    if (!key) return;
-    let alive = true;
-    const syms = key.split(",");
-    Promise.all(syms.map((s) => getCandles(s, "daily", "1m"))).then((lists) => {
-      if (!alive) return;
-      setRes({ key, data: Object.fromEntries(syms.map((s, i) => [s, lists[i].map((c) => c.close)])) });
-    });
-    return () => {
-      alive = false;
-    };
-  }, [key]);
-  return res.data;
 }
 
 /* Dashboard "fantasma": la forma de lo que va a haber, sin datos.
@@ -189,7 +183,11 @@ export default function Dashboard() {
   const [range, setRange] = useState("6m");
   const [modal, setModal] = useState(null); // null | { symbol?, name?, side? }
   const [showAll, setShowAll] = useState(false);
+  const [tradeSide, setTradeSide] = useState("all");
+  const [tradeQuery, setTradeQuery] = useState("");
   const [busy, setBusy] = useState("");
+  const [cur, setCur] = useDisplayCurrency();
+  const fx = useMep();
 
   // Ruta protegida
   useEffect(() => {
@@ -200,16 +198,18 @@ export default function Dashboard() {
   const watchSymbols = useMemo(() => watch.rows.map((w) => w.symbol), [watch.rows]);
   const { quotes, loading: quotesLoading } = useQuotes([...posSymbols, ...watchSymbols]);
   const { positions, totals } = useMemo(
-    () => computePositions(trades.rows, quotes),
-    [trades.rows, quotes],
+    () => computePositions(trades.rows, quotes, cur, fx.mep),
+    [trades.rows, quotes, cur, fx.mep],
   );
-  const history = useHistory(trades.rows, range);
+  const history = useHistory(trades.rows, range, cur, fx.mep);
   const sparks = useSparks(watchSymbols);
 
   if (!user) return null;
 
   const held = Object.fromEntries(positions.map((p) => [p.symbol, p.qty]));
-  const ready = trades.loaded && watch.loaded;
+  // Si hay activos en otra moneda que la elegida, esperamos el MEP para convertir
+  const needsFx = trades.rows.some((t) => assetCurrency(t.symbol) !== cur);
+  const ready = trades.loaded && watch.loaded && (!needsFx || fx.loaded);
   // El portfolio se "abre" recién con la primera operación (seguir activos no cuenta)
   const empty = ready && trades.rows.length === 0;
 
@@ -223,23 +223,53 @@ export default function Dashboard() {
 
   const follow = async ({ symbol, name }) => {
     setBusy(symbol);
-    await addWatch(uid, symbol, name);
+    await attempt(addWatch(uid, symbol, name), { ok: `Seguís ${symbol}`, fail: `No se pudo seguir ${symbol}` });
     setBusy("");
     watch.reload();
   };
   const unfollow = async (symbol) => {
+    const row = watch.rows.find((w) => w.symbol === symbol);
     setBusy(symbol);
-    await removeWatch(uid, symbol);
+    const ok = await attempt(removeWatch(uid, symbol), { fail: `No se pudo dejar de seguir ${symbol}` });
     setBusy("");
     watch.reload();
+    if (ok) {
+      toast(`Dejaste de seguir ${symbol}`, {
+        action: { label: "Deshacer", run: () => addWatch(uid, symbol, row?.name || null).then(() => watch.reload()) },
+      });
+    }
   };
   const removeTrade = async (t) => {
-    if (!window.confirm(`¿Borrar la ${t.side === "buy" ? "compra" : "venta"} de ${t.qty} ${t.symbol}?`)) return;
-    await deleteTrade(t.id);
-    trades.reload();
+    const what = `${t.side === "buy" ? "compra" : "venta"} de ${Number(t.qty)} ${t.symbol}`;
+    // borrar una compra no puede dejar ventas posteriores sin respaldo
+    const bad = findOversell(trades.rows.filter((x) => x.id !== t.id));
+    if (bad) {
+      await confirmDialog({
+        title: "No se puede borrar esta compra",
+        body: `Sin ella, la venta de ${bad.sell} ${bad.symbol} del ${formatDate(bad.date)} quedaría sin respaldo. Borrá primero esa venta.`,
+        confirmText: "Entendido",
+        icon: "bi-shield-exclamation",
+        info: true,
+      });
+      return;
+    }
+    const ok = await confirmDialog({
+      title: `¿Borrar la ${what}?`,
+      body: `Del ${formatDate(t.executed_at)}. Se recalculan tus posiciones y la evolución del portfolio. No se puede deshacer.`,
+      confirmText: "Borrar",
+      danger: true,
+    });
+    if (!ok) return;
+    if (await attempt(deleteTrade(t.id), { ok: `Borraste la ${what}`, fail: "No se pudo borrar la operación" })) trades.reload();
   };
 
-  const shownTrades = showAll ? trades.rows : trades.rows.slice(0, 6);
+  // operaciones filtradas por tipo y por ticker
+  const tq = tradeQuery.trim().toUpperCase();
+  const filteredTrades = trades.rows.filter(
+    (t) => (tradeSide === "all" || t.side === tradeSide) && (!tq || t.symbol.includes(tq) || (t.name || "").toUpperCase().includes(tq)),
+  );
+
+  const shownTrades = showAll ? filteredTrades : filteredTrades.slice(0, 6);
 
   /* Seguidos: se muestra real aunque no haya operaciones */
   const watchSection = (
@@ -265,7 +295,7 @@ export default function Dashboard() {
                   </div>
                   <Sparkline values={closes} up={up} />
                   <div className="watch-px">
-                    <b>{q ? money(q.price) : "—"}</b>
+                    <b>{q ? fmtPrice(w.symbol, q.price) : "—"}</b>
                     {q ? <Delta value={q.change_pct} /> : <small>sin datos</small>}
                   </div>
                 </Link>
@@ -317,6 +347,23 @@ export default function Dashboard() {
           <p className="date-line">{dateLabel}</p>
         </div>
         <div className="head-actions">
+          <div className="cur-pick">
+            <div className="seg" role="group" aria-label="Moneda del portfolio">
+              {[
+                ["USD", "Dólar MEP"],
+                ["ARS", "Pesos"],
+              ].map(([c, label]) => (
+                <button key={c} type="button" className={c === cur ? "on" : ""} onClick={() => setCur(c)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            {fx.mep && (
+              <small title={`Dólar MEP implícito en los CEDEARs, cierre ${formatDate(fx.mep.date)}`}>
+                MEP {money(fx.mep.rate, 0, "ARS")}
+              </small>
+            )}
+          </div>
           <button type="button" className="btn btn-pink btn-sm" onClick={() => setModal({})}>
             <i className="bi bi-plus-lg" /> Registrar operación
           </button>
@@ -355,15 +402,15 @@ export default function Dashboard() {
               <div className="ov-top">
                 <div>
                   <span className="lbl">Valor del portfolio</span>
-                  <div className="ov-val">{money(totals.value)}</div>
+                  <div className="ov-val">{money(totals.value, undefined, cur)}</div>
                   <div className="ov-deltas">
                     <Delta value={totals.dayPct} />
                     <span className={totals.dayChange >= 0 ? "txt-up" : "txt-down"}>
-                      {signed(totals.dayChange)} hoy
+                      {signed(totals.dayChange, undefined, cur)} hoy
                     </span>
                     <span className="sep" />
                     <span className={totals.pnl >= 0 ? "txt-up" : "txt-down"}>
-                      {signed(totals.pnl)} ({pct(totals.pnlPct)}) desde que invertís
+                      {signed(totals.pnl, undefined, cur)} ({pct(totals.pnlPct)}) desde que invertís
                     </span>
                   </div>
                 </div>
@@ -381,7 +428,12 @@ export default function Dashboard() {
                 </div>
               </div>
               {positions.length ? (
-                <PortfolioChart points={history.points} loading={history.loading} />
+                <PortfolioChart
+                  points={history.points}
+                  live={{ value: totals.value, invested: totals.cost }}
+                  currency={cur}
+                  loading={history.loading}
+                />
               ) : (
                 <div className="ov-none">
                   <p>Todavía no tenés posiciones abiertas.</p>
@@ -395,7 +447,7 @@ export default function Dashboard() {
             <div className="card alloc">
               <div className="sec-head">
                 <h2>Distribución</h2>
-                <span className="sub">{money(totals.cost, 0)} invertidos</span>
+                <span className="sub">{money(totals.cost, 0, cur)} invertidos</span>
               </div>
               {positions.length ? (
                 <>
@@ -414,7 +466,7 @@ export default function Dashboard() {
                         <span className="dot" style={{ background: `oklch(0.62 0.17 ${HUES[i % HUES.length]})` }} />
                         <b>{p.symbol}</b>
                         <span className="w">{p.weight.toFixed(1)}%</span>
-                        <span className={"pl " + (p.pnl >= 0 ? "txt-up" : "txt-down")}>{signed(p.pnl, 0)}</span>
+                        <span className={"pl " + (p.pnl >= 0 ? "txt-up" : "txt-down")}>{signed(p.pnl, 0, cur)}</span>
                       </li>
                     ))}
                   </ul>
@@ -466,17 +518,17 @@ export default function Dashboard() {
                       </div>
                     </Link>
                     <div className="pos-num col-shares">{p.qty}</div>
-                    <div className="pos-num col-avg">{money(p.avgCost)}</div>
+                    <div className="pos-num col-avg">{fmtPrice(p.symbol, p.avgCost)}</div>
                     <div className="pos-num col-price">
-                      {money(p.price)}
+                      {fmtPrice(p.symbol, p.price)}
                       <small className={p.dayPct >= 0 ? "txt-up" : "txt-down"}>{pct(p.dayPct)} hoy</small>
                     </div>
                     <div className="pos-num">
-                      {money(p.value)}
+                      {money(p.value, undefined, cur)}
                       <small>{p.weight.toFixed(1)}% del total</small>
                     </div>
                     <div className={"pos-num col-pnl " + (p.pnl >= 0 ? "txt-up" : "txt-down")}>
-                      {signed(p.pnl)}
+                      {signed(p.pnl, undefined, cur)}
                       <small>{pct(p.pnlPct)}</small>
                     </div>
                     <div className="pos-act">
@@ -503,13 +555,36 @@ export default function Dashboard() {
             <section>
               <div className="sec-head">
                 <h2>Operaciones</h2>
-                {trades.rows.length > 6 && (
+                {filteredTrades.length > 6 && (
                   <button type="button" className="lnk-btn" onClick={() => setShowAll((v) => !v)}>
-                    {showAll ? "Ver menos" : `Ver todas (${trades.rows.length})`}
+                    {showAll ? "Ver menos" : `Ver todas (${filteredTrades.length})`}
                   </button>
                 )}
               </div>
+              <div className="list-filters">
+                <div className="seg" role="radiogroup" aria-label="Tipo de operación">
+                  {[
+                    ["all", "Todas"],
+                    ["buy", "Compras"],
+                    ["sell", "Ventas"],
+                  ].map(([k, label]) => (
+                    <button key={k} type="button" role="radio" aria-checked={tradeSide === k} className={tradeSide === k ? "on" : ""} onClick={() => setTradeSide(k)}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className="search-form compact filter-in">
+                  <i className="bi bi-funnel ico" aria-hidden="true" />
+                  <input value={tradeQuery} onChange={(e) => setTradeQuery(e.target.value)} placeholder="Filtrar por ticker o nombre" aria-label="Filtrar operaciones" />
+                  {tradeQuery && (
+                    <button type="button" className="filter-x" onClick={() => setTradeQuery("")} aria-label="Limpiar filtro">
+                      <i className="bi bi-x" />
+                    </button>
+                  )}
+                </div>
+              </div>
               <div className="card trade-list">
+                {!shownTrades.length && <p className="asset-none muted">No hay operaciones que coincidan con el filtro.</p>}
                 {shownTrades.map((t) => (
                   <div key={t.id} className={"trade-row " + t.side}>
                     <span className="side-ic" aria-hidden="true">
@@ -525,9 +600,9 @@ export default function Dashboard() {
                       </span>
                     </div>
                     <div className="trade-nums">
-                      <b>{money(Number(t.qty) * Number(t.price))}</b>
+                      <b>{money(Number(t.qty) * Number(t.price), undefined, assetCurrency(t.symbol))}</b>
                       <span>
-                        {Number(t.qty)} × {money(Number(t.price))}
+                        {Number(t.qty)} × {fmtPrice(t.symbol, Number(t.price))}
                       </span>
                     </div>
                     <button
@@ -553,6 +628,7 @@ export default function Dashboard() {
         uid={uid}
         initial={modal || {}}
         held={held}
+        trades={trades.rows}
         onSaved={() => trades.reload()}
       />
     </AppShell>

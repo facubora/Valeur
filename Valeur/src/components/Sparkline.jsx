@@ -1,6 +1,8 @@
-/* Mini gráfico de línea en SVG puro (sin librería) para tarjetas chicas */
-export default function Sparkline({ values = [], up = true, width = 96, height = 32 }) {
-  if (values.length < 2) return <svg className="spark" width={width} height={height} aria-hidden="true" />;
+/* Mini gráfico de línea en SVG puro (sin librería) para tarjetas chicas.
+   Con `stretch` ocupa todo el ancho del contenedor (el trazo no se deforma). */
+export default function Sparkline({ values = [], up = true, width = 96, height = 32, stretch = false }) {
+  const cls = "spark " + (up ? "up" : "down") + (stretch ? " stretch" : "");
+  if (values.length < 2) return <svg className={cls} width={stretch ? "100%" : width} height={height} aria-hidden="true" />;
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;
@@ -10,7 +12,14 @@ export default function Sparkline({ values = [], up = true, width = 96, height =
   const area = `${line} L${width},${height} L0,${height} Z`;
   const id = `sp-${up ? "u" : "d"}`;
   return (
-    <svg className={"spark " + (up ? "up" : "down")} width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
+    <svg
+      className={cls}
+      width={stretch ? "100%" : width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio={stretch ? "none" : undefined}
+      aria-hidden="true"
+    >
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="currentColor" stopOpacity="0.28" />
@@ -18,7 +27,15 @@ export default function Sparkline({ values = [], up = true, width = 96, height =
         </linearGradient>
       </defs>
       <path d={area} fill={`url(#${id})`} />
-      <path d={line} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round" />
+      <path
+        d={line}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+        vectorEffect={stretch ? "non-scaling-stroke" : undefined}
+      />
     </svg>
   );
 }

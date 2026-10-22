@@ -1,0 +1,930 @@
+/* ============================================================
+   Cáscara de la app: cinta de mercado, barra principal, buscador
+   global (⌘K) y pestañas en mobile. Scopeado bajo .app-root.shell
+   ============================================================ */
+
+/* ---------- CINTA DE MERCADO ---------- */
+.app-root .tape {
+  --tape-bg: oklch(0.17 0 0);
+  --tape-ink: oklch(0.96 0 0);
+  --tape-soft: oklch(0.96 0 0 / 0.55);
+  --tape-line: oklch(1 0 0 / 0.09);
+  --tape-up: oklch(0.8 0.15 158);
+  --tape-down: oklch(0.74 0.17 27);
+  position: relative;
+  z-index: calc(var(--z-sticky) + 1);
+  display: flex;
+  align-items: stretch;
+  height: 34px;
+  background: var(--tape-bg);
+  color: var(--tape-ink);
+  font-size: 0.76rem;
+  overflow: hidden;
+}
+[data-theme="dark"] .app-root .tape {
+  --tape-bg: oklch(0.13 0 0);
+  border-bottom: 1px solid var(--line);
+}
+.app-root .tape-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 18px;
+  border-right: 1px solid var(--tape-line);
+  flex-shrink: 0;
+}
+.app-root .tape .mk {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  cursor: default;
+}
+.app-root .tape .mk i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tape-soft);
+}
+.app-root .tape .mk.open i {
+  background: var(--tape-up);
+  box-shadow: 0 0 0 0 var(--tape-up);
+  animation: mk-live 2s ease-out infinite;
+}
+@keyframes mk-live {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--tape-up) 60%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 6px color-mix(in oklch, var(--tape-up) 0%, transparent);
+  }
+}
+.app-root .tape .mk small {
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--tape-soft);
+}
+.app-root .tape-track {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 36px, #000 calc(100% - 36px), transparent);
+}
+.app-root .tape-run {
+  display: flex;
+  width: max-content;
+  height: 100%;
+  animation: tape-scroll calc(var(--n, 8) * 5.5s) linear infinite;
+}
+.app-root .tape-track:hover .tape-run {
+  animation-play-state: paused;
+}
+@keyframes tape-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.app-root .tape-set {
+  display: flex;
+  align-items: center;
+}
+.app-root .tp-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 100%;
+  padding: 0 18px;
+  border-right: 1px solid var(--tape-line);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.2s;
+}
+.app-root a.tp-item:hover {
+  background: oklch(1 0 0 / 0.06);
+}
+.app-root .tp-item b {
+  font-weight: 600;
+  color: var(--tape-soft);
+}
+.app-root .tp-item span {
+  font-weight: 600;
+}
+.app-root .tp-item em {
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.72rem;
+}
+.app-root .tp-item em.up {
+  color: var(--tape-up);
+}
+.app-root .tp-item em.down {
+  color: var(--tape-down);
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-root .tape-run {
+    animation: none;
+  }
+  .app-root .tape-track {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .app-root .tape-set[aria-hidden="true"] {
+    display: none;
+  }
+}
+
+/* ---------- BARRA PRINCIPAL ---------- */
+.app-root .shell-sentinel {
+  display: block;
+  height: 1px;
+  margin-bottom: -1px;
+}
+.app-root .vx-top {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: color-mix(in oklch, var(--bg) 84%, transparent);
+  backdrop-filter: saturate(1.5) blur(16px);
+  -webkit-backdrop-filter: saturate(1.5) blur(16px);
+  border-bottom: 1px solid transparent;
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
+}
+.app-root .vx-top.scrolled {
+  border-bottom-color: var(--line);
+  box-shadow: 0 12px 30px -26px oklch(0 0 0 / 0.5);
+}
+.app-root .vx-bar {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  height: 68px;
+}
+.app-root .vx-bar .brand {
+  flex-shrink: 0;
+}
+
+/* navegación numerada con un trazo de acento abajo */
+.app-root .vx-nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 100%;
+}
+.app-root .vx-nav a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  color: var(--ink-soft);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  transition:
+    color 0.2s,
+    background 0.2s;
+}
+.app-root .vx-nav a i {
+  display: none;
+}
+.app-root .vx-nav a .n {
+  align-self: flex-start;
+  margin-top: 8px;
+  font-family: var(--font-body);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: color-mix(in oklch, var(--ink-soft) 70%, transparent);
+  font-variant-numeric: tabular-nums;
+  transition: color 0.2s;
+}
+.app-root .vx-nav a:hover {
+  color: var(--ink);
+  background: color-mix(in oklch, var(--ink) 4%, transparent);
+}
+.app-root .vx-nav a.active {
+  color: var(--ink);
+}
+.app-root .vx-nav a.active .n {
+  color: var(--accent-text);
+}
+.app-root .vx-ind {
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--accent);
+  box-shadow: 0 -2px 14px color-mix(in oklch, var(--accent) 55%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.25s;
+}
+
+.app-root .vx-right {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+/* botonera recta: buscador | campanita | usuario, en un solo bloque */
+.app-root .vx-tools {
+  display: flex;
+  align-items: stretch;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in oklch, var(--surface) 70%, transparent);
+}
+.app-root .vx-tools > * + * {
+  border-left: 1px solid var(--line);
+}
+.app-root .vx-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 270px;
+  padding: 0 8px 0 14px;
+  border: 0;
+  border-radius: 11px 0 0 11px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+.app-root .vx-search span {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .vx-search:hover {
+  background: color-mix(in oklch, var(--ink) 4%, transparent);
+  color: var(--ink);
+}
+.app-root .vx-tools .bell-wrap {
+  display: flex;
+}
+.app-root .vx-tools .icon-btn.bell {
+  width: 44px;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  transform: none;
+}
+.app-root .vx-tools .icon-btn.bell:hover {
+  background: color-mix(in oklch, var(--ink) 4%, transparent);
+}
+.app-root .vx-tools .icon-btn.bell.has {
+  color: var(--accent-text);
+}
+.app-root .vx-tools .icon-btn.bell .badge {
+  top: 5px;
+  left: calc(50% + 3px);
+  right: auto;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 5px;
+  font-size: 0.62rem;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.app-root .vx-tools .user-wrap {
+  display: flex;
+}
+.app-root .vx-tools .user-chip {
+  height: 100%;
+  max-width: 190px;
+  gap: 9px;
+  padding: 0 12px 0 7px;
+  border: 0;
+  border-radius: 0 11px 11px 0;
+  background: transparent;
+}
+.app-root .vx-tools .user-chip:hover,
+.app-root .vx-tools .user-chip[aria-expanded="true"] {
+  background: color-mix(in oklch, var(--ink) 4%, transparent);
+}
+.app-root .vx-tools .avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+/* si es el primer o el último botón del bloque, que respete las esquinas */
+.app-root .vx-tools > :only-child,
+.app-root .vx-tools > .vx-search:only-child {
+  border-radius: 11px;
+}
+.app-root .vx-tools .user-menu,
+.app-root .vx-tools .notif-panel {
+  top: calc(100% + 8px);
+  border-radius: 12px;
+}
+
+.app-root kbd {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---------- ÍNDICE DE LA PÁGINA ---------- */
+/* Franja a todo el ancho; al scrollear se acopla debajo del header */
+.app-root .sub-nav {
+  position: sticky;
+  top: 68px;
+  z-index: calc(var(--z-sticky) - 1);
+  margin: -14px calc(50% - 50vw) -8px;
+  padding: 0 calc(50vw - 50%);
+  border-top: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--bg);
+  transition:
+    background 0.3s,
+    box-shadow 0.3s;
+}
+.app-root .sub-nav.stuck {
+  border-top-color: transparent;
+  background: color-mix(in oklch, var(--bg) 86%, transparent);
+  backdrop-filter: saturate(1.5) blur(16px);
+  -webkit-backdrop-filter: saturate(1.5) blur(16px);
+  box-shadow: 0 12px 30px -26px oklch(0 0 0 / 0.5);
+}
+/* con el índice acoplado, la sombra la pone él (header + índice = un bloque) */
+.app-root:has(.sub-nav.stuck) .vx-top {
+  box-shadow: none;
+}
+.app-root .sub-nav-in {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  height: 46px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.app-root .sub-nav-in::-webkit-scrollbar {
+  display: none;
+}
+.app-root .sub-nav-lbl {
+  display: flex;
+  align-items: center;
+  padding-right: 18px;
+  margin-right: 8px;
+  border-right: 1px solid var(--line-soft);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.app-root .sub-nav button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: 0.86rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.app-root .sub-nav button i {
+  font-size: 0.85rem;
+}
+.app-root .sub-nav button:hover {
+  color: var(--ink);
+}
+.app-root .sub-nav button::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--accent);
+  transform: scaleX(0);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .sub-nav button.on {
+  color: var(--ink);
+}
+.app-root .sub-nav button.on i {
+  color: var(--accent-text);
+}
+.app-root .sub-nav button.on::after {
+  transform: scaleX(1);
+}
+
+/* ---------- BUSCADOR GLOBAL (⌘K) ---------- */
+.app-root .cmdk-bg {
+  align-items: flex-start;
+  padding-top: 12vh;
+}
+.app-root .cmdk {
+  width: min(620px, 100%);
+  max-height: min(560px, 76vh);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 40px 90px -30px oklch(0 0 0 / 0.6);
+  overflow: hidden;
+  animation: modal-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .cmdk-in {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.app-root .cmdk-in > i {
+  font-size: 1.05rem;
+  color: var(--accent-text);
+}
+.app-root .cmdk-in input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  outline: none;
+}
+.app-root .cmdk-in input::placeholder {
+  color: color-mix(in oklch, var(--ink-soft) 75%, transparent);
+}
+.app-root .cmdk-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 8px 10px;
+}
+.app-root .cmdk-title {
+  display: block;
+  padding: 12px 10px 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+}
+.app-root .cmdk-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-body);
+  text-align: left;
+  cursor: pointer;
+}
+.app-root .cmdk-item[aria-selected="true"] {
+  background: color-mix(in oklch, var(--accent) 10%, transparent);
+}
+.app-root .ci-txt {
+  min-width: 0;
+}
+.app-root .ci-txt b {
+  display: flex;
+  align-items: center;
+  font-size: 0.92rem;
+}
+.app-root .ci-txt > span {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .cmdk-item small {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.app-root .ci-ic {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in oklch, var(--accent) 10%, transparent);
+  color: var(--accent-text);
+  font-size: 0.85rem;
+}
+.app-root .ci-go {
+  grid-column: 4;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.app-root .cmdk-item[aria-selected="true"] .ci-go {
+  opacity: 1;
+}
+.app-root .cmdk-none {
+  padding: 22px 12px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.app-root .cmdk-foot {
+  display: flex;
+  gap: 18px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+}
+.app-root .cmdk-foot kbd {
+  height: 20px;
+  padding: 0 6px;
+  margin-right: 3px;
+}
+
+/* ---------- CONFIRMACIÓN Y AVISOS ---------- */
+.app-root .confirm-modal {
+  width: min(420px, 100%);
+  padding: 26px 24px 22px;
+  text-align: center;
+}
+.app-root .cf-ic {
+  width: 46px;
+  height: 46px;
+  margin: 0 auto 14px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 1.25rem;
+  color: var(--accent-text);
+  background: color-mix(in oklch, var(--accent) 12%, transparent);
+}
+.app-root .cf-ic.danger {
+  color: var(--down);
+  background: color-mix(in oklch, var(--down) 13%, transparent);
+}
+.app-root .confirm-modal h2 {
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+.app-root .confirm-modal p {
+  margin-top: 8px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.app-root .cf-btns {
+  display: flex;
+  gap: 8px;
+  margin-top: 22px;
+}
+.app-root .cf-btns .btn {
+  flex: 1;
+  justify-content: center;
+}
+.app-root .btn-danger {
+  background: var(--down);
+  color: #fff;
+}
+.app-root .btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -10px color-mix(in oklch, var(--down) 60%, transparent);
+}
+.app-root .toasts {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 300;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(460px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.app-root .toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 8px 10px 14px;
+  border-radius: 12px;
+  background: oklch(0.2 0 0);
+  color: oklch(0.96 0 0);
+  font-size: 0.88rem;
+  box-shadow: 0 18px 40px -18px oklch(0 0 0 / 0.6);
+  pointer-events: auto;
+  animation: modal-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-theme="dark"] .app-root .toast {
+  background: oklch(0.3 0 0);
+}
+.app-root .toast > i {
+  color: oklch(0.8 0.15 158);
+}
+.app-root .toast.error > i {
+  color: oklch(0.74 0.17 27);
+}
+.app-root .toast span {
+  flex: 1;
+  min-width: 0;
+}
+.app-root .toast-act {
+  border: 0;
+  background: transparent;
+  color: oklch(0.82 0.1 280);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+.app-root .toast-x {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: oklch(0.96 0 0 / 0.6);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.app-root .toast-x:hover {
+  background: oklch(1 0 0 / 0.1);
+}
+
+/* ---------- TICKER INEXISTENTE / FILTROS DE LISTAS ---------- */
+.app-root .not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 620px;
+  margin: 40px auto 0;
+  text-align: center;
+}
+.app-root .not-found .cf-ic {
+  margin: 0;
+}
+.app-root .not-found h1 {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+}
+.app-root .not-found p {
+  color: var(--ink-soft);
+}
+.app-root .not-found .chips {
+  justify-content: center;
+}
+.app-root .list-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.app-root .filter-in {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+  max-width: 340px;
+}
+.app-root .filter-in input {
+  height: 40px;
+  padding-right: 36px;
+}
+.app-root .filter-x {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.app-root .filter-x:hover {
+  background: color-mix(in oklch, var(--ink) 6%, transparent);
+  color: var(--ink);
+}
+
+.app-root .notif-filter {
+  margin: 0 16px 6px;
+  width: auto;
+}
+.app-root .notif-none {
+  padding: 14px 16px 18px;
+}
+.app-root .alert-filter {
+  align-self: flex-start;
+  margin-bottom: 12px;
+}
+
+/* ---------- PESTAÑAS EN MOBILE ---------- */
+.app-root .tabbar {
+  display: none;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 1180px) {
+  .app-root .vx-search {
+    width: 44px;
+    padding: 0;
+    justify-content: center;
+  }
+  .app-root .vx-search span,
+  .app-root .vx-search kbd {
+    display: none;
+  }
+}
+@media (max-width: 900px) {
+  .app-root .vx-bar {
+    gap: 16px;
+  }
+  .app-root .vx-nav a .n {
+    display: none;
+  }
+  .app-root .vx-nav a {
+    padding: 0 10px;
+    font-size: 0.94rem;
+  }
+  .app-root .user-chip .uname,
+  .app-root .user-chip .caret {
+    display: none;
+  }
+  .app-root .vx-tools .user-chip {
+    padding: 0 7px;
+  }
+}
+@media (max-width: 600px) {
+  .app-root .tape {
+    height: 30px;
+    font-size: 0.72rem;
+  }
+  .app-root .tape-status {
+    gap: 10px;
+    padding: 0 12px;
+  }
+  .app-root .tape .mk small {
+    display: none;
+  }
+  .app-root .tp-item {
+    padding: 0 14px;
+  }
+  .app-root .vx-bar {
+    height: 58px;
+  }
+  .app-root .vx-nav {
+    display: none;
+  }
+  .app-root .vx-bar .brand {
+    font-size: 1.25rem;
+    gap: 9px;
+  }
+  .app-root .vx-bar .brand .mark {
+    width: 20px;
+    height: 20px;
+  }
+  .app-root .vx-tools {
+    height: 40px;
+  }
+  .app-root .vx-search {
+    width: 42px;
+  }
+  .app-root .vx-tools .icon-btn.bell {
+    width: 42px;
+  }
+  .app-root .sub-nav {
+    top: 58px;
+    margin-top: -6px;
+  }
+  .app-root .sub-nav-in {
+    height: 44px;
+  }
+  .app-root .sub-nav-lbl {
+    display: none;
+  }
+  .app-root .bell-wrap .notif-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: auto;
+    right: 0;
+    width: calc(100vw - 32px);
+  }
+  .app-root .sub-nav button {
+    padding: 0 10px;
+    font-size: 0.82rem;
+  }
+  .app-root .dock {
+    display: none;
+  }
+  .app-root.shell .app-main {
+    padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+  }
+  .app-root .tabbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--z-sticky);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    background: color-mix(in oklch, var(--bg) 88%, transparent);
+    backdrop-filter: saturate(1.5) blur(16px);
+    -webkit-backdrop-filter: saturate(1.5) blur(16px);
+    border-top: 1px solid var(--line);
+  }
+  .app-root .tabbar a {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 7px 0 5px;
+    border-radius: 12px;
+    color: var(--ink-soft);
+    font-size: 0.68rem;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+  .app-root .tabbar a i {
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+  .app-root .tabbar a.active {
+    color: var(--accent-text);
+  }
+  .app-root .tabbar a.active::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: 30%;
+    right: 30%;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    background: var(--accent);
+  }
+  .app-root .cmdk-bg {
+    align-items: flex-start;
+    padding: 64px 12px 12px;
+  }
+  .app-root .cmdk {
+    max-height: 72vh;
+    border-radius: 18px;
+  }
+  .app-root .cmdk-foot {
+    display: none;
+  }
+  .app-root .toasts {
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+}

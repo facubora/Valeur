@@ -1091,8 +1091,20 @@
 }
 .app-root .head-actions {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 8px 14px;
   flex-wrap: wrap;
+}
+.app-root .cur-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.app-root .cur-pick small {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .app-root .dash-grid {
   display: grid;
@@ -1509,17 +1521,47 @@
 .app-root .pchart-tip {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 6px 18px;
   flex-wrap: wrap;
   min-height: 24px;
   font-size: 0.86rem;
   font-variant-numeric: tabular-nums;
 }
+.app-root .pchart-tip .pt-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
 .app-root .pchart-tip b {
   font-family: var(--font-display);
   font-size: 1rem;
 }
+.app-root .pchart-tip b em {
+  color: inherit;
+  font-style: normal;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
 .app-root .pchart-tip small {
+  color: var(--ink-soft);
+}
+.app-root .pchart-tip .pt-date {
+  margin-left: auto;
+}
+/* muestras de color: área = valor, punteada = invertido */
+.app-root .pt-key {
+  align-self: center;
+  width: 14px;
+  height: 0;
+  border-top: 2px solid var(--accent);
+}
+.app-root .pt-key.inv {
+  border-top: 1.5px dashed var(--ink-soft);
+}
+.app-root .pchart-note {
+  margin: -4px 0 8px;
+  font-size: 0.8rem;
   color: var(--ink-soft);
 }
 .app-root .pchart-canvas {
@@ -1867,6 +1909,28 @@
   background: var(--down);
   color: #fff;
 }
+.app-root .price-warn {
+  display: flex;
+  gap: 8px;
+  margin: -4px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--down) 9%, transparent);
+  color: var(--ink);
+  font-size: 0.84rem;
+  line-height: 1.4;
+  animation: warn-in 0.22s ease-out;
+}
+.app-root .price-warn i {
+  color: var(--down);
+  line-height: 1.4;
+}
+@keyframes warn-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
 .app-root .field .hint {
   display: block;
   margin-top: 6px;
@@ -1944,6 +2008,74 @@
   letter-spacing: 0.1em;
   color: var(--ink-soft);
 }
+
+/* aviso: el backend de mercado no respondió */
+.app-root .net-notice {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1px dashed color-mix(in oklch, var(--down) 45%, transparent);
+  border-radius: 18px;
+  background: color-mix(in oklch, var(--down) 4%, transparent);
+  animation: auth-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.app-root .net-notice > i {
+  font-size: 18px;
+  color: var(--down);
+  flex-shrink: 0;
+}
+.app-root .net-notice > div {
+  flex: 1;
+  min-width: 0;
+}
+.app-root .net-notice b {
+  display: block;
+  font-size: 0.95rem;
+}
+.app-root .net-notice > div > span {
+  display: block;
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+}
+.app-root .net-notice .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* "actualizado hace X" + refrescar, a la derecha del título de sección */
+.app-root .sec-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.app-root .sec-head .sub.refresh {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.app-root .sec-head .sub.refresh:hover:not(:disabled) {
+  color: var(--accent-text);
+}
+.app-root .sec-head .sub.refresh:disabled {
+  cursor: wait;
+}
+.app-root .sec-head .sub.refresh:disabled i {
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .app-root .loading-box {
   position: relative;
   overflow: hidden;
@@ -2006,6 +2138,9 @@
   padding: 0 12px;
   font-size: 0.78rem;
 }
+.app-root .mkt-tabs button .short {
+  display: none;
+}
 .app-root .mkt-tabs button {
   height: 34px;
   padding: 0 14px;
@@ -2050,6 +2185,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 12px;
+  min-height: 48px; /* precio (20px) + gap + delta (24px): no salta al cargar */
 }
 .app-root .mkt-id > div {
   min-width: 0;
@@ -2131,8 +2267,14 @@
   border-radius: 999px;
   background: color-mix(in oklch, var(--ink) 8%, transparent);
 }
+.app-root .ph-line.px {
+  height: 16px;
+  margin: 2px 0;
+}
 .app-root .ph-line.short {
   width: 70px;
+  height: 14px;
+  margin: 5px 0;
 }
 
 /* seguidos con logo */
@@ -2195,6 +2337,10 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.app-root .pf-kv em {
+  font-style: normal;
+  color: var(--ink-soft);
+}
 .app-root .pf-strip .go {
   color: var(--ink-soft);
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
@@ -2233,6 +2379,16 @@
 @media (max-width: 900px) {
   .app-root .wrap {
     width: calc(100% - 40px);
+  }
+  .app-root .pf-strip {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 14px;
+  }
+  .app-root .pf-strip .pf-main {
+    grid-column: 1 / -1;
+  }
+  .app-root .home-search {
+    width: min(320px, 100%);
   }
   .app-root .stat-grid {
     grid-template-columns: 1fr 1fr;
@@ -2453,6 +2609,13 @@
     flex: 1;
     padding: 0 6px;
     font-size: 0.74rem;
+    white-space: nowrap;
+  }
+  .app-root .mkt-tabs button .full {
+    display: none;
+  }
+  .app-root .mkt-tabs button .short {
+    display: inline;
   }
   .app-root .mkt-grid {
     grid-template-columns: 1fr;
@@ -2463,11 +2626,31 @@
     gap: 12px 10px;
   }
   .app-root .pf-strip {
-    grid-template-columns: 1fr 1fr;
+    padding: 16px;
     gap: 12px;
   }
   .app-root .pf-strip .go {
     display: none;
+  }
+  .app-root .home-head {
+    align-items: stretch;
+  }
+  .app-root .sec-meta {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .app-root .net-notice {
+    flex-wrap: wrap;
+    padding: 14px 16px;
+  }
+  .app-root .net-notice .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .app-root .mkt-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
   .app-root .pf-strip.empty {
     grid-template-columns: auto 1fr;
