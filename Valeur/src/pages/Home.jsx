@@ -5,6 +5,7 @@ import Onboarding from "../components/Onboarding";
 import Logo from "../components/Logo";
 import TradeModal from "../components/TradeModal";
 import PortfolioSummary, { PortfolioSummaryEmpty } from "../components/PortfolioSummary";
+import Pill from "../components/Pill";
 import AlertRows from "../components/AlertRows";
 import { PostTile } from "../components/Social";
 import { SectionNav, SectionHead } from "../components/Sections";
@@ -29,33 +30,6 @@ import { useAlerts } from "../lib/alerts";
 import { useMyProfile, updateProfile, useFollowGraph, useFeed } from "../lib/social";
 import { useForYou } from "../lib/foryou";
 import { toast, attempt } from "../lib/feedback";
-
-const abs = (n) => Math.abs(n).toLocaleString("es-AR", { maximumFractionDigits: 2 }) + "%";
-
-/* Una cifra del día en una pastilla: etiqueta, valor y variación con flecha.
-   Con `to` es un link. */
-function Pill({ to, label, value, delta }) {
-  const up = delta >= 0;
-  const body = (
-    <>
-      <span className="hp-l">{label}</span>
-      {value && <b>{value}</b>}
-      {delta != null && Number.isFinite(delta) && (
-        <em className={up ? "up" : "down"}>
-          <i className={up ? "bi bi-caret-up-fill" : "bi bi-caret-down-fill"} />
-          {abs(delta)}
-        </em>
-      )}
-    </>
-  );
-  return to ? (
-    <Link to={to} className="hp">
-      {body}
-    </Link>
-  ) : (
-    <span className="hp">{body}</span>
-  );
-}
 
 export default function Home() {
   const navigate = useNavigate();

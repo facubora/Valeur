@@ -533,6 +533,10 @@
   transform: translateY(-1px);
   box-shadow: var(--sh-2);
 }
+.app-root .hp-ic {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
 .app-root .hp-l {
   color: var(--ink-soft);
   font-weight: 600;

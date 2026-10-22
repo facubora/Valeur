@@ -6,6 +6,7 @@ import TradeModal from "../components/TradeModal";
 import Onboarding from "../components/Onboarding";
 import Logo from "../components/Logo";
 import Donut from "../components/Donut";
+import Pill from "../components/Pill";
 import { CurrencyPick } from "../components/MarketBits";
 import { SectionNav, SectionHead } from "../components/Sections";
 import { useAuth } from "../context/AuthContext";
@@ -202,6 +203,15 @@ export default function Dashboard() {
           <h1>
             Tu <em>portfolio</em>.
           </h1>
+          {/* el portfolio de un vistazo, como las pastillas del Inicio */}
+          {ready && !empty && (
+            <div className="hpills" aria-label="Tu portfolio en cifras">
+              <Pill label="Invertido" value={money(totals.cost, 0, cur)} />
+              <Pill label="Ganancia" value={signed(totals.pnl, 0, cur)} delta={totals.pnlPct} />
+              {best && positions.length > 1 && <Pill to={tickerUrl(best.symbol)} label="Mejor" value={best.symbol} delta={best.pnlPct} />}
+              <Pill label={positions.length === 1 ? "Activo" : "Activos"} value={positions.length} />
+            </div>
+          )}
         </div>
         <div className="head-actions">
           <CurrencyPick />

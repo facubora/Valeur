@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AppShell from "../components/AppShell";
+import Pill from "../components/Pill";
 import PostComposer from "../components/PostComposer";
 import ProfileModal from "../components/ProfileModal";
 import { Avatar, Verified, Person, PersonCard, FollowButton, PostCard, GhostPosts, SetupNotice } from "../components/Social";
@@ -104,6 +105,8 @@ export default function Community() {
 
   const profile = useMyProfile(uid);
   const me = profile.data;
+  const fecha = new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
+  const today = fecha.charAt(0).toUpperCase() + fecha.slice(1);
   const graph = useFollowGraph(uid);
   const counts = useFollowCounts(uid);
   const feed = useFeed({ uid, mode: tab, following: graph.loaded ? graph.following : null });
@@ -172,10 +175,20 @@ export default function Community() {
     <AppShell>
       <section className="page-head">
         <div>
+          <span className="kicker">{today}</span>
           <h1>
             La <em>comunidad</em>.
           </h1>
-          <p>Lo que recomiendan y tienen las personas que seguís.</p>
+          {graph.loaded && (
+            <div className="hpills" aria-label="Tu comunidad en cifras">
+              <Pill to="#personas" label="Seguís" value={graph.following.size} />
+              <Pill to="#perfil" label="Te siguen" value={counts.followers ?? graph.followers.size} />
+              <Pill to="#perfil" label={graph.friends.size === 1 ? "Amigo" : "Amigos"} value={graph.friends.size} />
+              {me && (
+                <Pill to="#perfil" icon={VISIBILITY.find(([k]) => k === me.visibility)?.[2]} label="Portfolio" value={VISIBILITY.find(([k]) => k === me.visibility)?.[1]} />
+              )}
+            </div>
+          )}
         </div>
         <PeopleSearch uid={uid} graph={graph} />
       </section>
