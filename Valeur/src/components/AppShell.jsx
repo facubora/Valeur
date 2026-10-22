@@ -33,7 +33,6 @@ const DRAWER = {
     ["resumen", "Resumen", "bi-pie-chart"],
     ["posiciones", "Posiciones", "bi-list-ul"],
     ["operaciones", "Operaciones", "bi-arrow-left-right"],
-    ["seguidos", "Seguidos", "bi-star"],
   ],
   "/tickersearch": [
     ["para-vos", "Para vos", "bi-stars"],

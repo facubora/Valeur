@@ -1051,6 +1051,31 @@
   color: var(--accent-text);
 }
 
+/* ---------- ENCABEZADO DE CADA PÁGINA ---------- */
+/* Todas las páginas reservan el mismo alto arriba (el del saludo del Inicio,
+   con sus pastillas), así la primera sección arranca a la misma altura al
+   cambiar de pantalla. El texto va arriba y las acciones, centradas. */
+.app-root.shell .home-hero,
+.app-root.shell .page-head {
+  min-height: 136px;
+}
+.app-root.shell .page-head {
+  align-items: flex-start;
+}
+/* misma separación entre la fecha y el título que en el Inicio */
+.app-root.shell .page-head .kicker {
+  margin-bottom: 14px;
+}
+.app-root.shell .page-head > :last-child:not(:first-child) {
+  align-self: center;
+}
+@media (max-width: 600px) {
+  .app-root.shell .home-hero,
+  .app-root.shell .page-head {
+    min-height: 0;
+  }
+}
+
 /* ---------- MODALES ---------- */
 /* <Modal>: las animaciones (nacer del botón y volver) van por JS, así que se
    apagan las de CSS. Fondo apenas oscurecido, sin perder la página de vista */
