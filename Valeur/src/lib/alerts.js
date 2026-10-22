@@ -48,6 +48,28 @@ export async function addAlert(uid, { symbol, kind, value }) {
   return done(await supabase.from("alerts").insert({ user_id: uid, symbol: symbol.toUpperCase(), kind, value }), "alerts");
 }
 
+/* Cambiar el tipo o el valor de una alerta: vuelve a quedar activa */
+export async function updateAlert(id, { kind, value }) {
+  return done(await supabase.from("alerts").update({ kind, value, active: true, triggered_at: null }).eq("id", id), "alerts");
+}
+
+/* Qué tiene de malo una alerta antes de guardarla ("" si nada). `existing`
+   son las del usuario; `selfId` es la que se está editando (no cuenta como
+   repetida). */
+export function alertError({ symbol, kind, value, quote, existing = [], selfId = null }) {
+  const unit = ALERT_KIND[kind].unit;
+  const v = value;
+  if (!(v > 0)) return unit === "pct" ? "Poné un porcentaje mayor a cero" : "Poné un precio mayor a cero";
+  if (unit === "pct" && v > 100) return "El porcentaje diario tiene que ser menor a 100%";
+  if (unit !== "pct" && v > 1e12) return "El precio es demasiado grande";
+  if (existing.some((a) => a.id !== selfId && a.active && a.symbol === symbol && a.kind === kind && Math.abs(Number(a.value) - v) < 1e-9)) {
+    return "Ya tenés esa misma alerta activa";
+  }
+  if (quote && kind === "above" && v <= quote.price) return `Ya cotiza a ${fmtPrice(symbol, quote.price)}: poné un precio más alto`;
+  if (quote && kind === "below" && v >= quote.price) return `Ya cotiza a ${fmtPrice(symbol, quote.price)}: poné un precio más bajo`;
+  return "";
+}
+
 export async function deleteAlert(id) {
   return done(await supabase.from("alerts").delete().eq("id", id), "alerts");
 }

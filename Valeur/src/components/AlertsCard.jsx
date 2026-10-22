@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import Logo from "./Logo";
 import { FormError } from "./AuthLayout";
 import { assetCurrency, fmtPrice } from "../lib/market";
-import { ALERT_KINDS, ALERT_KIND, alertText, addAlert, deleteAlert, setAlertActive } from "../lib/alerts";
-import { toast, attempt } from "../lib/feedback";
+import { ALERT_KINDS, ALERT_KIND, alertText, alertError, addAlert, deleteAlert, setAlertActive } from "../lib/alerts";
+import { toast, attempt, confirmDialog } from "../lib/feedback";
 
 /* Pedir permiso para avisos del navegador (solo si todavía no se respondió) */
 export function BrowserNotifyAsk() {
@@ -31,6 +31,14 @@ function AlertRow({ a, showSymbol }) {
   };
   // borrar es rápido, pero se puede deshacer desde el aviso
   const remove = async () => {
+    const yes = await confirmDialog({
+      title: `¿Borrar la alerta de ${a.symbol}?`,
+      body: `${alertText(a)}. Ya no te va a avisar.`,
+      confirmText: "Borrar",
+      danger: true,
+      icon: "bi-trash3",
+    });
+    if (!yes) return;
     setBusy(true);
     const ok = await attempt(deleteAlert(a.id), { fail: "No se pudo borrar la alerta" });
     setBusy(false);
@@ -89,19 +97,13 @@ function AlertForm({ uid, symbol, quote, existing = [], onDone }) {
   const submit = async (e) => {
     e.preventDefault();
     const v = Number(String(value).replace(",", "."));
-    if (!(v > 0)) return setError(unit === "pct" ? "Poné un porcentaje mayor a cero" : "Poné un precio mayor a cero");
-    if (unit === "pct" && v > 100) return setError("El porcentaje diario tiene que ser menor a 100%");
-    if (unit !== "pct" && v > 1e12) return setError("El precio es demasiado grande");
-    if (existing.some((a) => a.active && a.symbol === symbol && a.kind === kind && Math.abs(Number(a.value) - v) < 1e-9)) {
-      return setError("Ya tenés esa misma alerta activa");
-    }
-    if (quote && kind === "above" && v <= quote.price) return setError(`Ya cotiza a ${fmtPrice(symbol, quote.price)}: poné un precio más alto`);
-    if (quote && kind === "below" && v >= quote.price) return setError(`Ya cotiza a ${fmtPrice(symbol, quote.price)}: poné un precio más bajo`);
+    const bad = alertError({ symbol, kind, value: v, quote, existing });
+    if (bad) return setError(bad);
     setSaving(true);
     const err = await addAlert(uid, { symbol, kind, value: v });
     setSaving(false);
     if (err) return setError(/failed to fetch|network/i.test(err) ? "Sin conexión con el servidor. Probá de nuevo." : err);
-    toast(`Alerta creada: ${alertText({ symbol, kind, value: v }).toLowerCase()}`);
+    toast(`Alerta creada: ${alertText({ symbol, kind, value: v }).replace(/^S/, "s")}`);
     setValue("");
     setError("");
     onDone?.();

@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import Onboarding from "../components/Onboarding";
 import Logo from "../components/Logo";
 import TradeModal from "../components/TradeModal";
 import PortfolioSummary, { PortfolioSummaryEmpty } from "../components/PortfolioSummary";
+import AlertRows from "../components/AlertRows";
 import { PostTile } from "../components/Social";
 import { SectionNav, SectionHead } from "../components/Sections";
-import { AssetRow, ForYouCards, ForYouStart } from "../components/MarketBits";
+import { ForYouCards, ForYouStart } from "../components/MarketBits";
 import { useAuth } from "../context/AuthContext";
 import {
   useBatch,
@@ -15,7 +16,6 @@ import {
   useMep,
   useDisplayCurrency,
   useMarketStatus,
-  fmtPrice,
   priceIn,
   money,
   signed,
@@ -23,12 +23,12 @@ import {
   tickerUrl,
 } from "../lib/market";
 import { POPULAR } from "../lib/onboarding";
-import { SECTORS, SECTOR, lookup } from "../lib/catalog";
+import { SECTORS, lookup } from "../lib/catalog";
 import { useTrades, useWatchlist, computePositions, addWatch, removeWatch } from "../lib/portfolio";
-import { useAlerts, alertText } from "../lib/alerts";
+import { useAlerts } from "../lib/alerts";
 import { useMyProfile, updateProfile, useFollowGraph, useFeed } from "../lib/social";
 import { useForYou } from "../lib/foryou";
-import { toast, attempt } from "../lib/feedback";
+import { toast, attempt, confirmDialog } from "../lib/feedback";
 
 const abs = (n) => Math.abs(n).toLocaleString("es-AR", { maximumFractionDigits: 2 }) + "%";
 
@@ -57,16 +57,6 @@ function Pill({ to, label, value, delta }) {
   );
 }
 
-/* Cuánto le falta a una alerta para saltar → { progress 0..1, text } */
-function alertGap(a, q) {
-  if (!q) return null;
-  const v = Number(a.value);
-  if (a.kind === "above") return { progress: Math.min(q.price / v, 1), text: `falta subir ${abs((v / q.price - 1) * 100)}` };
-  if (a.kind === "below") return { progress: Math.min(v / q.price, 1), text: `falta bajar ${abs((1 - v / q.price) * 100)}` };
-  const day = a.kind === "up_pct" ? Math.max(q.change_pct, 0) : Math.max(-q.change_pct, 0);
-  return { progress: Math.min(day / v, 1), text: `hoy ${pct(q.change_pct)} de ${a.kind === "up_pct" ? "+" : "−"}${abs(v)}` };
-}
-
 export default function Home() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -78,6 +68,21 @@ export default function Home() {
   const graph = useFollowGraph(uid);
   const feed = useFeed({ uid, mode: "following", following: graph.loaded ? graph.following : null, limit: 30 });
   const [busy, setBusy] = useState("");
+  const [leaving, setLeaving] = useState("");
+  // cuántas fichas entran por fila en el tablero de seguidos (para completar
+  // la primera fila con fichas punteadas)
+  const wltRef = useRef(null);
+  const [wltCols, setWltCols] = useState(4);
+  const hasWatch = watch.rows.length > 0;
+  useEffect(() => {
+    const el = wltRef.current;
+    if (!el) return;
+    const measure = () => setWltCols(getComputedStyle(el).gridTemplateColumns.split(" ").length);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [hasWatch]);
   const [trade, setTrade] = useState(false);
   const [cur] = useDisplayCurrency();
   const fx = useMep();
@@ -122,6 +127,8 @@ export default function Home() {
   const followed = new Set(watchSymbols);
   const held = Object.fromEntries(positions.map((p) => [p.symbol, p.qty]));
   const follow = async ({ symbol, name }) => {
+    // si la ficha se había ido hace un rato, que no vuelva "yéndose"
+    if (leaving === symbol) setLeaving("");
     setBusy(symbol);
     await attempt(addWatch(uid, symbol, name || lookup(symbol)?.name || null), { ok: `Seguís ${symbol}`, fail: `No se pudo seguir ${symbol}` });
     setBusy("");
@@ -135,9 +142,31 @@ export default function Home() {
     watch.reload();
     if (ok) {
       toast(`Dejaste de seguir ${symbol}`, {
-        action: { label: "Deshacer", run: () => addWatch(uid, symbol, row?.name || null).then(() => watch.reload()) },
+        action: {
+          label: "Deshacer",
+          run: () => {
+            setLeaving("");
+            addWatch(uid, symbol, row?.name || null).then(() => watch.reload());
+          },
+        },
       });
     }
+    return ok;
+  };
+  // la ficha se va (animación) y recién después se deja de seguir
+  const dropTile = async (symbol) => {
+    const yes = await confirmDialog({
+      title: `¿Dejar de seguir ${symbol}?`,
+      body: "Sale de tus seguidos y de la cinta de arriba. Lo podés volver a seguir cuando quieras.",
+      confirmText: "Dejar de seguir",
+      danger: true,
+      icon: "bi-star",
+    });
+    if (!yes) return;
+    setLeaving(symbol);
+    await new Promise((r) => setTimeout(r, 300));
+    // si salió bien, la ficha ya no vuelve (se va con el reload); si falló, reaparece
+    if (!(await unfollow(symbol))) setLeaving("");
   };
   const addInterest = async (k) => {
     if (!profile.data) return;
@@ -297,32 +326,7 @@ export default function Home() {
               Administrar
             </Link>
           </SectionHead>
-          <div className="card nrx">
-            <ul className="nrx-list">
-              {activeAlerts.slice(0, 6).map((a) => {
-                const q = quotes[a.symbol];
-                const gap = alertGap(a, q);
-                return (
-                  <li key={a.id}>
-                    <Link to={tickerUrl(a.symbol)}>
-                      <Logo symbol={a.symbol} size={28} />
-                      <span className="pfx-name">
-                        <b>{a.symbol}</b>
-                        <small>{alertText(a)}</small>
-                      </span>
-                      <span className="nrx-gap">
-                        <span className="nrx-bar">
-                          <span style={{ width: `${(gap?.progress ?? 0) * 100}%` }} />
-                        </span>
-                        <small>{gap?.text || "sin datos"}</small>
-                      </span>
-                      <span className="pfx-val">{q ? fmtPrice(a.symbol, q.price) : "—"}</span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+          <AlertRows alerts={activeAlerts.slice(0, 6)} quotes={quotes} existing={alerts.data} />
         </section>
       )}
 
@@ -340,20 +344,34 @@ export default function Home() {
         {!watch.loaded ? (
           <div className="card asset-list loading-box home-loading" />
         ) : watch.rows.length ? (
-          <div className="card asset-list">
-            {watch.rows.map((w) => (
-              <AssetRow
-                key={w.symbol}
-                symbol={w.symbol}
-                name={w.name || lookup(w.symbol)?.name}
-                tag={SECTOR[lookup(w.symbol)?.tags[0]]?.label}
-                quote={quotes[w.symbol]}
-                closes={sparks[w.symbol]}
-                cur={cur}
-                rate={rate}
-                busy={busy === w.symbol}
-                onRemove={() => unfollow(w.symbol)}
-              />
+          <div ref={wltRef} className="wlt">
+            {watch.rows.map((w) => {
+              const q = quotes[w.symbol];
+              const up = q ? q.change_pct >= 0 : null;
+              return (
+                <div key={w.symbol} className={"card wlt-tile" + (up === null ? "" : up ? " up" : " down") + (leaving === w.symbol ? " out" : "")}>
+                  <Link to={tickerUrl(w.symbol)} className="wlt-in">
+                    <span className="wlt-id">
+                      <Logo symbol={w.symbol} size={24} />
+                      <b>{w.symbol}</b>
+                    </span>
+                    <span className="wlt-px">{q ? priceIn(w.symbol, q.price, cur, rate) : "—"}</span>
+                    <span className="wlt-chg">
+                      {q && <i className={up ? "bi bi-caret-up-fill" : "bi bi-caret-down-fill"} />}
+                      {q ? pct(q.change_pct) : "sin datos"}
+                    </span>
+                  </Link>
+                  <button type="button" className="wlt-x" disabled={busy === w.symbol} onClick={() => dropTile(w.symbol)} aria-label={`Dejar de seguir ${w.symbol}`} title="Dejar de seguir">
+                    <i className="bi bi-x" />
+                  </button>
+                </div>
+              );
+            })}
+            {/* hasta llenar la primera fila, fichas punteadas para sumar más */}
+            {Array.from({ length: Math.max(0, wltCols - watch.rows.length) }, (_, i) => (
+              <Link key={`gh${i}`} to="/tickersearch#explorar" className="wlt-ghost" aria-label="Seguir otro activo">
+                <span className="gh-box">+</span>
+              </Link>
             ))}
           </div>
         ) : (
