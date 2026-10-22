@@ -244,18 +244,26 @@ export default function AssetChart({ symbol, quote }) {
   }, [candles]);
 
   const isUp = quote ? quote.change_pct >= 0 : true;
+  const ranges = INTRADAY.includes(interval) ? RANGES_INTRADAY : RANGES_DAILY;
   const compact = (n) => n.toLocaleString("es-AR", { notation: "compact", maximumFractionDigits: 1 });
   const px = (v) => fmtPrice(symbol, v);
 
   return (
         <div className="card chart-card">
           <div className="chart-controls">
-            <div className="seg" role="group" aria-label="Intervalo">
+            <div
+              className="vx-tabs sm"
+              role="group"
+              aria-label="Intervalo"
+              style={{ "--n": INTERVALS.length, "--i": INTERVALS.findIndex(([iv]) => iv === interval) }}
+            >
+              <span className="vx-tabs-thumb" aria-hidden="true" />
               {INTERVALS.map(([iv, label]) => (
                 <button
                   key={iv}
                   type="button"
                   className={iv === interval ? "on" : ""}
+                  aria-pressed={iv === interval}
                   onClick={() => handleInterval(iv)}
                 >
                   {label}
@@ -263,23 +271,22 @@ export default function AssetChart({ symbol, quote }) {
               ))}
             </div>
             <div className="right">
-              <div className="seg" role="group" aria-label="Rango">
-                {(INTRADAY.includes(interval) ? RANGES_INTRADAY : RANGES_DAILY).map(
-                  ([rg, label]) => (
-                    <button
-                      key={rg}
-                      type="button"
-                      className={rg === range ? "on" : ""}
-                      onClick={() => setRange(rg)}
-                    >
-                      {label}
-                    </button>
-                  ),
-                )}
+              <div
+                className="vx-tabs sm"
+                role="group"
+                aria-label="Rango"
+                style={{ "--n": ranges.length, "--i": Math.max(0, ranges.findIndex(([rg]) => rg === range)) }}
+              >
+                <span className="vx-tabs-thumb" aria-hidden="true" />
+                {ranges.map(([rg, label]) => (
+                  <button key={rg} type="button" className={rg === range ? "on" : ""} aria-pressed={rg === range} onClick={() => setRange(rg)}>
+                    {label}
+                  </button>
+                ))}
               </div>
               <button
                 type="button"
-                className="icon-btn"
+                className="icon-btn chart-reload"
                 onClick={reload}
                 aria-label="Recargar"
                 title="Recargar"

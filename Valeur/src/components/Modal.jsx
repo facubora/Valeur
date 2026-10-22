@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ModalClose } from "../lib/modal";
+import { ModalClose, press } from "../lib/modal";
 
 /* De dónde sale el modal: el último botón o link que se apretó. Se guarda en
    captura para que esté antes de que el click abra el modal (en Safari los
    botones no quedan con foco al hacer click, así que no alcanza activeElement). */
-let lastPress = null;
 if (typeof window !== "undefined") {
   window.addEventListener(
     "pointerdown",
     (e) => {
       const el = e.target.closest?.("button, a, [role='button']");
-      if (el) lastPress = { el, at: Date.now() };
+      if (el) press.last = { el, at: Date.now() };
     },
     true,
   );
@@ -42,7 +41,7 @@ export default function Modal({ onClose, label, className = "", bgClass = "", ch
   const bgRef = useRef(null);
   const closing = useRef(false);
   // el origen se toma una sola vez, al abrir
-  const [originEl] = useState(() => (lastPress && Date.now() - lastPress.at < 1500 ? lastPress.el : null));
+  const [originEl] = useState(() => (press.last && Date.now() - press.last.at < 1500 ? press.last.el : null));
 
   useLayoutEffect(() => {
     const box = boxRef.current;

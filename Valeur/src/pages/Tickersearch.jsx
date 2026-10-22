@@ -4,12 +4,13 @@ import { useAuth } from "../context/AuthContext";
 import AppShell from "../components/AppShell";
 import AssetChart from "../components/AssetChart";
 import AlertsCard from "../components/AlertsCard";
+import AlertEditor from "../components/AlertEditor";
+import AlertList from "../components/AssetAlerts";
 import Logo from "../components/Logo";
 import PostComposer from "../components/PostComposer";
 import ProfileModal from "../components/ProfileModal";
-import SymbolSearch from "../components/SymbolSearch";
 import TradeModal from "../components/TradeModal";
-import { PostCard, GhostPosts } from "../components/Social";
+import { PostCard } from "../components/Social";
 import { Delta, CurrencyPick, AssetRow, ForYouCards, ForYouStart } from "../components/MarketBits";
 import { SectionNav, SectionHead } from "../components/Sections";
 import Modal from "../components/Modal";
@@ -24,9 +25,8 @@ import {
   useDisplayCurrency,
   searchSymbols,
   tickerUrl,
-  fmtPrice,
+  money,
   priceIn,
-  isConverted,
   assetCurrency,
 } from "../lib/market";
 import { SECTOR, SECTORS, KIND_LABEL, TABS, listFor, lookup, similarTo } from "../lib/catalog";
@@ -591,9 +591,10 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
   const [cur] = useDisplayCurrency();
   const fx = useMep();
   const rate = fx.mep?.rate;
-  const converted = isConverted(symbol, cur) && rate;
   const [trade, setTrade] = useState(false);
   const [composer, setComposer] = useState(false);
+  const [alerting, setAlerting] = useState(false);
+  const [simOpen, setSimOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const following = followed.has(symbol);
   const kind = symbol.endsWith(".BA") && meta?.cedear ? "cedear" : meta?.kind;
@@ -603,13 +604,14 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
   posts.data.forEach((p) => (counts[p.stance] += 1));
   const total = posts.data.length;
 
-  const similar = useMemo(() => similarTo(symbol, 5), [symbol]);
-  const side = useBatch(similar.map((s) => s.symbol));
+  // los del mismo rubro se cotizan recién al abrir la lista
+  const similar = useMemo(() => similarTo(symbol, 6), [symbol]);
+  const side = useBatch(simOpen ? similar.map((s) => s.symbol) : []);
 
   const pos = useMemo(() => {
     if (!held[symbol]) return null;
-    return computePositions(trades.rows, quote ? { [symbol]: quote } : {}).positions.find((p) => p.symbol === symbol);
-  }, [held, symbol, trades.rows, quote]);
+    return computePositions(trades.rows, quote ? { [symbol]: quote } : {}, cur, fx.mep).positions.find((p) => p.symbol === symbol);
+  }, [held, symbol, trades.rows, quote, cur, fx.mep]);
 
   const toggle = async () => {
     setBusy(true);
@@ -617,221 +619,203 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
     setBusy(false);
   };
 
-  // Escape cierra el modal de recomendar
-  useEffect(() => {
-    if (!composer) return;
-    const onKey = (e) => e.key === "Escape" && setComposer(false);
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [composer]);
-
   if (quote === null) return <NotFound symbol={symbol} onOpen={onOpen} />;
+
+  const myAlerts = alerts.data.filter((a) => a.symbol === symbol && a.active).length;
+  const lead = total ? ["buy", "hold", "sell"].reduce((m, k) => (counts[k] > counts[m] ? k : m), "buy") : null;
+  const up = quote ? quote.change_pct >= 0 : true;
 
   return (
     <>
-      <nav className="crumbs">
-        <button type="button" className="lnk-btn back" onClick={() => onOpen(null)}>
-          <i className="bi bi-arrow-left" /> Mercado
-        </button>
-        <div className="crumb-right">
-          <CurrencyPick />
-          <div className="crumb-search">
-            <SymbolSearch onPick={({ symbol: s }) => onOpen(s)} placeholder="Buscar otro activo…" />
+      <section className="page-head ad-head">
+        <div className="ad-id">
+          <span className="kicker ad-kicker">
+            <button type="button" onClick={() => onOpen(null)}>
+              <i className="bi bi-arrow-left" /> Mercado
+            </button>
+            {kind && <span>{KIND_LABEL[kind]}</span>}
+            {meta?.tags.map((t) => (
+              <span key={t}>{SECTOR[t].label}</span>
+            ))}
+            <span>{assetCurrency(symbol) === "ARS" ? "En pesos" : "En dólares"}</span>
+          </span>
+          <div className="ad-title">
+            <Logo symbol={symbol} size={44} />
+            <h1>
+              {name || symbol}
+              <small>
+                {symbol}
+                {following && <i className="bi bi-star-fill" title="Lo seguís" />}
+              </small>
+            </h1>
           </div>
-        </div>
-      </nav>
-
-      <section className="asset-head">
-        <div className="asset-title">
-          <Logo symbol={symbol} size={54} />
-          <div>
-            <h1>{name || symbol}</h1>
-            <div className="asset-tags">
-              <span className="sym">{symbol}</span>
-              {kind && <span className="tag">{KIND_LABEL[kind]}</span>}
-              {meta?.tags.map((t) => (
-                <span key={t} className="tag soft">
-                  <i className={"bi " + SECTOR[t].icon} /> {SECTOR[t].label}
-                </span>
-              ))}
-              <span className="tag soft">{assetCurrency(symbol) === "ARS" ? "En pesos" : "En dólares"}</span>
+          {(pos || myAlerts > 0 || lead) && (
+            <div className="hpills">
+              {pos && <Pill to="/dashboard" label="Tu posición" value={money(pos.value, undefined, cur)} delta={pos.pnlPct} />}
+              {myAlerts > 0 && (
+                <Pill onClick={() => setAlerting(true)} icon="bi-bell" label="Alertas" value={myAlerts === 1 ? "1 vigilando" : `${myAlerts} vigilando`} />
+              )}
+              {lead && (
+                <Pill
+                  to="#comunidad"
+                  label="Comunidad"
+                  value={`${Math.round((counts[lead] / total) * 100)}% ${STANCE[lead].label.toLowerCase()}`}
+                />
+              )}
             </div>
-          </div>
+          )}
         </div>
-        <div className="asset-quote">
+
+        <div className="ad-quote">
           {quote ? (
-            <>
+            <div className="ad-px">
               <b>{priceIn(symbol, quote.price, cur, rate)}</b>
-              <div>
-                <Delta value={quote.change_pct} />
-                <span className="chg">
-                  {quote.change >= 0 ? "+" : "-"}
+              <div className="ad-sub">
+                <span className={up ? "txt-up" : "txt-down"}>
+                  <i className={up ? "bi bi-caret-up-fill" : "bi bi-caret-down-fill"} />
+                  {Math.abs(quote.change_pct).toFixed(2).replace(".", ",")}% · {up ? "+" : "−"}
                   {priceIn(symbol, Math.abs(quote.change), cur, rate)} hoy
                 </span>
+                <CurrencyPick />
               </div>
-              {converted && (
-                <small className="native" title="Precio convertido al dólar MEP">
-                  Cotiza {fmtPrice(symbol, quote.price)}
-                </small>
-              )}
-            </>
-          ) : quote === null ? (
-            <span className="muted">Sin cotización</span>
+            </div>
           ) : (
-            <>
+            <div className="ad-px">
               <span className="ph-line px big" />
               <span className="ph-line short" />
-            </>
+            </div>
           )}
+          <div className="ad-acts">
+            {user ? (
+              <>
+                {/* lo de todos los días, a un toque: seguir, alerta y recomendar */}
+                <div className="ad-quick">
+                  <button
+                    type="button"
+                    className={"aq" + (following ? " on fav" : "")}
+                    onClick={toggle}
+                    disabled={busy || !ctx.watch.loaded}
+                    aria-pressed={following}
+                    title={following ? "Dejar de seguir" : "Seguir"}
+                  >
+                    <i className={following ? "bi bi-star-fill" : "bi bi-star"} />
+                    <span>{following ? "Siguiendo" : "Seguir"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={"aq" + (myAlerts ? " on" : "")}
+                    onClick={() => setAlerting(true)}
+                    title={myAlerts ? `Alertas: ${myAlerts} vigilando` : "Crear alerta"}
+                  >
+                    <i className={myAlerts ? "bi bi-bell-fill" : "bi bi-bell"} />
+                    <span>Alerta</span>
+                    {myAlerts > 0 && <em>{myAlerts}</em>}
+                  </button>
+                  <button type="button" className="aq" onClick={() => setComposer(true)} title="Recomendar">
+                    <i className="bi bi-chat-square-quote" />
+                    <span>Recomendar</span>
+                  </button>
+                </div>
+                <button type="button" className="btn btn-pink ad-trade" onClick={() => setTrade(true)}>
+                  <i className="bi bi-arrow-left-right" /> Operar
+                </button>
+              </>
+            ) : (
+              <Link to="/login" className="btn btn-pink ad-trade">
+                Iniciá sesión para operar
+              </Link>
+            )}
+          </div>
         </div>
       </section>
 
-      {user ? (
-        <div className="asset-actions">
-          <button type="button" className={"btn btn-line btn-sm" + (following ? " on" : "")} onClick={toggle} disabled={busy || !ctx.watch.loaded}>
-            <i className={following ? "bi bi-star-fill" : "bi bi-star"} />
-            {following ? "Siguiendo" : "Seguir"}
-          </button>
-          <a href="#alertas" className="btn btn-line btn-sm">
-            <i className="bi bi-bell" /> Alerta
-          </a>
-          <button type="button" className="btn btn-line btn-sm" onClick={() => setComposer(true)}>
-            <i className="bi bi-chat-square-quote" /> Recomendar
-          </button>
-          <button type="button" className="btn btn-pink btn-sm" onClick={() => setTrade(true)}>
-            <i className="bi bi-arrow-left-right" /> Operar
-          </button>
-        </div>
-      ) : (
-        <div className="asset-actions">
-          <Link to="/login" className="btn btn-line btn-sm">
-            Iniciá sesión para seguir, crear alertas u operar
-          </Link>
-        </div>
-      )}
+      <section className="ad-main">
+        <AssetChart symbol={symbol} quote={quote} />
 
-      <section className="asset-grid">
-        <div className="asset-main">
-          <AssetChart symbol={symbol} quote={quote} />
-
-          {user && (
-            <section className="asset-talk">
-              <div className="sec-head">
-                <div className="sec-title">
-                  <h2>Qué dice la comunidad</h2>
-                  {total > 0 && (
-                    <span className="sub">
-                      {total} {total === 1 ? "recomendación" : "recomendaciones"}
-                    </span>
-                  )}
-                </div>
-                <button type="button" className="lnk-btn" onClick={() => setComposer(true)}>
-                  <i className="bi bi-pencil-square" /> Recomendar
-                </button>
-              </div>
-              {total > 0 && (
-                <div className="consensus" role="img" aria-label={`Comprar ${counts.buy}, mantener ${counts.hold}, vender ${counts.sell}`}>
-                  <div className="cons-bar">
-                    {["buy", "hold", "sell"].map((k) =>
-                      counts[k] ? <span key={k} className={k} style={{ flex: counts[k] }} /> : null,
-                    )}
-                  </div>
-                  <div className="cons-legend">
-                    {["buy", "hold", "sell"].map((k) => (
-                      <span key={k} className={k}>
-                        <i /> {STANCE[k].label} <b>{Math.round((counts[k] / total) * 100)}%</b>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {total > 0 ? (
-                <div className="post-list">
-                  {posts.data.slice(0, 6).map((p) => (
-                    <PostCard key={p.id} post={p} uid={uid} quote={p.symbol === symbol ? quote : null} />
-                  ))}
-                </div>
-              ) : (
-                <div className="talk-empty">
-                  <GhostPosts n={1} />
-                  <button type="button" className="btn btn-line btn-sm" onClick={() => setComposer(true)}>
-                    <i className="bi bi-pencil-square" /> Sé el primero en recomendar {symbol}
-                  </button>
-                </div>
-              )}
-            </section>
-          )}
-        </div>
-
-        <aside className="asset-side">
-          {pos && (
-            <div className="card side-card pos-mini">
-              <div className="side-head">
-                <h3>
-                  <i className="bi bi-wallet2" /> Tu posición
-                </h3>
-                <Link to="/dashboard" className="lnk">
-                  Portfolio
-                </Link>
-              </div>
-              <dl className="pm-kv">
-                <div>
-                  <dt>Cantidad</dt>
-                  <dd>{pos.qty.toLocaleString("es-AR", { maximumFractionDigits: 4 })}</dd>
-                </div>
-                <div>
-                  <dt>Costo promedio</dt>
-                  <dd>{fmtPrice(symbol, pos.avgCost)}</dd>
-                </div>
-                <div>
-                  <dt>Valor hoy</dt>
-                  <dd>{priceIn(symbol, pos.qty * pos.price, cur, rate)}</dd>
-                </div>
-                <div>
-                  <dt>Resultado</dt>
-                  <dd className={pos.pnlPct >= 0 ? "txt-up" : "txt-down"}>
-                    {pos.pnlPct >= 0 ? "+" : ""}
-                    {pos.pnlPct.toFixed(2)}%
-                  </dd>
-                </div>
-              </dl>
-            </div>
-          )}
-
-          {user && (
-            <div id="alertas">
-              <AlertsCard uid={uid} alerts={alerts.data} symbol={symbol} quote={quote} />
-            </div>
-          )}
-
-          {similar.length > 0 && (
-            <div className="card side-card">
-              <div className="side-head">
-                <h3>
-                  <i className="bi bi-diagram-3" /> Del mismo rubro
-                </h3>
-              </div>
-              <ul className="sim-list">
+        {similar.length > 0 && (
+          <div className={"card ad-sim" + (simOpen ? " open" : "")}>
+            <button type="button" className="ad-sim-head" aria-expanded={simOpen} onClick={() => setSimOpen((o) => !o)}>
+              <i className="bi bi-diagram-3" />
+              <b>Del mismo rubro</b>
+              <span className="ad-sim-logos" aria-hidden="true">
+                {similar.slice(0, 4).map((s) => (
+                  <Logo key={s.symbol} symbol={s.symbol} size={24} />
+                ))}
+              </span>
+              <small>{similar.length} activos</small>
+              <i className="bi bi-chevron-down ad-sim-chev" />
+            </button>
+            <div className="ad-sim-body" inert={!simOpen}>
+              <ul>
                 {similar.map((s) => {
                   const q = side.quotes[s.symbol];
                   return (
                     <li key={s.symbol}>
                       <Link to={tickerUrl(s.symbol)}>
-                        <Logo symbol={s.symbol} size={28} />
-                        <div>
+                        <Logo symbol={s.symbol} size={30} />
+                        <span>
                           <b>{s.name}</b>
-                          <span>{s.symbol}</span>
-                        </div>
-                        {q ? <Delta value={q.change_pct} /> : <span className="ph-line short" />}
+                          <small>{s.symbol}</small>
+                        </span>
+                        {q ? (
+                          <span className="ad-sim-px">
+                            <b>{priceIn(s.symbol, q.price, cur, rate)}</b>
+                            <small className={q.change_pct >= 0 ? "txt-up" : "txt-down"}>
+                              <i className={q.change_pct >= 0 ? "bi bi-caret-up-fill" : "bi bi-caret-down-fill"} />
+                              {Math.abs(q.change_pct).toFixed(2).replace(".", ",")}%
+                            </small>
+                          </span>
+                        ) : (
+                          <span className="ph-line short" />
+                        )}
                       </Link>
                     </li>
                   );
                 })}
               </ul>
             </div>
-          )}
-        </aside>
+          </div>
+        )}
       </section>
+
+      {user && (
+        <section id="comunidad" className="block ad-talk">
+          <SectionHead
+            kicker="Comunidad"
+            title={`Qué dicen de ${symbol}`}
+            desc={
+              total
+                ? `${total} ${total === 1 ? "recomendación" : "recomendaciones"} de la comunidad.`
+                : "Todavía nadie lo recomendó. Podés ser el primero."
+            }
+          >
+            <button type="button" className="btn btn-line btn-sm" onClick={() => setComposer(true)}>
+              <i className="bi bi-pencil-square" /> Recomendar
+            </button>
+          </SectionHead>
+          {total > 0 && (
+            <div className="consensus" role="img" aria-label={`Comprar ${counts.buy}, mantener ${counts.hold}, vender ${counts.sell}`}>
+              <div className="cons-bar">
+                {["buy", "hold", "sell"].map((k) => (counts[k] ? <span key={k} className={k} style={{ flex: counts[k] }} /> : null))}
+              </div>
+              <div className="cons-legend">
+                {["buy", "hold", "sell"].map((k) => (
+                  <span key={k} className={k}>
+                    <i /> {STANCE[k].label} <b>{Math.round((counts[k] / total) * 100)}%</b>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {total > 0 && (
+            <div className="post-list">
+              {posts.data.slice(0, 6).map((p) => (
+                <PostCard key={p.id} post={p} uid={uid} quote={p.symbol === symbol ? quote : null} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
       {user && (
         <TradeModal
@@ -845,11 +829,50 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
         />
       )}
 
+      {alerting && (
+        <Modal onClose={() => setAlerting(false)} label={`Alertas de ${symbol}`} className="tm am">
+          <AlertBody uid={uid} symbol={symbol} name={name} alerts={alerts.data} quote={quote} />
+        </Modal>
+      )}
+
       {composer && (
         <Modal onClose={() => setComposer(false)} label={`Recomendar ${symbol}`} className="tm cm">
           <RecommendBody uid={uid} username={user.username} symbol={symbol} />
         </Modal>
       )}
+    </>
+  );
+}
+
+/* Alertas del activo (en el Modal que nace del botón): las que ya tenés,
+   para editar o borrar, y abajo crear otra */
+function AlertBody({ uid, symbol, name, alerts, quote }) {
+  const close = useModalClose();
+  const mine = alerts.filter((a) => a.symbol === symbol);
+  return (
+    <>
+      <div className="tm-head">
+        <div>
+          <span className="kicker">Alertas · {name || symbol}</span>
+          <h2>¿Cuándo te avisamos?</h2>
+          <p className="am-sub">Te llega a la campanita, en cualquier pantalla de Valeur.</p>
+        </div>
+        <button type="button" className="tm-x" onClick={close} aria-label="Cerrar">
+          <i className="bi bi-x-lg" />
+        </button>
+      </div>
+      <div className="am-body">
+        {mine.length > 0 && (
+          <div className="am-list">
+            <span className="lbl">Las que tenés</span>
+            <AlertList symbol={symbol} alerts={alerts} quote={quote} />
+          </div>
+        )}
+        <div className="am-new">
+          {mine.length > 0 && <span className="lbl">Nueva alerta</span>}
+          <AlertEditor uid={uid} symbol={symbol} existing={alerts} onDone={close} onCancel={close} />
+        </div>
+      </div>
     </>
   );
 }

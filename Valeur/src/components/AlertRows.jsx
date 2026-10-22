@@ -1,23 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "./Logo";
-import { ALERT_KINDS, ALERT_KIND, alertText, alertError, addAlert, updateAlert, deleteAlert } from "../lib/alerts";
-import { fmtPrice, pct, tickerUrl } from "../lib/market";
+import { ALERT_KINDS, ALERT_KIND, alertText, alertError, alertGap, addAlert, updateAlert, deleteAlert } from "../lib/alerts";
+import { fmtPrice, tickerUrl } from "../lib/market";
 import { toast, attempt } from "../lib/feedback";
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const abs = (n) => Math.abs(n).toLocaleString("es-AR", { maximumFractionDigits: 2 }) + "%";
-
-/* Cuánto le falta a una alerta para saltar → { progress 0..1, text } */
-function alertGap(a, q) {
-  if (!q) return null;
-  const v = Number(a.value);
-  if (a.kind === "above") return { progress: Math.min(q.price / v, 1), text: `falta subir ${abs((v / q.price - 1) * 100)}` };
-  if (a.kind === "below") return { progress: Math.min(v / q.price, 1), text: `falta bajar ${abs((1 - v / q.price) * 100)}` };
-  const day = a.kind === "up_pct" ? Math.max(q.change_pct, 0) : Math.max(-q.change_pct, 0);
-  return { progress: Math.min(day / v, 1), text: `hoy ${pct(q.change_pct)} de ${a.kind === "up_pct" ? "+" : "−"}${abs(v)}` };
-}
-
 /* Una alerta: cuánto le falta y, al pasar el mouse, editar o borrar.
    Editar se hace ahí mismo (tipo + valor), con las mismas validaciones que
    al crearla. Borrar se puede deshacer desde el aviso. */

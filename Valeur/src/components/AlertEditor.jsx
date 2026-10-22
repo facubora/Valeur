@@ -21,6 +21,16 @@ export default function AlertEditor({ uid, symbol, alert = null, existing = [], 
   const quote = quotes[symbol];
   const unit = ALERT_KIND[kind].unit;
   const kindIdx = ALERT_KINDS.findIndex(([k]) => k === kind);
+  // en una frase, qué va a pasar con lo que está escrito
+  const typed = toNum(value);
+  const say =
+    typed > 0
+      ? `${alertText({ symbol, kind, value: typed }).replace(/^Si /, "si ")}${unit === "pct" ? ", cada día que pase" : ". Avisa una vez"}`
+      : unit === "pct"
+        ? "si se mueve más de ese porcentaje en un día"
+        : kind === "above"
+          ? "cuando suba hasta ese precio"
+          : "cuando baje hasta ese precio";
 
   // atajos: ±5% / ±10% del precio, o 2 / 3 / 5% de movimiento en el día
   const quick =
@@ -115,9 +125,13 @@ export default function AlertEditor({ uid, symbol, alert = null, existing = [], 
           ))}
         </div>
       )}
-      {error && (
+      {error ? (
         <p className="ae-err" role="alert">
           <i className="bi bi-exclamation-circle" /> {error}
+        </p>
+      ) : (
+        <p className={"ae-say" + (typed > 0 ? " set" : "")}>
+          <i className="bi bi-bell" /> Te avisamos {say}.
         </p>
       )}
       <div className="ae-btns">

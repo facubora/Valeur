@@ -2161,13 +2161,6 @@
 /* ============================================================
    MERCADO · detalle de un activo
    ============================================================ */
-.app-root .crumbs {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: -28px;
-}
 .app-root .lnk-btn.back {
   color: var(--ink-soft);
 }
@@ -2175,84 +2168,9 @@
   color: var(--accent-text);
   text-decoration: none;
 }
-.app-root .crumb-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-.app-root .crumb-search {
-  position: relative;
-  width: 260px;
-}
-.app-root .asset-quote .native {
-  font-size: 0.78rem;
-  color: var(--ink-soft);
-  font-variant-numeric: tabular-nums;
-}
-.app-root .asset-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px 32px;
-  flex-wrap: wrap;
-}
-.app-root .asset-title {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  min-width: 0;
-}
-.app-root .asset-title h1 {
-  font-size: clamp(1.8rem, 3.6vw, 2.6rem);
-  line-height: 1.05;
-}
-.app-root .asset-tags {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-.app-root .asset-tags .sym {
-  font-weight: 700;
-  font-size: 0.9rem;
-  margin-right: 4px;
-}
-.app-root .asset-quote {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-  font-variant-numeric: tabular-nums;
-}
-.app-root .asset-quote > b {
-  font-family: var(--font-display);
-  font-size: clamp(1.9rem, 3.6vw, 2.6rem);
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-.app-root .asset-quote > div {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.app-root .asset-quote .chg {
-  font-size: 0.88rem;
-  color: var(--ink-soft);
-}
 .app-root .ph-line.big {
   width: 180px;
   height: 30px;
-}
-.app-root .asset-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: -30px;
-}
-.app-root .asset-actions .btn-pink {
-  margin-left: auto;
 }
 .app-root .asset-grid {
   display: grid;
@@ -2339,67 +2257,6 @@
 }
 
 /* tu posición, similares */
-.app-root .pm-kv {
-  display: flex;
-  flex-direction: column;
-}
-.app-root .pm-kv > div {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 7px 0;
-  border-top: 1px solid var(--line-soft);
-  font-size: 0.88rem;
-}
-.app-root .pm-kv > div:first-child {
-  border-top: 0;
-  padding-top: 0;
-}
-.app-root .pm-kv dt {
-  color: var(--ink-soft);
-}
-.app-root .pm-kv dd {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.app-root .sim-list {
-  list-style: none;
-}
-.app-root .sim-list a {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  border-top: 1px solid var(--line-soft);
-}
-.app-root .sim-list li:first-child a {
-  border-top: 0;
-  padding-top: 0;
-}
-.app-root .sim-list a > div {
-  min-width: 0;
-}
-.app-root .sim-list b {
-  display: block;
-  font-size: 0.9rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.app-root .sim-list span {
-  display: block;
-  font-size: 0.76rem;
-  color: var(--ink-soft);
-}
-.app-root .sim-list a:hover b {
-  color: var(--accent-text);
-}
-.app-root .sim-list .delta {
-  align-self: center;
-}
 
 /* ============================================================
    ALERTAS
@@ -3766,17 +3623,6 @@
   .app-root .fy-x {
     opacity: 1;
   }
-  .app-root .crumbs {
-    flex-wrap: wrap;
-  }
-  .app-root .crumb-right {
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .app-root .crumb-search {
-    width: 100%;
-  }
   .app-root .sort-seg {
     width: 100%;
   }
@@ -3805,35 +3651,8 @@
   .app-root .asset-id .tag {
     display: none;
   }
-  .app-root .crumbs {
-    margin-bottom: -14px;
-  }
-  .app-root .asset-head {
-    align-items: flex-start;
-  }
-  .app-root .asset-quote {
-    align-items: flex-start;
-  }
-  .app-root .asset-actions {
-    margin-top: -14px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-  .app-root .asset-actions .btn {
-    justify-content: center;
-  }
-  .app-root .asset-actions .btn-pink {
-    margin-left: 0;
-  }
   .app-root .asset-grid {
     margin-top: -12px;
-  }
-  .app-root .asset-title {
-    gap: 12px;
-  }
-  .app-root .asset-title .logo {
-    width: 44px !important;
-    height: 44px !important;
   }
   .app-root .people-search {
     width: 100%;

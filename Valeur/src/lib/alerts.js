@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { supabase } from "./supabase";
 import { useSupa, changed } from "./social";
-import { useQuotes, fmtPrice } from "./market";
+import { useQuotes, fmtPrice, pct } from "./market";
 
 /* ── Alertas de precio ──────────────────────────────────────────────────────
    above / below: el precio cruza un valor → avisa una vez y se apaga.
@@ -68,6 +68,18 @@ export function alertError({ symbol, kind, value, quote, existing = [], selfId =
   if (quote && kind === "above" && v <= quote.price) return `Ya cotiza a ${fmtPrice(symbol, quote.price)}: poné un precio más alto`;
   if (quote && kind === "below" && v >= quote.price) return `Ya cotiza a ${fmtPrice(symbol, quote.price)}: poné un precio más bajo`;
   return "";
+}
+
+const abs = (n) => Math.abs(n).toLocaleString("es-AR", { maximumFractionDigits: 2 }) + "%";
+
+/* Cuánto le falta a una alerta para saltar → { progress 0..1, text } */
+export function alertGap(a, q) {
+  if (!q) return null;
+  const v = Number(a.value);
+  if (a.kind === "above") return { progress: Math.min(q.price / v, 1), text: `falta subir ${abs((v / q.price - 1) * 100)}` };
+  if (a.kind === "below") return { progress: Math.min(v / q.price, 1), text: `falta bajar ${abs((1 - v / q.price) * 100)}` };
+  const day = a.kind === "up_pct" ? Math.max(q.change_pct, 0) : Math.max(-q.change_pct, 0);
+  return { progress: Math.min(day / v, 1), text: `hoy ${pct(q.change_pct)} de ${a.kind === "up_pct" ? "+" : "−"}${abs(v)}` };
 }
 
 export async function deleteAlert(id) {
