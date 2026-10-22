@@ -76,6 +76,21 @@ export default function AppShell({ children }) {
   useAlertWatcher(user?.id);
   const notifs = useNotifications(user?.id);
   const [search, setSearch] = useState(false);
+  const [tapeOff, setTapeOff] = useState(() => {
+    try {
+      return localStorage.getItem("valeur-tape") === "off";
+    } catch {
+      return false;
+    }
+  });
+  const setTape = (on) => {
+    setTapeOff(!on);
+    try {
+      localStorage.setItem("valeur-tape", on ? "on" : "off");
+    } catch {
+      /* sin almacenamiento: vale solo para esta página */
+    }
+  };
 
   // Lo desplegado se cierra con Escape o al elegir un destino
   useEffect(() => {
@@ -165,7 +180,12 @@ export default function AppShell({ children }) {
 
   return (
     <div className="app-root shell">
-      <MarketTape watch={watch.rows} />
+      {/* la cinta se puede ocultar (y se recuerda); se vuelve a prender desde Tu cuenta */}
+      <div className={"tape-wrap" + (tapeOff ? " off" : "")} inert={tapeOff}>
+        <div className="tape-clip">
+          <MarketTape watch={watch.rows} onHide={() => setTape(false)} />
+        </div>
+      </div>
       <span ref={topRef} className="shell-sentinel" aria-hidden="true" />
 
       <header className={"vx-top" + (scrolled ? " scrolled" : "")}>
@@ -317,6 +337,10 @@ export default function AppShell({ children }) {
                       <Link to="/tickersearch#alertas">
                         <i className="bi bi-bell" /> Mis alertas
                       </Link>
+                      <button type="button" role="switch" aria-checked={!tapeOff} className="mp-switch" onClick={() => setTape(tapeOff)}>
+                        <i className="bi bi-activity" /> Cinta de cotizaciones
+                        <span className="sw" aria-hidden="true" />
+                      </button>
                     </div>
                     <div className="mp-foot">
                       <div className="theme-seg" role="radiogroup" aria-label="Tema">

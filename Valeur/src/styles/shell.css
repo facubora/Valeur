@@ -4,6 +4,40 @@
    ============================================================ */
 
 /* ---------- CINTA DE MERCADO ---------- */
+/* se puede ocultar: se pliega hacia arriba (grid 1fr → 0fr) */
+.app-root .tape-wrap {
+  position: relative;
+  z-index: calc(var(--z-sticky) + 1);
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.app-root .tape-wrap.off {
+  grid-template-rows: 0fr;
+}
+.app-root .tape-clip {
+  min-height: 0;
+  overflow: hidden;
+}
+.app-root .tape-hide {
+  flex-shrink: 0;
+  width: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-left: 1px solid var(--tape-line);
+  background: transparent;
+  color: var(--tape-soft);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    background 0.2s;
+}
+.app-root .tape-hide:hover {
+  color: var(--tape-ink);
+  background: oklch(1 0 0 / 0.06);
+}
 .app-root .tape {
   --tape-bg: oklch(0.17 0 0);
   --tape-ink: oklch(0.96 0 0);
@@ -686,6 +720,7 @@
   display: grid;
 }
 .app-root .mp-list a,
+.app-root .mp-switch,
 .app-root .mp-out {
   display: flex;
   align-items: center;
@@ -705,17 +740,51 @@
     color 0.15s;
 }
 .app-root .mp-list a i,
+.app-root .mp-switch i,
 .app-root .mp-out i {
   width: 16px;
   font-size: 0.9rem;
   color: var(--ink-soft);
   transition: color 0.15s;
 }
-.app-root .mp-list a:hover {
+.app-root .mp-list a:hover,
+.app-root .mp-switch:hover {
   background: color-mix(in oklch, var(--ink) 5%, transparent);
 }
 .app-root .mp-list a:hover i {
   color: var(--accent-text);
+}
+/* interruptor (mostrar u ocultar la cinta) */
+.app-root .mp-switch {
+  width: 100%;
+  text-align: left;
+}
+.app-root .mp-switch .sw {
+  position: relative;
+  width: 30px;
+  height: 18px;
+  margin-left: auto;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--ink) 16%, transparent);
+  transition: background 0.25s;
+}
+.app-root .mp-switch .sw::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 1px 2px oklch(0 0 0 / 0.25);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.app-root .mp-switch[aria-checked="true"] .sw {
+  background: var(--accent);
+}
+.app-root .mp-switch[aria-checked="true"] .sw::after {
+  transform: translateX(12px);
 }
 .app-root .mp-foot {
   display: flex;
@@ -999,6 +1068,199 @@
   border-color: color-mix(in oklch, var(--accent) 45%, transparent);
   background: color-mix(in srgb, var(--accent) 15%, color-mix(in srgb, var(--surface) 60%, transparent));
   color: var(--accent-text);
+}
+
+/* ---------- MODALES ---------- */
+/* <Modal>: las animaciones (nacer del botón y volver) van por JS, así que se
+   apagan las de CSS. Fondo apenas oscurecido, sin perder la página de vista */
+.app-root .vx-modal-bg {
+  animation: none;
+  background: oklch(0.2 0.03 265 / 0.22);
+  backdrop-filter: blur(3px) saturate(1.2);
+  -webkit-backdrop-filter: blur(3px) saturate(1.2);
+}
+[data-theme="dark"] .app-root .vx-modal-bg {
+  background: oklch(0 0 0 / 0.5);
+}
+.app-root .vx-modal {
+  animation: none;
+  width: min(500px, 100%);
+  padding: 0;
+  border: 1px solid var(--line-soft);
+  border-radius: 22px;
+  box-shadow:
+    0 2px 6px oklch(0.25 0.03 265 / 0.08),
+    0 50px 100px -30px oklch(0.2 0.03 265 / 0.45);
+  will-change: transform;
+}
+
+/* registrar operación */
+.app-root .tm-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 24px 6px;
+}
+.app-root .tm-head .kicker {
+  margin-bottom: 6px;
+}
+.app-root .tm-head h2 {
+  font-size: 1.45rem;
+  line-height: 1.1;
+}
+.app-root .tm-x {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    transform 0.2s;
+}
+.app-root .tm-x:hover {
+  color: var(--ink);
+  border-color: var(--line);
+  transform: rotate(90deg);
+}
+.app-root .tm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 24px 0;
+}
+/* compra / venta con ficha que se desliza */
+.app-root .tm-side {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 4px;
+  border-radius: 12px;
+  background: color-mix(in oklch, var(--ink) 5%, transparent);
+}
+.app-root .tm-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  border-radius: 9px;
+  background: var(--surface);
+  box-shadow:
+    0 1px 2px oklch(0.25 0.03 265 / 0.12),
+    0 4px 12px -4px oklch(0.25 0.03 265 / 0.18);
+  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+[data-theme="dark"] .app-root .tm-thumb {
+  background: oklch(0.3 0 0);
+}
+.app-root .tm-side[data-side="sell"] .tm-thumb {
+  transform: translateX(100%);
+}
+.app-root .tm-side button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  /* con el padding de 4px de la barra, mide 46px: lo mismo que el botón de registrar */
+  height: 38px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font: 600 0.92rem var(--font-body);
+  cursor: pointer;
+  transition: color 0.25s;
+}
+.app-root .tm-side button.on:first-of-type {
+  color: var(--up);
+}
+.app-root .tm-side button.on:last-of-type {
+  color: var(--down);
+}
+/* campos: hundidos sobre el fondo, se encienden al enfocar */
+.app-root .tm .field label {
+  font-size: 0.78rem;
+}
+/* todo a 46px: campos, compra/venta y el botón de registrar */
+.app-root .tm .field input {
+  height: 46px;
+  border-color: var(--line-soft);
+  border-radius: 10px;
+  background: var(--bg);
+  font-variant-numeric: tabular-nums;
+}
+.app-root .tm .field input:focus {
+  background: var(--surface);
+}
+.app-root .tm-search input {
+  padding-left: 40px;
+}
+.app-root .tm-picked {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 9px 9px 11px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: var(--bg);
+  animation: nrx-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .tm-picked > div {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+.app-root .tm-picked b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1rem;
+}
+.app-root .tm-picked span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* pie: total en grande y la acción, sobre un fondo apenas distinto */
+.app-root .tm-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 4px -24px 0;
+  padding: 16px 24px 22px;
+  border-top: 1px solid var(--line-soft);
+  background: color-mix(in oklch, var(--bg) 70%, transparent);
+}
+.app-root .tm-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.app-root .tm-total span {
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+}
+.app-root .tm-total b {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .tm-foot .btn-pink {
+  justify-content: center;
+  height: 46px;
 }
 
 /* ---------- BUSCADOR GLOBAL (⌘K) ---------- */

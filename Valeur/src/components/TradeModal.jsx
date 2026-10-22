@@ -2,18 +2,26 @@ import { useEffect, useRef, useState } from "react";
 import { getQuote, useSuggestions, money, fmtPrice, assetCurrency, today, formatDate } from "../lib/market";
 import { addTrade, findOversell } from "../lib/portfolio";
 import { toast } from "../lib/feedback";
+import { useModalClose } from "../lib/modal";
 import { FormError, SubmitButton } from "./AuthLayout";
+import Modal from "./Modal";
+import Logo from "./Logo";
 
 const SYMBOL_RE = /^[A-Z0-9.=^-]{1,12}$/;
 
-/* Modal para registrar una compra o venta.
+/* Modal para registrar una compra o venta. Nace del botón que lo abrió.
    `held` = { SYM: cantidad } para no vender más de lo que se tiene.
    El formulario se monta al abrir, así arranca limpio con lo prellenado. */
-export default function TradeModal({ open, ...props }) {
-  return open ? <TradeForm {...props} /> : null;
+export default function TradeModal({ open, onClose, ...props }) {
+  return open ? (
+    <Modal onClose={onClose} label="Registrar operación" className="tm">
+      <TradeForm {...props} />
+    </Modal>
+  ) : null;
 }
 
-function TradeForm({ onClose, uid, initial = {}, held = {}, trades = [], onSaved }) {
+function TradeForm({ uid, initial = {}, held = {}, trades = [], onSaved }) {
+  const close = useModalClose();
   const [symbol, setSymbol] = useState(initial.symbol || "");
   const [name, setName] = useState(initial.name || "");
   const [query, setQuery] = useState("");
@@ -50,13 +58,6 @@ function TradeForm({ onClose, uid, initial = {}, held = {}, trades = [], onSaved
       alive = false;
     };
   }, [symbol]);
-
-  // Escape cierra
-  useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
   const pick = (s) => {
     setSymbol(s.symbol.toUpperCase());
@@ -111,152 +112,146 @@ function TradeForm({ onClose, uid, initial = {}, held = {}, trades = [], onSaved
     if (err) return setError(/failed to fetch|network/i.test(err) ? "Sin conexión con el servidor. Probá de nuevo." : err);
     toast(`${side === "buy" ? "Compra" : "Venta"} de ${q} ${symbol} registrada`);
     onSaved?.();
-    onClose();
+    close();
   };
 
+  const sell = side === "sell";
   return (
-    <div className="modal-bg" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="trade-title">
-        <div className="modal-head">
+    <>
+      <div className="tm-head">
+        <div>
+          <span className="kicker">Nueva operación</span>
           <h2 id="trade-title">Registrar operación</h2>
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="Cerrar">
-            <i className="bi bi-x-lg" />
+        </div>
+        <button type="button" className="tm-x" onClick={close} aria-label="Cerrar">
+          <i className="bi bi-x-lg" />
+        </button>
+      </div>
+
+      {/* el error se va apenas tocás algo */}
+      <form className="tm-form" onSubmit={submit} onChange={() => error && setError("")} noValidate>
+        {/* Compra / venta: lo primero que se decide */}
+        <div className="tm-side" data-side={side} role="radiogroup" aria-label="Tipo de operación">
+          <span className="tm-thumb" aria-hidden="true" />
+          <button type="button" role="radio" aria-checked={!sell} className={!sell ? "on" : ""} onClick={() => setSide("buy")}>
+            <i className="bi bi-plus-lg" /> Compra
+          </button>
+          <button type="button" role="radio" aria-checked={sell} className={sell ? "on" : ""} onClick={() => setSide("sell")}>
+            <i className="bi bi-dash-lg" /> Venta
           </button>
         </div>
 
-        <form className="auth-form trade-form" onSubmit={submit} noValidate>
-          {/* Activo */}
-          <div className="field">
-            <label htmlFor="t-symbol">Activo</label>
-            {symbol ? (
-              <div className="picked">
-                <span className="tk">{symbol.slice(0, 4)}</span>
-                <div>
-                  <b>{symbol}</b>
-                  <span className={quote === null ? "txt-down" : ""}>
-                    {quote === null ? "No encontramos cotización" : name || (quote ? fmtPrice(symbol, quote.price) : "…")}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className="chip"
-                  onClick={() => {
-                    setSymbol("");
-                    setName("");
-                    setPrice("");
-                    setQuote(undefined);
-                    setTimeout(() => firstInput.current?.focus(), 30);
-                  }}
-                >
-                  Cambiar
-                </button>
+        {/* Activo */}
+        <div className="field">
+          <label htmlFor="t-symbol">Activo</label>
+          {symbol ? (
+            <div className="tm-picked">
+              <Logo symbol={symbol} size={34} />
+              <div>
+                <b>{symbol}</b>
+                <span className={quote === null ? "txt-down" : ""}>
+                  {quote === null ? "No encontramos cotización" : [name, quote ? `hoy ${fmtPrice(symbol, quote.price)}` : "…"].filter(Boolean).join(" · ")}
+                </span>
               </div>
-            ) : (
-              <div className="search-form compact">
-                <i className="bi bi-search ico" aria-hidden="true" />
-                <input
-                  id="t-symbol"
-                  ref={firstInput}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      if (suggestions[0] && query.length >= 2) pick(suggestions[0]);
-                      else commitQuery();
-                    }
-                  }}
-                  placeholder="Ticker o empresa… AAPL, Tesla"
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-                {suggestions.length > 0 && (
-                  <ul className="suggest" role="listbox">
-                    {suggestions.map((s) => (
-                      <li key={s.symbol} role="option" aria-selected={false} onMouseDown={() => pick(s)}>
-                        <div>
-                          <b>{s.symbol}</b>
-                          <span>{s.name}</span>
-                        </div>
-                        {s.type && <small>{s.type}</small>}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Compra / venta */}
-          <div className="field">
-            <label>Tipo</label>
-            <div className="seg full" role="radiogroup" aria-label="Tipo de operación">
-              <button type="button" role="radio" aria-checked={side === "buy"} className={side === "buy" ? "on" : ""} onClick={() => setSide("buy")}>
-                <i className="bi bi-arrow-down-left" /> Compra
-              </button>
               <button
                 type="button"
-                role="radio"
-                aria-checked={side === "sell"}
-                className={side === "sell" ? "on sell" : ""}
-                onClick={() => setSide("sell")}
+                className="btn btn-line btn-sm"
+                onClick={() => {
+                  setSymbol("");
+                  setName("");
+                  setPrice("");
+                  setQuote(undefined);
+                  setTimeout(() => firstInput.current?.focus(), 30);
+                }}
               >
-                <i className="bi bi-arrow-up-right" /> Venta
+                Cambiar
               </button>
             </div>
-            {side === "sell" && symbol && (
-              <small className="hint">Tenés {heldQty} {symbol}</small>
-            )}
-          </div>
-
-          <div className="row-2">
-            <div className="field">
-              <label htmlFor="t-qty">Cantidad</label>
-              <input id="t-qty" type="number" min="0" step="any" inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} placeholder="0" />
+          ) : (
+            <div className="search-form compact tm-search">
+              <i className="bi bi-search ico" aria-hidden="true" />
+              <input
+                id="t-symbol"
+                ref={firstInput}
+                value={query}
+                onChange={(e) => setQuery(e.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (suggestions[0] && query.length >= 2) pick(suggestions[0]);
+                    else commitQuery();
+                  }
+                }}
+                placeholder="Ticker o empresa… AAPL, Tesla"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              {suggestions.length > 0 && (
+                <ul className="suggest" role="listbox">
+                  {suggestions.map((s) => (
+                    <li key={s.symbol} role="option" aria-selected={false} onMouseDown={() => pick(s)}>
+                      <div>
+                        <b>{s.symbol}</b>
+                        <span>{s.name}</span>
+                      </div>
+                      {s.type && <small>{s.type}</small>}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            <div className="field">
-              <label htmlFor="t-price">
-                Precio{symbol ? ` (${currency === "ARS" ? "ARS" : "US$"})` : " por unidad"}
-                {quote && (
-                  <button type="button" className="link-btn" onClick={() => setPrice(String(quote.price))}>
-                    usar actual {fmtPrice(symbol, quote.price)}
-                  </button>
-                )}
-              </label>
-              <input id="t-price" type="number" min="0" step="any" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" />
-            </div>
-          </div>
-
-          {offPrice && (
-            <p className="price-warn" role="status">
-              <i className="bi bi-exclamation-circle" /> {symbol} cotiza a {fmtPrice(symbol, quote.price)}. Revisá que
-              el precio sea de esta especie y en {currency === "ARS" ? "pesos" : "dólares"}.
-            </p>
           )}
+          {sell && symbol && <small className="hint">Tenés {heldQty} {symbol}</small>}
+        </div>
 
-          <div className="row-2">
-            <div className="field">
-              <label htmlFor="t-date">Fecha</label>
-              <input id="t-date" type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} />
-            </div>
-            <div className="field">
-              <label htmlFor="t-note">Nota (opcional)</label>
-              <input id="t-note" value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} placeholder="Por qué la hiciste" />
-            </div>
+        <div className="row-2">
+          <div className="field">
+            <label htmlFor="t-qty">Cantidad</label>
+            <input id="t-qty" type="number" min="0" step="any" inputMode="decimal" value={qty} onChange={(e) => setQty(e.target.value)} placeholder="0" />
           </div>
+          <div className="field">
+            <label htmlFor="t-price">
+              Precio{symbol ? ` (${currency === "ARS" ? "ARS" : "US$"})` : " por unidad"}
+              {quote && (
+                <button type="button" className="link-btn" onClick={() => setPrice(String(quote.price))}>
+                  usar actual
+                </button>
+              )}
+            </label>
+            <input id="t-price" type="number" min="0" step="any" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" />
+          </div>
+        </div>
 
-          <div className="trade-total">
-            <span>Total {side === "buy" ? "invertido" : "recibido"}</span>
+        {offPrice && (
+          <p className="price-warn" role="status">
+            <i className="bi bi-exclamation-circle" /> {symbol} cotiza a {fmtPrice(symbol, quote.price)}. Revisá que
+            el precio sea de esta especie y en {currency === "ARS" ? "pesos" : "dólares"}.
+          </p>
+        )}
+
+        <div className="row-2">
+          <div className="field">
+            <label htmlFor="t-date">Fecha</label>
+            <input id="t-date" type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div className="field">
+            <label htmlFor="t-note">Nota (opcional)</label>
+            <input id="t-note" value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} placeholder="Por qué la hiciste" />
+          </div>
+        </div>
+
+        {/* pie: el total en grande y la acción */}
+        <div className="tm-foot">
+          <div className="tm-total">
+            <span>Total {sell ? "recibido" : "invertido"}</span>
             <b>{money(total, undefined, currency)}</b>
           </div>
-
           <FormError error={error} />
-
           <SubmitButton loading={saving} loadingText="Guardando…" disabled={saving}>
-            {side === "buy" ? "Registrar compra" : "Registrar venta"}
+            {sell ? "Registrar venta" : "Registrar compra"}
           </SubmitButton>
-        </form>
-      </div>
-    </div>
+        </div>
+      </form>
+    </>
   );
 }
