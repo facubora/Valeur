@@ -11,7 +11,7 @@ import PostComposer from "../components/PostComposer";
 import ProfileModal from "../components/ProfileModal";
 import TradeModal from "../components/TradeModal";
 import { PostCard, GhostPosts } from "../components/Social";
-import { Delta, CurrencyPick, AssetRow, ForYouCards, ForYouStart } from "../components/MarketBits";
+import { Delta, AssetRow, ForYouCards, ForYouStart } from "../components/MarketBits";
 import { SectionNav, SectionHead } from "../components/Sections";
 import Modal from "../components/Modal";
 import Pill from "../components/Pill";
@@ -294,7 +294,6 @@ function Explore({ uid, user, ctx, recent, onOpen }) {
             </div>
           )}
         </div>
-        <CurrencyPick />
       </section>
 
       <SearchBar onOpen={onOpen} recent={recent} />
@@ -657,7 +656,6 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
                 {priceIn(symbol, Math.abs(quote.change), cur, rate)} hoy
               </span>
             )}
-            <CurrencyPick />
             {pos && <Pill to="/dashboard" label="Tu posición" value={money(pos.value, undefined, cur)} delta={pos.pnlPct} />}
             {myAlerts > 0 && (
               <Pill onClick={() => setAlerting(true)} icon="bi-bell" label="Alertas" value={myAlerts === 1 ? "1 vigilando" : `${myAlerts} vigilando`} />

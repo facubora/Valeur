@@ -54,9 +54,10 @@ export function AuthProvider({ children }) {
         id: uid,
         email: session.user.email,
         username:
-          (profile?.id === uid && profile.username) ||
+          (profile && profile.id === uid && profile.username) ||
           session.user.user_metadata?.username ||
           session.user.email.split("@")[0],
+        currency: session.user.user_metadata?.currency || null,
       }
     : null;
 

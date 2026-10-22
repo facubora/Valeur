@@ -1169,6 +1169,24 @@
 .app-root .mp-list a:hover i {
   color: var(--accent-text);
 }
+/* moneda de la cuenta (la palanca US$ / AR$ vive acá) */
+.app-root .mp-cur {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 42px;
+  padding: 0 4px 0 10px;
+  font-size: 0.89rem;
+  font-weight: 500;
+}
+.app-root .mp-cur > i {
+  width: 16px;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.app-root .mp-cur .cur-pick {
+  margin-left: auto;
+}
 /* interruptor (mostrar u ocultar la cinta) */
 .app-root .mp-switch {
   width: 100%;
@@ -2449,8 +2467,7 @@
 .app-root .ad-day i {
   font-size: 0.7rem;
 }
-.app-root .ad-id .hpills .cur-pick {
-  flex-shrink: 0;
+.app-root .ad-day {
   margin-right: 6px;
 }
 .app-root .ad-price {

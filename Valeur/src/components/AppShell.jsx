@@ -7,6 +7,8 @@ import { useMyProfile } from "../lib/social";
 import { useAlertWatcher, useNotifications } from "../lib/alerts";
 import { BellButton, NotificationsPanel } from "./NotificationBell";
 import { Verified } from "./Social";
+import { CurrencyPick } from "./MarketBits";
+import { adoptAccountCurrency } from "../lib/market";
 import MarketTape from "./MarketTape";
 import CommandPalette from "./CommandPalette";
 import { ConfirmHost, ToastHost } from "./Feedback";
@@ -90,6 +92,9 @@ export default function AppShell({ children }) {
       /* sin almacenamiento: vale solo para esta página */
     }
   };
+
+  // la moneda es una decisión de la cuenta: al entrar se usa la guardada
+  useEffect(() => adoptAccountCurrency(user?.currency), [user?.currency]);
 
   // Lo desplegado se cierra con Escape o al elegir un destino
   useEffect(() => {
@@ -340,6 +345,10 @@ export default function AppShell({ children }) {
                         <i className="bi bi-activity" /> Cinta de cotizaciones
                         <span className="sw" aria-hidden="true" />
                       </button>
+                      <div className="mp-cur">
+                        <i className="bi bi-currency-exchange" /> Ver precios en
+                        <CurrencyPick />
+                      </div>
                     </div>
                     <div className="mp-foot">
                       <div className="theme-seg" role="radiogroup" aria-label="Tema">

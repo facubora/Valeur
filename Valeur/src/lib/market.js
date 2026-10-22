@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { MARKET_API } from "./supabase";
+import { MARKET_API, supabase } from "./supabase";
 
 /* ── Datos de mercado (backend Flask + yfinance) ─────────────────────────── */
 
@@ -510,20 +510,32 @@ let curValue = (() => {
   }
 })();
 
+/* Cambia la moneda en toda la app (y la recuerda en este navegador) */
+function applyCurrency(c) {
+  curValue = c;
+  try {
+    localStorage.setItem(CUR_KEY, c);
+  } catch {
+    /* sin storage: queda solo en memoria */
+  }
+  curListeners.forEach((fn) => fn(c));
+}
+
+/* La moneda es de la cuenta: al entrar se toma la guardada (si hay) */
+export function adoptAccountCurrency(c) {
+  if ((c === "USD" || c === "ARS") && c !== curValue) applyCurrency(c);
+}
+
 export function useDisplayCurrency() {
   const [cur, setLocal] = useState(curValue);
   useEffect(() => {
     curListeners.add(setLocal);
     return () => curListeners.delete(setLocal);
   }, []);
+  // además de aplicarla, la guarda en la cuenta para los otros dispositivos
   const setCur = useCallback((c) => {
-    curValue = c;
-    try {
-      localStorage.setItem(CUR_KEY, c);
-    } catch {
-      /* sin storage: queda solo en memoria */
-    }
-    curListeners.forEach((fn) => fn(c));
+    applyCurrency(c);
+    supabase?.auth.updateUser({ data: { currency: c } }).catch(() => {});
   }, []);
   return [cur, setCur];
 }
