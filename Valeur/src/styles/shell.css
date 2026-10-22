@@ -165,20 +165,34 @@
   height: 1px;
   margin-bottom: -1px;
 }
+.app-root.shell {
+  --glass: color-mix(in oklch, var(--bg) 58%, transparent);
+}
 .app-root .vx-top {
   position: sticky;
   top: 0;
   z-index: calc(var(--z-sticky) + 2);
-  background: color-mix(in oklch, var(--bg) 70%, transparent);
-  backdrop-filter: saturate(1.8) blur(20px);
-  -webkit-backdrop-filter: saturate(1.8) blur(20px);
   border-bottom: 1px solid var(--line-soft);
   box-shadow: 0 1px 0 oklch(1 0 0 / 0.5) inset;
   transition:
-    background 0.35s,
+    border-color 0.3s,
     box-shadow 0.3s;
 }
+/* el vidrio va en una capa aparte (y no en la barra misma) para que lo que
+   cuelga de ella —el índice de la página— pueda desenfocar lo de atrás */
+.app-root .vx-top::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--glass);
+  backdrop-filter: saturate(1.8) blur(20px);
+  -webkit-backdrop-filter: saturate(1.8) blur(20px);
+  transition: background 0.35s;
+}
+/* al bajar, la barra se achica para dejar más lugar al contenido */
 .app-root .vx-top.scrolled {
+  --bar-h: 54px;
   box-shadow: 0 16px 36px -24px oklch(0.25 0.03 265 / 0.35);
 }
 [data-theme="dark"] .app-root .vx-top {
@@ -192,6 +206,7 @@
   align-items: center;
   gap: 28px;
   height: var(--bar-h);
+  transition: height 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .app-root .vx-bar .brand {
   flex-shrink: 0;
@@ -587,7 +602,7 @@
   transform: none;
 }
 /* con un recuadro abierto la barra se vuelve sólida, del mismo color que él */
-.app-root .vx-top:has(.vx-pop.open) {
+.app-root .vx-top:has(.vx-pop.open)::before {
   background: var(--bg);
 }
 
@@ -755,97 +770,142 @@
 }
 
 /* ---------- ÍNDICE DE LA PÁGINA ---------- */
-/* Franja a todo el ancho; al scrollear se acopla debajo del header */
-.app-root .sub-nav {
-  position: sticky;
-  top: var(--bar-h);
-  z-index: calc(var(--z-sticky) - 1);
-  margin: -14px calc(50% - 50vw) -8px;
-  padding: 0 calc(50vw - 50%);
-  border-top: 1px solid var(--line-soft);
-  border-bottom: 1px solid var(--line-soft);
-  background: var(--bg);
+/* No ocupa lugar en la página: al bajar a las secciones cuelga de la barra,
+   saliendo del link de la página actual, del mismo vidrio que ella */
+.app-root .vx-sub-slot {
+  display: contents;
+}
+.app-root .vx-sub {
+  position: absolute;
+  top: 100%;
+  left: var(--sub-x, var(--nav-x, 0));
+  z-index: 1;
+  display: grid;
+  grid-template-rows: 0fr;
+  max-width: calc(100% - var(--sub-x, 0px));
+  opacity: 0;
   transition:
-    background 0.3s,
-    box-shadow 0.3s;
+    grid-template-rows 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.25s;
 }
-.app-root .sub-nav.stuck {
-  border-top-color: transparent;
-  background: color-mix(in oklch, var(--bg) 86%, transparent);
-  backdrop-filter: saturate(1.5) blur(16px);
-  -webkit-backdrop-filter: saturate(1.5) blur(16px);
-  box-shadow: 0 12px 30px -26px oklch(0 0 0 / 0.5);
+.app-root .vx-sub.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
 }
-/* con el índice acoplado, la sombra la pone él (header + índice = un bloque) */
-.app-root:has(.sub-nav.stuck) .vx-top {
-  box-shadow: none;
+.app-root .vx-sub-bg,
+.app-root .vx-sub-fl {
+  position: absolute;
+  background: var(--glass);
+  backdrop-filter: saturate(1.8) blur(20px);
+  -webkit-backdrop-filter: saturate(1.8) blur(20px);
+  pointer-events: none;
 }
-.app-root .sub-nav-in {
+.app-root .vx-sub-bg {
+  inset: 0;
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 14px 28px -20px oklch(0.25 0.03 265 / 0.35);
+}
+[data-theme="dark"] .app-root .vx-sub-bg {
+  box-shadow: 0 14px 28px -16px oklch(0 0 0 / 0.85);
+}
+/* curvas cóncavas que lo unen a la barra */
+.app-root .vx-sub-fl {
+  top: 0;
+  width: 16px;
+  height: 16px;
+}
+.app-root .vx-sub-fl.l {
+  left: -16px;
+  -webkit-mask: radial-gradient(circle at 0 100%, transparent 15.5px, #000 16px);
+  mask: radial-gradient(circle at 0 100%, transparent 15.5px, #000 16px);
+}
+.app-root .vx-sub-fl.r {
+  right: -16px;
+  -webkit-mask: radial-gradient(circle at 100% 100%, transparent 15.5px, #000 16px);
+  mask: radial-gradient(circle at 100% 100%, transparent 15.5px, #000 16px);
+}
+/* con el índice colgando, la línea de la barra se borra y el vidrio
+   de la barra baja 1px para quedar pegado al del índice */
+.app-root .vx-top:has(.vx-sub.open) {
+  border-bottom-color: transparent;
+}
+.app-root .vx-top:has(.vx-sub.open)::before {
+  bottom: -1px;
+}
+/* si se abre un recuadro, el índice se esconde detrás */
+.app-root .vx-bar:has(.vx-pop.open) .vx-sub {
+  opacity: 0;
+  pointer-events: none;
+}
+.app-root .vx-sub-in {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+.app-root .vx-sub-row {
+  position: relative;
+  isolation: isolate;
   display: flex;
-  align-items: stretch;
-  gap: 4px;
-  height: 46px;
+  gap: 2px;
+  padding: 2px 6px 6px;
   overflow-x: auto;
   scrollbar-width: none;
 }
-.app-root .sub-nav-in::-webkit-scrollbar {
+.app-root .vx-sub-row::-webkit-scrollbar {
   display: none;
 }
-.app-root .sub-nav-lbl {
-  display: flex;
-  align-items: center;
-  padding-right: 18px;
-  margin-right: 8px;
-  border-right: 1px solid var(--line-soft);
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--ink-soft);
-  white-space: nowrap;
-}
-.app-root .sub-nav button {
-  position: relative;
+.app-root .vx-sub button {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 0 12px;
+  height: 30px;
+  padding: 0 11px;
   border: 0;
+  border-radius: 9px;
   background: transparent;
   color: var(--ink-soft);
   font-family: var(--font-body);
-  font-size: 0.86rem;
+  font-size: 0.84rem;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: color 0.2s;
+  transition:
+    color 0.2s,
+    background 0.2s;
 }
-.app-root .sub-nav button i {
-  font-size: 0.85rem;
-}
-.app-root .sub-nav button:hover {
+.app-root .vx-sub button:hover {
   color: var(--ink);
 }
-.app-root .sub-nav button::after {
+.app-root .vx-sub button.on {
+  color: var(--ink);
+}
+/* la ficha que sigue al mouse (y vuelve a la sección actual), con su
+   barrita de acento abajo, como en la navegación de arriba */
+.app-root .vx-sub-ind {
+  position: absolute;
+  z-index: -1;
+  top: 2px;
+  left: 0;
+  height: 30px;
+  border-radius: 8px;
+  background: color-mix(in oklch, var(--ink) 6%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.25s;
+}
+.app-root .vx-sub-ind::after {
   content: "";
   position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: -1px;
+  left: 50%;
+  bottom: -4px;
+  width: 14px;
   height: 2px;
-  border-radius: 2px 2px 0 0;
+  margin-left: -7px;
+  border-radius: 2px;
   background: var(--accent);
-  transform: scaleX(0);
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.app-root .sub-nav button.on {
-  color: var(--ink);
-}
-.app-root .sub-nav button.on i {
-  color: var(--accent-text);
-}
-.app-root .sub-nav button.on::after {
-  transform: scaleX(1);
+  box-shadow: 0 0 8px color-mix(in oklch, var(--accent) 60%, transparent);
 }
 
 /* ---------- BUSCADOR GLOBAL (⌘K) ---------- */
@@ -1274,16 +1334,18 @@
     padding: 7px 6px;
     font-size: 0.86rem;
   }
-  .app-root .sub-nav {
-    margin-top: -6px;
+  .app-root .vx-sub {
+    left: 0;
+    right: 0;
+    max-width: none;
   }
-  .app-root .sub-nav-in {
-    height: 44px;
-  }
-  .app-root .sub-nav-lbl {
+  .app-root .vx-sub-fl {
     display: none;
   }
-  .app-root .sub-nav button {
+  .app-root .vx-top.scrolled {
+    --bar-h: 50px;
+  }
+  .app-root .vx-sub button {
     padding: 0 10px;
     font-size: 0.82rem;
   }

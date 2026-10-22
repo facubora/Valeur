@@ -176,10 +176,6 @@
   border-top: 1px solid var(--line-soft);
   scroll-margin-top: 140px;
 }
-.app-root .sub-nav + .block {
-  border-top: 0;
-  padding-top: 12px;
-}
 .app-root .s-head {
   display: flex;
   align-items: flex-end;

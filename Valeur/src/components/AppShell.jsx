@@ -127,8 +127,16 @@ export default function AppShell({ children }) {
 
   // Sobre la ruta activa; se reacomoda al redimensionar o al cargar las fuentes
   useLayoutEffect(() => {
-    // el recuadro de "Más" arranca donde arranca la navegación
-    const place = () => barRef.current?.style.setProperty("--nav-x", `${(navRef.current?.offsetLeft ?? 0) - 8}px`);
+    // el recuadro de "Más" arranca donde arranca la navegación, y el índice
+    // de la página sale del link de la página en la que estás
+    const place = () => {
+      const bar = barRef.current;
+      const nav = navRef.current;
+      if (!bar || !nav) return;
+      const here = nav.querySelector("a.active");
+      bar.style.setProperty("--nav-x", `${nav.offsetLeft - 8}px`);
+      bar.style.setProperty("--sub-x", `${nav.offsetLeft + (here ? here.offsetLeft : 0) - 8}px`);
+    };
     place();
     moveTo(activeLink());
     const onResize = () => {
@@ -237,6 +245,9 @@ export default function AppShell({ children }) {
               </Link>
             )}
           </div>
+
+          {/* hueco para el índice de la página (SectionNav), que cuelga de la barra */}
+          <div id="vx-sub-slot" className="vx-sub-slot" />
 
           {/* Recuadros que salen de la barra: secciones (debajo de la navegación),
               notificaciones y cuenta (a la derecha) */}
