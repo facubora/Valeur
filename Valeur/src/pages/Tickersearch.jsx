@@ -13,6 +13,7 @@ import { PostCard, GhostPosts } from "../components/Social";
 import { Delta, CurrencyPick, AssetRow, ForYouCards, ForYouStart } from "../components/MarketBits";
 import { SectionNav, SectionHead } from "../components/Sections";
 import Modal from "../components/Modal";
+import Pill from "../components/Pill";
 import { useModalClose } from "../lib/modal";
 import {
   useSuggestions,
@@ -243,6 +244,15 @@ function Explore({ uid, user, ctx, recent, onOpen }) {
     return [...rows].filter((r) => val(r) != null).sort((a, b) => (sort === "up" ? val(b) - val(a) : val(a) - val(b)));
   }, [rows, sort, list.quotes]);
   const visible = more ? sorted : sorted.slice(0, 12);
+  // cómo viene el día en esta pestaña: cuántos suben y bajan, y los extremos
+  const day = useMemo(() => {
+    const qs = rows.map((r) => [r.symbol, list.quotes[r.symbol]]).filter(([, q]) => q && Number.isFinite(q.change_pct));
+    if (!qs.length) return null;
+    const by = [...qs].sort((a, b) => b[1].change_pct - a[1].change_pct);
+    return { up: qs.filter(([, q]) => q.change_pct >= 0).length, down: qs.filter(([, q]) => q.change_pct < 0).length, top: by[0], bottom: by.at(-1) };
+  }, [rows, list.quotes]);
+  const tabName = TABS.find(([k]) => k === tab)?.[1];
+  const fecha = new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
   const alertSyms = new Set(alerts.data.filter((a) => a.active).map((a) => a.symbol));
 
   const setInterest = async (k, on) => {
@@ -271,10 +281,18 @@ function Explore({ uid, user, ctx, recent, onOpen }) {
     <>
       <section className="page-head">
         <div>
+          <span className="kicker">{fecha.charAt(0).toUpperCase() + fecha.slice(1)}</span>
           <h1>
             El <em>mercado</em>, a tu medida.
           </h1>
-          <p>Buscá cualquier activo, explorá por rubro y recibí ideas según lo que seguís.</p>
+          {/* cómo viene el día en la pestaña que estás mirando */}
+          {day && (
+            <div className="hpills" aria-label={`Cómo vienen hoy los ${tabName}`}>
+              <Pill label={tabName} value={`${day.up} suben · ${day.down} bajan`} />
+              <Pill to={`?symbol=${encodeURIComponent(day.top[0])}`} label="Más sube" value={day.top[0]} delta={day.top[1].change_pct} />
+              <Pill to={`?symbol=${encodeURIComponent(day.bottom[0])}`} label="Más baja" value={day.bottom[0]} delta={day.bottom[1].change_pct} />
+            </div>
+          )}
         </div>
         <CurrencyPick />
       </section>
@@ -334,7 +352,13 @@ function Explore({ uid, user, ctx, recent, onOpen }) {
         </SectionHead>
 
         <div className="explore-bar">
-          <div className="seg mkt-tabs" role="tablist" aria-label="Tipo de activo">
+          <div
+            className="vx-tabs mkt-tabs"
+            role="tablist"
+            aria-label="Tipo de activo"
+            style={{ "--n": TABS.length, "--i": Math.max(0, TABS.findIndex(([k]) => k === tab)) }}
+          >
+            <span className="vx-tabs-thumb" aria-hidden="true" />
             {TABS.map(([k, label]) => (
               <button
                 key={k}
