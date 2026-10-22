@@ -754,74 +754,52 @@
   opacity: 0.8;
 }
 
-/* alertas cercanas */
-.app-root .near-grid {
+/* alertas: una tarjeta, una fila por alerta con cuánto le falta para saltar */
+.app-root .nrx {
+  padding: 8px 16px;
+}
+.app-root .nrx-list {
+  list-style: none;
+}
+.app-root .nrx-list li + li {
+  border-top: 1px solid var(--line-soft);
+}
+.app-root .nrx-list a {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-.app-root .near {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 16px 18px;
-  min-width: 0;
-  transition:
-    border-color 0.25s,
-    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.app-root .near:hover {
-  border-color: color-mix(in oklch, var(--accent) 45%, transparent);
-  transform: translateY(-3px);
-}
-.app-root .near-top {
-  display: flex;
+  grid-template-columns: auto minmax(0, 1fr) minmax(140px, 220px) 110px;
   align-items: center;
-  gap: 10px;
-  min-width: 0;
+  gap: 16px;
+  padding: 11px 8px;
+  border-radius: 10px;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.15s;
 }
-.app-root .near-top > div {
-  min-width: 0;
+.app-root .nrx-list a:hover {
+  background: color-mix(in oklch, var(--ink) 4%, transparent);
 }
-.app-root .near-top b {
-  display: block;
-  font-size: 0.92rem;
+.app-root .nrx-list .pfx-val {
+  text-align: right;
 }
-.app-root .near-top span {
-  display: block;
-  font-size: 0.8rem;
+.app-root .nrx-gap {
+  display: grid;
+  gap: 6px;
+}
+.app-root .nrx-gap small {
+  font-size: 0.76rem;
   color: var(--ink-soft);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-.app-root .near-bar {
-  height: 6px;
+.app-root .nrx-bar {
+  height: 4px;
   border-radius: 999px;
   background: color-mix(in oklch, var(--ink) 8%, transparent);
   overflow: hidden;
 }
-.app-root .near-bar span {
+.app-root .nrx-bar span {
   display: block;
   height: 100%;
   border-radius: 999px;
   background: var(--accent);
   transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.app-root .near-foot {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  font-variant-numeric: tabular-nums;
-}
-.app-root .near-foot span {
-  font-weight: 700;
-  font-size: 0.92rem;
-}
-.app-root .near-foot small {
-  font-size: 0.78rem;
-  color: var(--ink-soft);
 }
 
 /* ============================================================
@@ -2821,9 +2799,6 @@
     border-left: 0;
     border-top: 1px solid var(--line-soft);
   }
-  .app-root .near-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .app-root .me-strip {
     grid-template-columns: 1fr;
   }
@@ -2914,6 +2889,18 @@
   .app-root .mvx-col {
     padding: 12px 8px 8px;
   }
+  .app-root .nrx {
+    padding: 4px 8px;
+  }
+  /* la barra de cuánto falta pasa abajo del nombre */
+  .app-root .nrx-list a {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 6px 12px;
+  }
+  .app-root .nrx-gap {
+    grid-column: 2 / -1;
+    grid-row: 2;
+  }
   .app-root .block {
     padding-top: 32px;
     gap: 18px;
@@ -2936,7 +2923,6 @@
   .app-root .fy-card .fy-x {
     opacity: 1;
   }
-  .app-root .near-grid,
   .app-root .post-grid,
   .app-root .feed-grid,
   .app-root .people-grid,

@@ -297,29 +297,31 @@ export default function Home() {
               Administrar
             </Link>
           </SectionHead>
-          <div className="near-grid">
-            {activeAlerts.slice(0, 6).map((a) => {
-              const q = quotes[a.symbol];
-              const gap = alertGap(a, q);
-              return (
-                <Link key={a.id} to={tickerUrl(a.symbol)} className="card near">
-                  <div className="near-top">
-                    <Logo symbol={a.symbol} size={30} />
-                    <div>
-                      <b>{a.symbol}</b>
-                      <span>{alertText(a)}</span>
-                    </div>
-                  </div>
-                  <div className="near-bar">
-                    <span style={{ width: `${(gap?.progress ?? 0) * 100}%` }} />
-                  </div>
-                  <div className="near-foot">
-                    <span>{q ? fmtPrice(a.symbol, q.price) : "—"}</span>
-                    <small>{gap?.text || "sin datos"}</small>
-                  </div>
-                </Link>
-              );
-            })}
+          <div className="card nrx">
+            <ul className="nrx-list">
+              {activeAlerts.slice(0, 6).map((a) => {
+                const q = quotes[a.symbol];
+                const gap = alertGap(a, q);
+                return (
+                  <li key={a.id}>
+                    <Link to={tickerUrl(a.symbol)}>
+                      <Logo symbol={a.symbol} size={28} />
+                      <span className="pfx-name">
+                        <b>{a.symbol}</b>
+                        <small>{alertText(a)}</small>
+                      </span>
+                      <span className="nrx-gap">
+                        <span className="nrx-bar">
+                          <span style={{ width: `${(gap?.progress ?? 0) * 100}%` }} />
+                        </span>
+                        <small>{gap?.text || "sin datos"}</small>
+                      </span>
+                      <span className="pfx-val">{q ? fmtPrice(a.symbol, q.price) : "—"}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         </section>
       )}
