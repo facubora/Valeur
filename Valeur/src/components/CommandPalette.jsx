@@ -5,6 +5,8 @@ import { Avatar, Verified } from "./Social";
 import { useSuggestions, tickerUrl } from "../lib/market";
 import { ASSETS, KIND_LABEL } from "../lib/catalog";
 import { usePeopleSearch } from "../lib/social";
+import { useModalClose } from "../lib/modal";
+import Modal from "./Modal";
 
 /* Accesos directos que aparecen siempre (filtrados por lo que se escribe) */
 const PAGES = [
@@ -29,12 +31,18 @@ function recents() {
   }
 }
 
-/* Buscador global: activos, personas y secciones. Se abre con ⌘K / Ctrl+K o "/" */
+/* Buscador global: activos, personas y secciones. Se abre con ⌘K / Ctrl+K o "/".
+   Si se abre con el buscador del header, nace de ahí (Modal). */
 export default function CommandPalette({ open, onClose, username }) {
-  return open ? <Palette onClose={onClose} username={username} /> : null;
+  return open ? (
+    <Modal onClose={onClose} label="Buscar en Valeur" className="cmdk" bgClass="cmdk-bg">
+      <Palette onClose={onClose} username={username} />
+    </Modal>
+  ) : null;
 }
 
 function Palette({ onClose, username }) {
+  const close = useModalClose();
   const navigate = useNavigate();
   const [q, setQ] = useState("");
   const [cursor, setCursor] = useState(0);
@@ -108,7 +116,7 @@ function Palette({ onClose, username }) {
   const onKey = (e) => {
     if (e.key === "Escape") {
       e.preventDefault();
-      onClose();
+      close();
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
       setCursor((sel + 1) % Math.max(flat.length, 1));
@@ -128,108 +136,106 @@ function Palette({ onClose, username }) {
 
   let i = -1;
   return (
-    <div className="modal-bg cmdk-bg" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="cmdk" role="dialog" aria-modal="true" aria-label="Buscar en Valeur">
-        <div className="cmdk-in">
-          <i className="bi bi-search" aria-hidden="true" />
-          <input
-            ref={input}
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              setCursor(0);
-            }}
-            onKeyDown={onKey}
-            placeholder="Buscá un activo, una persona o una sección…"
-            aria-label="Buscar"
-            aria-controls="cmdk-list"
-            autoComplete="off"
-            spellCheck={false}
-          />
-          <kbd>esc</kbd>
-        </div>
-        <div className="cmdk-list" id="cmdk-list" role="listbox" ref={listRef}>
-          {groups.map(([title, items]) => (
-            <div key={title} className="cmdk-group">
-              <span className="cmdk-title">{title}</span>
-              {items.map((it) => {
-                i += 1;
-                const idx = i;
-                return (
-                  <button
-                    key={title + (it.symbol || it.to || it.p?.id)}
-                    type="button"
-                    role="option"
-                    aria-selected={idx === sel}
-                    className="cmdk-item"
-                    onMouseEnter={() => setCursor(idx)}
-                    onClick={() => go(it)}
-                  >
-                    {it.kind === "asset" && (
-                      <>
-                        <Logo symbol={it.symbol} size={28} />
-                        <span className="ci-txt">
-                          <b>{it.symbol}</b>
-                          <span>{it.name || " "}</span>
-                        </span>
-                        {it.sub && <small>{it.sub}</small>}
-                      </>
-                    )}
-                    {it.kind === "person" && (
-                      <>
-                        <Avatar name={it.p.username} size={28} />
-                        <span className="ci-txt">
-                          <b>
-                            {it.p.display_name || it.p.username}
-                            {it.p.verified && <Verified label={it.p.verified_label} />}
-                          </b>
-                          <span>@{it.p.username}</span>
-                        </span>
-                        <small>Perfil</small>
-                      </>
-                    )}
-                    {it.kind === "page" && (
-                      <>
-                        <span className="ci-ic">
-                          <i className={"bi " + it.icon} />
-                        </span>
-                        <span className="ci-txt">
-                          <b>{it.label}</b>
-                          <span>{it.desc}</span>
-                        </span>
-                      </>
-                    )}
-                    <i className="bi bi-arrow-return-left ci-go" aria-hidden="true" />
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-          {nq && !flat.length && (
-            <p className="cmdk-none">
-              {/^[A-Z0-9.=^-]{1,12}$/.test(q.trim().toUpperCase()) ? (
-                <>
-                  Enter para buscar <b>{q.trim().toUpperCase()}</b> en el mercado
-                </>
-              ) : (
-                "No encontramos nada con eso."
-              )}
-            </p>
-          )}
-        </div>
-        <div className="cmdk-foot">
-          <span>
-            <kbd>↑</kbd>
-            <kbd>↓</kbd> moverse
-          </span>
-          <span>
-            <kbd>↵</kbd> abrir
-          </span>
-          <span>
-            <kbd>esc</kbd> cerrar
-          </span>
-        </div>
+    <>
+      <div className="cmdk-in">
+        <i className="bi bi-search" aria-hidden="true" />
+        <input
+          ref={input}
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setCursor(0);
+          }}
+          onKeyDown={onKey}
+          placeholder="Buscá un activo, una persona o una sección…"
+          aria-label="Buscar"
+          aria-controls="cmdk-list"
+          autoComplete="off"
+          spellCheck={false}
+        />
+        <kbd>esc</kbd>
       </div>
-    </div>
+      <div className="cmdk-list" id="cmdk-list" role="listbox" ref={listRef}>
+        {groups.map(([title, items]) => (
+          <div key={title} className="cmdk-group">
+            <span className="cmdk-title">{title}</span>
+            {items.map((it) => {
+              i += 1;
+              const idx = i;
+              return (
+                <button
+                  key={title + (it.symbol || it.to || it.p?.id)}
+                  type="button"
+                  role="option"
+                  aria-selected={idx === sel}
+                  className="cmdk-item"
+                  onMouseEnter={() => setCursor(idx)}
+                  onClick={() => go(it)}
+                >
+                  {it.kind === "asset" && (
+                    <>
+                      <Logo symbol={it.symbol} size={28} />
+                      <span className="ci-txt">
+                        <b>{it.symbol}</b>
+                        <span>{it.name || " "}</span>
+                      </span>
+                      {it.sub && <small>{it.sub}</small>}
+                    </>
+                  )}
+                  {it.kind === "person" && (
+                    <>
+                      <Avatar name={it.p.username} size={28} />
+                      <span className="ci-txt">
+                        <b>
+                          {it.p.display_name || it.p.username}
+                          {it.p.verified && <Verified label={it.p.verified_label} />}
+                        </b>
+                        <span>@{it.p.username}</span>
+                      </span>
+                      <small>Perfil</small>
+                    </>
+                  )}
+                  {it.kind === "page" && (
+                    <>
+                      <span className="ci-ic">
+                        <i className={"bi " + it.icon} />
+                      </span>
+                      <span className="ci-txt">
+                        <b>{it.label}</b>
+                        <span>{it.desc}</span>
+                      </span>
+                    </>
+                  )}
+                  <i className="bi bi-arrow-return-left ci-go" aria-hidden="true" />
+                </button>
+              );
+            })}
+          </div>
+        ))}
+        {nq && !flat.length && (
+          <p className="cmdk-none">
+            {/^[A-Z0-9.=^-]{1,12}$/.test(q.trim().toUpperCase()) ? (
+              <>
+                Enter para buscar <b>{q.trim().toUpperCase()}</b> en el mercado
+              </>
+            ) : (
+              "No encontramos nada con eso."
+            )}
+          </p>
+        )}
+      </div>
+      <div className="cmdk-foot">
+        <span>
+          <kbd>↑</kbd>
+          <kbd>↓</kbd> moverse
+        </span>
+        <span>
+          <kbd>↵</kbd> abrir
+        </span>
+        <span>
+          <kbd>esc</kbd> cerrar
+        </span>
+      </div>
+    </>
   );
 }

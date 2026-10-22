@@ -2489,12 +2489,6 @@
   gap: 12px;
   animation: auth-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.app-root .composer-modal .composer {
-  margin-top: 16px;
-  padding: 0;
-  border: 0;
-  animation: none;
-}
 .app-root .composer-row {
   display: flex;
   align-items: center;
@@ -2843,21 +2837,8 @@
 }
 
 /* ---------- modal de perfil ---------- */
-.app-root .profile-modal {
+.app-root .vx-modal.pm {
   width: min(580px, 100%);
-}
-.app-root .pm-tabs {
-  margin-top: 16px;
-}
-.app-root .pm-tabs button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 34px;
-}
-.app-root .pm-form {
-  margin-top: 18px;
 }
 .app-root .vis-opts {
   display: grid;

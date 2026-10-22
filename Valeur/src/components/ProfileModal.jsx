@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { FormError } from "./AuthLayout";
+import Modal from "./Modal";
+import { useModalClose } from "../lib/modal";
 import { Verified } from "./Social";
 import { SECTORS } from "../lib/catalog";
 import {
@@ -15,9 +17,13 @@ import { toast } from "../lib/feedback";
 const netMsg = (err) => (/failed to fetch|network/i.test(err) ? "Sin conexión con el servidor. Probá de nuevo." : err);
 
 /* Editar perfil: nombre, bio, privacidad del portfolio, rubros y verificación.
-   Se monta al abrir, así arranca con los datos actuales. */
-export default function ProfileModal({ open, ...props }) {
-  return open ? <ProfileForm {...props} /> : null;
+   Nace del botón que lo abrió. Se monta al abrir, así arranca con los datos actuales. */
+export default function ProfileModal({ open, onClose, ...props }) {
+  return open ? (
+    <Modal onClose={onClose} label="Tu perfil" className="tm pm">
+      <ProfileForm {...props} />
+    </Modal>
+  ) : null;
 }
 
 const TABS = [
@@ -27,7 +33,8 @@ const TABS = [
 ];
 const TAB_OF = { interests: "profile", privacy: "privacy", verify: "verify" };
 
-function ProfileForm({ uid, profile, onClose, focus = null }) {
+function ProfileForm({ uid, profile, focus = null }) {
+  const close = useModalClose();
   const [tab, setTab] = useState(TAB_OF[focus] || "profile");
   const [name, setName] = useState(profile?.display_name || "");
   const [bio, setBio] = useState(profile?.bio || "");
@@ -35,12 +42,6 @@ function ProfileForm({ uid, profile, onClose, focus = null }) {
   const [interests, setInterests] = useState(profile?.interests || []);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    const onKey = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
   const toggle = (k) => setInterests((xs) => (xs.includes(k) ? xs.filter((x) => x !== k) : [...xs, k]));
 
@@ -61,20 +62,26 @@ function ProfileForm({ uid, profile, onClose, focus = null }) {
     setSaving(false);
     if (err) return setError(netMsg(err));
     toast("Perfil actualizado");
-    onClose();
+    close();
   };
 
+  const ti = TABS.findIndex(([k]) => k === tab);
   return (
-    <div className="modal-bg" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal profile-modal" role="dialog" aria-modal="true" aria-labelledby="pm-title">
-        <div className="modal-head">
+    <>
+      <div className="tm-head">
+        <div>
+          <span className="kicker">Tu cuenta</span>
           <h2 id="pm-title">Tu perfil</h2>
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="Cerrar">
-            <i className="bi bi-x-lg" />
-          </button>
         </div>
+        <button type="button" className="tm-x" onClick={close} aria-label="Cerrar">
+          <i className="bi bi-x-lg" />
+        </button>
+      </div>
 
-        <div className="seg full pm-tabs" role="tablist" aria-label="Secciones del perfil">
+      <div className="pm-body">
+        {/* pestañas con ficha que se desliza */}
+        <div className="vx-tabs" role="tablist" aria-label="Secciones del perfil" style={{ "--n": TABS.length, "--i": ti }}>
+          <span className="vx-tabs-thumb" aria-hidden="true" />
           {TABS.map(([k, label, icon]) => (
             <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>
               <i className={"bi " + icon} /> {label}
@@ -85,7 +92,7 @@ function ProfileForm({ uid, profile, onClose, focus = null }) {
         {tab === "verify" ? (
           <VerifySection uid={uid} profile={profile} />
         ) : (
-          <form className="auth-form pm-form" onSubmit={save} noValidate>
+          <form className="pm-form" onSubmit={save} onChange={() => error && setError("")} noValidate>
             {tab === "profile" ? (
               <>
                 <div className="field">
@@ -129,14 +136,16 @@ function ProfileForm({ uid, profile, onClose, focus = null }) {
               </fieldset>
             )}
 
-            <FormError error={error} />
-            <button type="submit" className="btn btn-pink" disabled={saving}>
-              {saving ? "Guardando…" : "Guardar cambios"}
-            </button>
+            <div className="tm-foot">
+              <FormError error={error} />
+              <button type="submit" className="btn btn-pink" disabled={saving}>
+                {saving ? "Guardando…" : "Guardar cambios"}
+              </button>
+            </div>
           </form>
         )}
       </div>
-    </div>
+    </>
   );
 }
 

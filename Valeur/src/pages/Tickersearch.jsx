@@ -12,6 +12,8 @@ import TradeModal from "../components/TradeModal";
 import { PostCard, GhostPosts } from "../components/Social";
 import { Delta, CurrencyPick, AssetRow, ForYouCards, ForYouStart } from "../components/MarketBits";
 import { SectionNav, SectionHead } from "../components/Sections";
+import Modal from "../components/Modal";
+import { useModalClose } from "../lib/modal";
 import {
   useSuggestions,
   useQuotes,
@@ -813,25 +815,31 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
       )}
 
       {composer && (
-        <div className="modal-bg" onMouseDown={(e) => e.target === e.currentTarget && setComposer(false)}>
-          <div className="modal composer-modal" role="dialog" aria-modal="true" aria-labelledby="cm-title">
-            <div className="modal-head">
-              <h2 id="cm-title">Recomendar {symbol}</h2>
-              <button type="button" className="icon-btn" onClick={() => setComposer(false)} aria-label="Cerrar">
-                <i className="bi bi-x-lg" />
-              </button>
-            </div>
-            <PostComposer
-              uid={uid}
-              username={user.username}
-              initialSymbol={symbol}
-              autoOpen
-              onDone={() => setComposer(false)}
-              onCancel={() => setComposer(false)}
-            />
-          </div>
-        </div>
+        <Modal onClose={() => setComposer(false)} label={`Recomendar ${symbol}`} className="tm cm">
+          <RecommendBody uid={uid} username={user.username} symbol={symbol} />
+        </Modal>
       )}
+    </>
+  );
+}
+
+/* Recomendar un activo desde su detalle (en el Modal que nace del botón) */
+function RecommendBody({ uid, username, symbol }) {
+  const close = useModalClose();
+  return (
+    <>
+      <div className="tm-head">
+        <div>
+          <span className="kicker">Comunidad</span>
+          <h2 id="cm-title">Recomendar {symbol}</h2>
+        </div>
+        <button type="button" className="tm-x" onClick={close} aria-label="Cerrar">
+          <i className="bi bi-x-lg" />
+        </button>
+      </div>
+      <div className="cm-body">
+        <PostComposer uid={uid} username={username} initialSymbol={symbol} autoOpen onDone={close} onCancel={close} />
+      </div>
     </>
   );
 }

@@ -37,7 +37,7 @@ function fromRect(from, to) {
    hasta el centro mientras crece, el contenido aparece al llegar, y al cerrar
    vuelve a meterse en el botón. Escape y click afuera cierran.
    Adentro, useModalClose() (lib/modal) da `close`: anima y después llama a onClose. */
-export default function Modal({ onClose, label, className = "", children }) {
+export default function Modal({ onClose, label, className = "", bgClass = "", children }) {
   const boxRef = useRef(null);
   const bgRef = useRef(null);
   const closing = useRef(false);
@@ -122,7 +122,7 @@ export default function Modal({ onClose, label, className = "", children }) {
   }, [close]);
 
   return (
-    <div ref={bgRef} className="modal-bg vx-modal-bg" onMouseDown={(e) => e.target === e.currentTarget && close()}>
+    <div ref={bgRef} className={"modal-bg vx-modal-bg " + bgClass} onMouseDown={(e) => e.target === e.currentTarget && close()}>
       <div ref={boxRef} className={"modal vx-modal " + className} role="dialog" aria-modal="true" aria-label={label}>
         <ModalClose.Provider value={close}>{children}</ModalClose.Provider>
       </div>

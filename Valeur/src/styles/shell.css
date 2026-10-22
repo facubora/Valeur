@@ -1244,22 +1244,109 @@
   height: 46px;
 }
 
+/* pestañas con ficha que se desliza (--n pestañas, --i la activa) */
+.app-root .vx-tabs {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--n), 1fr);
+  padding: 4px;
+  border-radius: 12px;
+  background: color-mix(in oklch, var(--ink) 5%, transparent);
+}
+.app-root .vx-tabs-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / var(--n));
+  border-radius: 9px;
+  background: var(--surface);
+  box-shadow:
+    0 1px 2px oklch(0.25 0.03 265 / 0.12),
+    0 4px 12px -4px oklch(0.25 0.03 265 / 0.18);
+  transform: translateX(calc(var(--i) * 100%));
+  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+[data-theme="dark"] .app-root .vx-tabs-thumb {
+  background: oklch(0.3 0 0);
+}
+.app-root .vx-tabs button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 38px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-soft);
+  font: 600 0.88rem var(--font-body);
+  cursor: pointer;
+  transition: color 0.25s;
+}
+.app-root .vx-tabs button.on {
+  color: var(--ink);
+}
+.app-root .vx-tabs button.on i {
+  color: var(--accent-text);
+}
+
+/* editar perfil */
+.app-root .pm-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 24px 0;
+}
+.app-root .pm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: nrx-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .pm .field textarea {
+  border-color: var(--line-soft);
+  border-radius: 10px;
+  background: var(--bg);
+}
+.app-root .pm .field textarea:focus {
+  background: var(--surface);
+}
+.app-root .pm-body > .verify-box {
+  margin-bottom: 22px;
+  animation: nrx-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* recomendar desde el detalle de un activo */
+.app-root .vx-modal.cm {
+  width: min(560px, 100%);
+}
+.app-root .cm-body {
+  padding: 8px 24px 24px;
+}
+.app-root .cm-body .composer {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  animation: none;
+}
+
 /* ---------- BUSCADOR GLOBAL (⌘K) ---------- */
 .app-root .cmdk-bg {
   align-items: flex-start;
   padding-top: 12vh;
 }
+/* va dentro de <Modal> (que lo anima): si se abre desde el buscador del
+   header, nace de ahí */
 .app-root .cmdk {
   width: min(620px, 100%);
   max-height: min(560px, 76vh);
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: 22px;
   background: var(--surface);
-  box-shadow: 0 40px 90px -30px oklch(0 0 0 / 0.6);
   overflow: hidden;
-  animation: modal-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .app-root .cmdk-in {
   display: flex;
