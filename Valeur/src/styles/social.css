@@ -689,113 +689,69 @@
   opacity: 0.8;
 }
 
-/* movimientos: subieron / bajaron */
-.app-root .movers {
+/* movimientos: una tarjeta, lo que sube y lo que baja lado a lado. Las
+   filas son las mismas que las de "Tu portfolio" */
+.app-root .mvx {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-.app-root .movers-col {
-  padding: 16px 18px 8px;
-  min-width: 0;
-}
-.app-root .mc-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--line-soft);
-}
-.app-root .mc-head b {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-}
-.app-root .mc-head small {
-  margin-left: auto;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--ink-soft);
-}
-.app-root .mc-ic {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  font-size: 0.85rem;
-}
-.app-root .movers-col.up .mc-ic {
-  color: var(--up);
-  background: color-mix(in oklch, var(--up) 14%, transparent);
-}
-.app-root .movers-col.down .mc-ic {
-  color: var(--down);
-  background: color-mix(in oklch, var(--down) 14%, transparent);
-}
-.app-root .movers-col ul {
-  list-style: none;
-}
-.app-root .mv-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line-soft);
-}
-.app-root .movers-col li:last-child .mv-row {
-  border-bottom: 0;
-}
-.app-root .mv-row > div {
-  min-width: 0;
-}
-.app-root .mv-row b {
-  display: block;
-  font-size: 0.92rem;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
-.app-root .mv-row:hover b {
-  color: var(--accent-text);
-}
-.app-root .mv-row > div > span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.78rem;
-  color: var(--ink-soft);
-}
-.app-root .mv-row .tag {
-  height: 18px;
-  padding: 0 6px;
-  font-size: 0.64rem;
-}
-.app-root .mv-px {
-  font-weight: 700;
-  font-size: 0.9rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.app-root .mv-row .delta {
-  align-self: center;
-  min-width: 70px;
-  justify-content: center;
-}
-.app-root .mc-none {
-  padding: 14px 0 10px;
-}
-.app-root .movers.ghosted {
-  pointer-events: none;
-}
-.app-root .gh-col {
+.app-root .mvx-col {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  padding: 16px 16px 12px;
+}
+.app-root .mvx-col + .mvx-col {
+  border-left: 1px solid var(--line-soft);
+}
+.app-root .mvx-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 2px 8px 10px;
+}
+.app-root .mvx-head i {
+  font-size: 0.7rem;
+}
+.app-root .mvx-col.up .mvx-head i {
+  color: var(--up);
+}
+.app-root .mvx-col.down .mvx-head i {
+  color: var(--down);
+}
+.app-root .mvx-head b {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+}
+.app-root .mvx-head small {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.app-root .mvx .pfx-name b {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.app-root .mvx-held {
+  font-size: 0.74rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+.app-root .mvx-none {
+  padding: 10px 8px 14px;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+.app-root .mvx.ghosted .mvx-col {
   gap: 14px;
-  padding: 18px;
-  border-style: dashed;
-  border-color: color-mix(in oklch, var(--ink) 16%, transparent);
-  background: transparent;
+  padding: 22px 24px;
+  opacity: 0.8;
 }
 
 /* alertas cercanas */
@@ -2858,8 +2814,12 @@
 }
 
 @media (max-width: 900px) {
-  .app-root .movers {
+  .app-root .mvx {
     grid-template-columns: 1fr;
+  }
+  .app-root .mvx-col + .mvx-col {
+    border-left: 0;
+    border-top: 1px solid var(--line-soft);
   }
   .app-root .near-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2951,8 +2911,8 @@
     grid-template-columns: auto minmax(0, 1fr) auto 60px;
     gap: 10px;
   }
-  .app-root .mv-px {
-    display: none;
+  .app-root .mvx-col {
+    padding: 12px 8px 8px;
   }
   .app-root .block {
     padding-top: 32px;

@@ -7,7 +7,7 @@ import TradeModal from "../components/TradeModal";
 import PortfolioSummary, { PortfolioSummaryEmpty } from "../components/PortfolioSummary";
 import { PostTile } from "../components/Social";
 import { SectionNav, SectionHead } from "../components/Sections";
-import { Delta, AssetRow, ForYouCards, ForYouStart } from "../components/MarketBits";
+import { AssetRow, ForYouCards, ForYouStart } from "../components/MarketBits";
 import { useAuth } from "../context/AuthContext";
 import {
   useBatch,
@@ -237,48 +237,46 @@ export default function Home() {
       <section id="movimientos" className="block">
         <SectionHead kicker="En el día" title="Movimientos" desc="Lo que más subió y lo que más bajó hoy de lo que seguís y tenés." />
         {movers.length ? (
-          <div className="movers">
+          <div className="card mvx">
             {[
-              ["Subieron", "bi-arrow-up-right", "up", ups],
-              ["Bajaron", "bi-arrow-down-right", "down", downs],
-            ].map(([title, icon, kind, list]) => (
-              <div key={kind} className={"card movers-col " + kind}>
-                <div className="mc-head">
-                  <span className="mc-ic">
-                    <i className={"bi " + icon} />
-                  </span>
+              ["Suben", "up", ups, "Nada de lo tuyo sube hoy."],
+              ["Bajan", "down", downs, "Nada de lo tuyo baja hoy."],
+            ].map(([title, kind, list, none]) => (
+              <div key={kind} className={"mvx-col " + kind}>
+                <div className="mvx-head">
+                  <i className={kind === "up" ? "bi bi-caret-up-fill" : "bi bi-caret-down-fill"} />
                   <b>{title}</b>
                   <small>{list.length}</small>
                 </div>
                 {list.length ? (
-                  <ul>
+                  <ul className="pfx-list">
                     {list.map((m) => (
                       <li key={m.symbol}>
-                        <Link to={tickerUrl(m.symbol)} className="mv-row">
-                          <Logo symbol={m.symbol} size={30} />
-                          <div>
-                            <b>{m.name}</b>
-                            <span>
+                        <Link to={tickerUrl(m.symbol)}>
+                          <Logo symbol={m.symbol} size={28} />
+                          <span className="pfx-name">
+                            <b>
                               {m.symbol}
-                              {m.held && <em className="tag soft">en cartera</em>}
-                            </span>
-                          </div>
-                          <span className="mv-px">{priceIn(m.symbol, m.q.price, cur, rate)}</span>
-                          <Delta value={m.q.change_pct} />
+                              {m.held && <i className="bi bi-wallet2 mvx-held" title="En tu cartera" aria-label="En tu cartera" />}
+                            </b>
+                            <small>{m.name}</small>
+                          </span>
+                          <span className="pfx-val">{priceIn(m.symbol, m.q.price, cur, rate)}</span>
+                          <span className={"pfx-chg " + (kind === "up" ? "txt-up" : "txt-down")}>{pct(m.q.change_pct)}</span>
                         </Link>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="muted small mc-none">{kind === "up" ? "Nada de lo tuyo sube hoy." : "Nada de lo tuyo baja hoy."}</p>
+                  <p className="mvx-none">{none}</p>
                 )}
               </div>
             ))}
           </div>
         ) : (
-          <div className="movers ghosted" aria-hidden="true">
+          <div className="card mvx ghosted" aria-hidden="true">
             {[0, 1].map((i) => (
-              <div key={i} className="card movers-col gh-col">
+              <div key={i} className="mvx-col">
                 {[0, 1, 2].map((j) => (
                   <div key={j} className="gh-row">
                     <span className="gh-box">+</span>
