@@ -218,7 +218,7 @@ export function GhostPosts({ n = 2 }) {
             <span className="gh-pill" />
           </div>
           <div className="gh-asset">
-            <span className="gh-box">+</span>
+            <span className="gh-av sq" />
             <span className="gh-ln w25" />
           </div>
           <span className="gh-ln w90" />

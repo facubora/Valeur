@@ -141,6 +141,12 @@
   border-radius: 50%;
   border: 1.5px dashed color-mix(in oklch, var(--ink) 22%, transparent);
 }
+/* la caja del activo en el ejemplo de recomendación: gris, sin "+" */
+.app-root .gh-av.sq {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+}
 .app-root .gh-box {
   width: 30px;
   height: 30px;

@@ -10,7 +10,7 @@ import Logo from "../components/Logo";
 import PostComposer from "../components/PostComposer";
 import ProfileModal from "../components/ProfileModal";
 import TradeModal from "../components/TradeModal";
-import { PostCard } from "../components/Social";
+import { PostCard, GhostPosts } from "../components/Social";
 import { Delta, CurrencyPick, AssetRow, ForYouCards, ForYouStart } from "../components/MarketBits";
 import { SectionNav, SectionHead } from "../components/Sections";
 import Modal from "../components/Modal";
@@ -649,73 +649,58 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
               </small>
             </h1>
           </div>
-          {(pos || myAlerts > 0 || lead) && (
-            <div className="hpills">
-              {pos && <Pill to="/dashboard" label="Tu posición" value={money(pos.value, undefined, cur)} delta={pos.pnlPct} />}
-              {myAlerts > 0 && (
-                <Pill onClick={() => setAlerting(true)} icon="bi-bell" label="Alertas" value={myAlerts === 1 ? "1 vigilando" : `${myAlerts} vigilando`} />
-              )}
-              {lead && (
-                <Pill
-                  to="#comunidad"
-                  label="Comunidad"
-                  value={`${Math.round((counts[lead] / total) * 100)}% ${STANCE[lead].label.toLowerCase()}`}
-                />
-              )}
-            </div>
-          )}
+          <div className="hpills">
+            {quote && (
+              <span className={"ad-day " + (up ? "txt-up" : "txt-down")}>
+                <i className={up ? "bi bi-caret-up-fill" : "bi bi-caret-down-fill"} />
+                {Math.abs(quote.change_pct).toFixed(2).replace(".", ",")}% · {up ? "+" : "−"}
+                {priceIn(symbol, Math.abs(quote.change), cur, rate)} hoy
+              </span>
+            )}
+            <CurrencyPick />
+            {pos && <Pill to="/dashboard" label="Tu posición" value={money(pos.value, undefined, cur)} delta={pos.pnlPct} />}
+            {myAlerts > 0 && (
+              <Pill onClick={() => setAlerting(true)} icon="bi-bell" label="Alertas" value={myAlerts === 1 ? "1 vigilando" : `${myAlerts} vigilando`} />
+            )}
+            {lead && (
+              <Pill
+                to="#comunidad"
+                label="Comunidad"
+                value={`${Math.round((counts[lead] / total) * 100)}% ${STANCE[lead].label.toLowerCase()}`}
+              />
+            )}
+          </div>
         </div>
 
         <div className="ad-quote">
           {quote ? (
-            <div className="ad-px">
-              <b>{priceIn(symbol, quote.price, cur, rate)}</b>
-              <div className="ad-sub">
-                <span className={up ? "txt-up" : "txt-down"}>
-                  <i className={up ? "bi bi-caret-up-fill" : "bi bi-caret-down-fill"} />
-                  {Math.abs(quote.change_pct).toFixed(2).replace(".", ",")}% · {up ? "+" : "−"}
-                  {priceIn(symbol, Math.abs(quote.change), cur, rate)} hoy
-                </span>
-                <CurrencyPick />
-              </div>
-            </div>
+            <b className="ad-price">{priceIn(symbol, quote.price, cur, rate)}</b>
           ) : (
-            <div className="ad-px">
-              <span className="ph-line px big" />
-              <span className="ph-line short" />
-            </div>
+            <span className="ph-line px big" />
           )}
           <div className="ad-acts">
             {user ? (
               <>
                 {/* lo de todos los días, a un toque: seguir, alerta y recomendar */}
-                <div className="ad-quick">
-                  <button
-                    type="button"
-                    className={"aq" + (following ? " on fav" : "")}
-                    onClick={toggle}
-                    disabled={busy || !ctx.watch.loaded}
-                    aria-pressed={following}
-                    title={following ? "Dejar de seguir" : "Seguir"}
-                  >
-                    <i className={following ? "bi bi-star-fill" : "bi bi-star"} />
-                    <span>{following ? "Siguiendo" : "Seguir"}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={"aq" + (myAlerts ? " on" : "")}
-                    onClick={() => setAlerting(true)}
-                    title={myAlerts ? `Alertas: ${myAlerts} vigilando` : "Crear alerta"}
-                  >
-                    <i className={myAlerts ? "bi bi-bell-fill" : "bi bi-bell"} />
-                    <span>Alerta</span>
-                    {myAlerts > 0 && <em>{myAlerts}</em>}
-                  </button>
-                  <button type="button" className="aq" onClick={() => setComposer(true)} title="Recomendar">
-                    <i className="bi bi-chat-square-quote" />
-                    <span>Recomendar</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  className={"btn btn-line aq" + (following ? " on fav" : "")}
+                  onClick={toggle}
+                  disabled={busy || !ctx.watch.loaded}
+                  aria-pressed={following}
+                >
+                  <i className={following ? "bi bi-star-fill" : "bi bi-star"} />
+                  {following ? "Siguiendo" : "Seguir"}
+                </button>
+                <button type="button" className={"btn btn-line aq" + (myAlerts ? " on" : "")} onClick={() => setAlerting(true)}>
+                  <i className={myAlerts ? "bi bi-bell-fill" : "bi bi-bell"} />
+                  Alerta
+                  {myAlerts > 0 && <em>{myAlerts}</em>}
+                </button>
+                <button type="button" className="btn btn-line aq" onClick={() => setComposer(true)}>
+                  <i className="bi bi-chat-square-quote" />
+                  Recomendar
+                </button>
                 <button type="button" className="btn btn-pink ad-trade" onClick={() => setTrade(true)}>
                   <i className="bi bi-arrow-left-right" /> Operar
                 </button>
@@ -807,12 +792,14 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
               </div>
             </div>
           )}
-          {total > 0 && (
+          {total > 0 ? (
             <div className="post-list">
               {posts.data.slice(0, 6).map((p) => (
                 <PostCard key={p.id} post={p} uid={uid} quote={p.symbol === symbol ? quote : null} />
               ))}
             </div>
+          ) : (
+            <GhostPosts n={1} />
           )}
         </section>
       )}
