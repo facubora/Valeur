@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AppShell from "../components/AppShell";
+import { SkPosts, SkPeople } from "../components/Skeleton";
 import Pill from "../components/Pill";
 import RecommendModal from "../components/PostComposer";
 import ProfileModal from "../components/ProfileModal";
@@ -382,7 +383,7 @@ export default function Community() {
         )}
 
         {!feed.loaded ? (
-          <GhostPosts n={2} />
+          <SkPosts n={2} />
         ) : shown.length ? (
           <div className="feed-grid">
             {shown.map((p) => (
@@ -425,7 +426,9 @@ export default function Community() {
               : "Verificados y perfiles públicos. Si se siguen mutuamente, son amigos y ven su portfolio."
           }
         />
-        {suggested.rows.length ? (
+        {!suggested.loaded ? (
+          <SkPeople n={3} />
+        ) : suggested.rows.length ? (
           <div className="people-grid">
             {suggested.rows.map((p) => (
               <PersonCard key={p.id} p={p} uid={uid} graph={graph} />

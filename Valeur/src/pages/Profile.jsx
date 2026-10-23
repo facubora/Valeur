@@ -5,6 +5,7 @@ import Logo from "../components/Logo";
 import ProfileModal from "../components/ProfileModal";
 import RecommendModal from "../components/PostComposer";
 import Pill from "../components/Pill";
+import { SkPosts, SkList } from "../components/Skeleton";
 import { SectionNav, SectionHead } from "../components/Sections";
 import { Avatar, Verified, FollowButton, PostCard, GhostPosts, SetupNotice } from "../components/Social";
 import { useAuth } from "../context/AuthContext";
@@ -200,7 +201,9 @@ export default function Profile() {
           )}
         </SectionHead>
 
-        {canSee && comp.rows.length > 0 ? (
+        {!p || (canSee && !shared.loaded) ? (
+          <SkList n={3} />
+        ) : canSee && comp.rows.length > 0 ? (
           <div className={"up-pf" + (shared.trades.length ? "" : " solo")}>
             <div className="card pf-share">
               <div className="pf-ret">
@@ -269,9 +272,7 @@ export default function Profile() {
               <i className={canSee ? "bi bi-inbox" : "bi bi-lock"} />
               <span>
                 <b>
-                  {!p || (!shared.loaded && canSee)
-                    ? "Cargando…"
-                    : canSee
+                  {canSee
                       ? isMe
                         ? "Todavía no cargaste operaciones"
                         : "Todavía no cargó operaciones"
@@ -308,7 +309,7 @@ export default function Profile() {
           }
         />
         {!posts.loaded ? (
-          <GhostPosts n={3} />
+          <SkPosts n={3} />
         ) : posts.data.length ? (
           <div className="feed-grid">
             {posts.data.map((post) => (

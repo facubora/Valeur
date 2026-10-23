@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import AppShell from "../components/AppShell";
 import AssetChart from "../components/AssetChart";
 import AlertRows, { BrowserNotifyAsk } from "../components/AlertRows";
+import { SkList, SkPosts } from "../components/Skeleton";
 import SymbolSearch from "../components/SymbolSearch";
 import AlertEditor from "../components/AlertEditor";
 import AlertList from "../components/AssetAlerts";
@@ -508,7 +509,7 @@ function MyAlerts({ uid, alerts }) {
       </SectionHead>
 
       {!alerts.loaded ? (
-        <GhostAlerts />
+        <SkList n={2} />
       ) : listed.length ? (
         <AlertRows alerts={listed} quotes={quotes} existing={alerts.data} />
       ) : (
@@ -846,7 +847,9 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
               </div>
             </div>
           )}
-          {total > 0 ? (
+          {!posts.loaded ? (
+            <SkPosts n={1} />
+          ) : total > 0 ? (
             <div className="post-list">
               {posts.data.slice(0, 6).map((p) => (
                 <PostCard key={p.id} post={p} uid={uid} quote={p.symbol === symbol ? quote : null} />

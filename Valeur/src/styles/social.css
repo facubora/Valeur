@@ -472,9 +472,6 @@
 .app-root .pulse-tile.mep .muted {
   font-size: 0.72rem;
 }
-.app-root .home-loading {
-  height: 180px;
-}
 
 /* hero: fecha + mercados, saludo y el día en cuatro cifras */
 .app-root .home-hero .kicker {
@@ -944,9 +941,6 @@
   display: grid;
   gap: 14px;
   padding: 22px 24px;
-}
-.app-root .pfd-ghost.loading {
-  pointer-events: none;
 }
 
 /* posiciones: filas de borde a borde; comprar y vender aparecen al pasar */

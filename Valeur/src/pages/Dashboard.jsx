@@ -7,6 +7,7 @@ import Onboarding from "../components/Onboarding";
 import Logo from "../components/Logo";
 import Donut from "../components/Donut";
 import Pill from "../components/Pill";
+import { SkPortfolio, SkList } from "../components/Skeleton";
 import { SectionNav, SectionHead } from "../components/Sections";
 import { useAuth } from "../context/AuthContext";
 import { useQuotes, useMep, useDisplayCurrency, assetCurrency, fmtPrice, money, signed, pct, formatDate, tickerUrl } from "../lib/market";
@@ -24,12 +25,11 @@ const RANGES = [
 const HUES = [230, 300, 150, 30, 190, 60, 340, 100];
 const color = (i) => `oklch(0.62 0.16 ${HUES[i % HUES.length]})`;
 
-/* Portfolio "fantasma": la forma de lo que va a haber, punteada. Con
-   `loading` hace de skeleton mientras llegan los datos (con la caché casi no
-   se ve); si no, invita a registrar la primera operación. */
-function PortfolioGhost({ loading = false, onTrade }) {
+/* Portfolio "fantasma": la forma de lo que va a haber, punteada, invitando a
+   registrar la primera operación (mientras carga va el esqueleto) */
+function PortfolioGhost({ onTrade }) {
   return (
-    <div className={"pfd-ghost" + (loading ? " loading" : "")} aria-hidden={loading}>
+    <div className="pfd-ghost">
       <div className="card pfr ghosted">
         <div className="pfr-main">
           <span className="lbl">Valor total</span>
@@ -37,11 +37,9 @@ function PortfolioGhost({ loading = false, onTrade }) {
           <svg className="ghost-line" viewBox="0 0 400 120" preserveAspectRatio="none" aria-hidden="true">
             <path d="M0,96 C60,90 90,70 140,74 S230,40 280,46 S360,20 400,16" />
           </svg>
-          {!loading && (
-            <button type="button" className="btn btn-pink btn-sm" onClick={onTrade}>
-              <i className="bi bi-plus-lg" /> Registrá tu primera operación
-            </button>
-          )}
+          <button type="button" className="btn btn-pink btn-sm" onClick={onTrade}>
+            <i className="bi bi-plus-lg" /> Registrá tu primera operación
+          </button>
         </div>
         <div className="pfr-side">
           <span className="lbl">Composición</span>
@@ -221,7 +219,13 @@ export default function Dashboard() {
 
       {trades.error && <p className="form-err">{trades.error}</p>}
 
-      {!ready && <PortfolioGhost loading />}
+      {/* mientras llegan las operaciones y los precios: la forma, en gris */}
+      {!ready && (
+        <section className="block sk-page" aria-busy="true" aria-label="Cargando tu portfolio">
+          <SkPortfolio />
+          <SkList n={3} />
+        </section>
+      )}
 
       {/* Checklist de arranque (mientras falte algún paso) */}
       {ready && (

@@ -7,6 +7,7 @@ import TradeModal from "../components/TradeModal";
 import PortfolioSummary, { PortfolioSummaryEmpty } from "../components/PortfolioSummary";
 import Pill from "../components/Pill";
 import AlertRows from "../components/AlertRows";
+import { SkPortfolio, SkList, SkTiles } from "../components/Skeleton";
 import { SectionNav, SectionHead } from "../components/Sections";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -162,9 +163,11 @@ export default function Home() {
             // hasta que llegan los precios no hay variación que mostrar
             posSymbols.some((sym) => quotes[sym]) && <Pill to="/dashboard" label="Tu portfolio" value={signed(totals.dayChange, undefined, cur)} delta={totals.dayPct} />
           ) : (
-            <button type="button" className="hp hp-add" onClick={() => setTrade(true)}>
-              <i className="bi bi-plus-lg" /> Registrá tu primera operación
-            </button>
+            ready && (
+              <button type="button" className="hp hp-add" onClick={() => setTrade(true)}>
+                <i className="bi bi-plus-lg" /> Registrá tu primera operación
+              </button>
+            )
           )}
           {top && <Pill to={tickerUrl(top.symbol)} label={top.symbol} delta={top.q.change_pct} />}
           {merv && <Pill to={tickerUrl("^MERV")} label="Merval" delta={merv.change_pct} />}
@@ -204,7 +207,9 @@ export default function Home() {
           </button>
         </SectionHead>
 
-        {positions.length ? (
+        {!ready ? (
+          <SkPortfolio />
+        ) : positions.length ? (
           <PortfolioSummary positions={positions} totals={totals} cur={cur} />
         ) : (
           <PortfolioSummaryEmpty onTrade={() => setTrade(true)} />
@@ -251,6 +256,8 @@ export default function Home() {
               </div>
             ))}
           </div>
+        ) : !ready || (mkt.loading && (watchSymbols.length || posSymbols.length)) ? (
+          <SkList n={4} />
         ) : (
           <div className="card mvx ghosted" aria-hidden="true">
             {[0, 1].map((i) => (
@@ -291,7 +298,7 @@ export default function Home() {
           </Link>
         </SectionHead>
         {!watch.loaded ? (
-          <div className="card asset-list loading-box home-loading" />
+          <SkTiles n={5} />
         ) : watch.rows.length ? (
           <div ref={wltRef} className="wlt">
             {watch.rows.map((w) => {

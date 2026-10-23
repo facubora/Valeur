@@ -2245,26 +2245,6 @@
     transform: rotate(360deg);
   }
 }
-.app-root .loading-box {
-  position: relative;
-  overflow: hidden;
-  border-style: dashed;
-  background: transparent;
-}
-.app-root .loading-box::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    100deg,
-    transparent 30%,
-    color-mix(in oklch, var(--accent) 10%, transparent) 50%,
-    transparent 70%
-  );
-  transform: translateX(-100%);
-  animation: shimmer 1.6s ease-in-out infinite;
-}
-
 /* logos: siempre círculo, imagen a full (misma forma para todos) */
 .app-root .logo {
   flex-shrink: 0;
