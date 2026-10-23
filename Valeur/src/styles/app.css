@@ -740,7 +740,7 @@
   --sh-1: 0 1px 2px oklch(0.25 0.03 265 / 0.06), 0 8px 24px -12px oklch(0.25 0.03 265 / 0.16);
   --sh-2: 0 2px 4px oklch(0.25 0.03 265 / 0.06), 0 22px 48px -20px oklch(0.25 0.03 265 / 0.28);
   display: grid;
-  grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 520px);
   min-height: 100vh;
   background: var(--bg);
 }
@@ -790,7 +790,7 @@
 .app-root .auth-show {
   position: relative;
   overflow: hidden;
-  margin: 16px 16px 16px 0;
+  margin: 16px 0 16px 16px;
   border-radius: 28px;
   background:
     radial-gradient(120% 90% at 80% 0%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 60%),
@@ -864,6 +864,9 @@
   font-size: 0.9rem;
 }
 .app-root .as-band em {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   margin-left: auto;
   font: 700 0.66rem var(--font-body);
   letter-spacing: 0.1em;
@@ -888,21 +891,56 @@
 .app-root .as-ft b {
   font: 600 1.15rem var(--font-display);
 }
-.app-root .as-logo {
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  border-radius: 50%;
+/* la franja toma el color de la postura */
+.app-root .as-jug.hold .as-band {
+  background: color-mix(in srgb, var(--ink) 6%, var(--surface));
+}
+.app-root .as-jug.hold .as-band em {
+  color: var(--ink-soft);
+}
+.app-root .as-jug.sell .as-band {
+  background: color-mix(in srgb, var(--down) 12%, var(--surface));
+}
+.app-root .as-jug.sell .as-band em {
+  color: var(--down);
+}
+.app-root .as-id {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.app-root .as-id > span {
   display: grid;
-  place-items: center;
-  font: 700 0.6rem var(--font-body);
-  color: #fff;
+  line-height: 1.15;
 }
-.app-root .as-logo.nv {
-  background: #76b900;
+.app-root .as-id small {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
 }
-.app-root .as-logo.ml {
-  background: #2d3277;
+.app-root .as-spark.down path {
+  stroke: var(--down);
+}
+/* qué activo se está viendo */
+.app-root .as-dots {
+  position: absolute;
+  top: 24px;
+  right: 26px;
+  display: flex;
+  gap: 6px;
+}
+.app-root .as-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 18%, transparent);
+  transition:
+    width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.3s;
+}
+.app-root .as-dots span.on {
+  width: 20px;
+  background: var(--accent);
 }
 .app-root .as-al {
   left: 18%;
