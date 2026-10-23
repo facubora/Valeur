@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import Pill from "../components/Pill";
-import PostComposer from "../components/PostComposer";
+import RecommendModal from "../components/PostComposer";
 import ProfileModal from "../components/ProfileModal";
 import { Avatar, Verified, Person, PersonCard, FollowButton, PostCard, GhostPosts, SetupNotice } from "../components/Social";
 import { SectionNav, SectionHead } from "../components/Sections";
@@ -23,6 +23,13 @@ import {
   useSuggestedPeople,
   unfollow,
 } from "../lib/social";
+
+/* Qué ve el resto con cada opción de privacidad */
+const VIS_HINT = {
+  private: "Solo vos. Tus recomendaciones siguen siendo públicas.",
+  friends: "Los que seguís y te siguen ven % y rendimiento.",
+  public: "Cualquiera ve % y rendimiento. Nunca los montos.",
+};
 
 const FEED_TABS = [
   ["following", "Siguiendo"],
@@ -187,8 +194,10 @@ export default function Community() {
   const [stanceFilter, setStanceFilter] = useState("all");
   const [symFilter, setSymFilter] = useState("");
   const [edit, setEdit] = useState(null); // null | "privacy" | "interests" | "verify" | "all"
-  const [composerKey, setComposerKey] = useState(0);
+  // escribir una recomendación (también se abre con ?publicar=1)
+  const [writing, setWriting] = useState(() => params.has("publicar"));
   const [savingVis, setSavingVis] = useState(false);
+  const [pendingVis, setPendingVis] = useState(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -222,13 +231,19 @@ export default function Community() {
 
   if (!user) return null;
 
-  const setVisibility = async (v) => {
-    if (!(await confirmVisibility(v, me?.visibility))) return;
+  const applyVisibility = async (v) => {
+    setPendingVis(null);
     setSavingVis(true);
     const label = VISIBILITY.find(([k]) => k === v)?.[1].toLowerCase();
     await attempt(updateProfile(uid, { visibility: v }), { ok: `Tu portfolio ahora es ${label === "amigos" ? "solo para amigos" : label}`, fail: "No se pudo cambiar la privacidad" });
     setSavingVis(false);
   };
+  // desde el paso de "Para arrancar" se confirma con el diálogo de siempre
+  const setVisibility = async (v) => {
+    if (await confirmVisibility(v, me?.visibility)) applyVisibility(v);
+  };
+  // en el carnet: abrir el portfolio se confirma ahí mismo, debajo de las opciones
+  const pickVisibility = (v) => (v === "private" ? applyVisibility(v) : setPendingVis(v));
 
   const steps = [
     {
@@ -249,7 +264,7 @@ export default function Community() {
       title: "Recomendá un activo",
       desc: "Comprar, mantener o vender, y por qué.",
       act: (
-        <button type="button" className="btn btn-line btn-sm" onClick={() => setComposerKey((k) => k + 1)}>
+        <button type="button" className="btn btn-line btn-sm" onClick={() => setWriting(true)}>
           <i className="bi bi-pencil-square" /> Escribir
         </button>
       ),
@@ -325,7 +340,11 @@ export default function Community() {
           <Tabs items={FEED_TABS} value={tab} onChange={setTab} label="Qué mostrar" />
         </SectionHead>
 
-        <PostComposer key={composerKey} uid={uid} username={user.username} autoOpen={composerKey > 0 || params.has("publicar")} onDone={() => setTab("following")} />
+        <button type="button" className="rc-open" onClick={() => setWriting(true)}>
+          <i className="bi bi-pencil" />
+          <span>¿Qué activo recomendás hoy?</span>
+          <b>Recomendar</b>
+        </button>
 
         {highlighted && (
           <div className="post-hl">
@@ -443,58 +462,104 @@ export default function Community() {
       </section>
 
       <section id="perfil" className="block">
-        <SectionHead kicker="Vos" title="Tu perfil" desc="Cómo te ven los demás y quién puede ver tu portfolio.">
-          <Link to={`/u/${user.username}`} className="btn btn-line btn-sm">
-            Ver mi perfil público
-          </Link>
-          <button type="button" className="btn btn-line btn-sm" onClick={() => setEdit("all")} disabled={!me}>
-            <i className="bi bi-pencil" /> Editar
-          </button>
-        </SectionHead>
-        <div className="card me-card">
-          <div className="me-id">
-            <Avatar name={user.username} size={56} />
-            <div>
-              <b>
-                {me?.display_name || user.username}
-                {me?.verified && <Verified label={me.verified_label} />}
-              </b>
-              <span>@{user.username}</span>
-              {me?.bio && <p>{me.bio}</p>}
+        <SectionHead kicker="Vos" title="Tu perfil" desc="Cómo te ven los demás y quién puede ver tu portfolio." />
+        <div className="card carnet">
+          <div className="cn-id">
+            <div className="cn-who">
+              <Avatar name={user.username} size={58} />
+              <div>
+                <b>
+                  {me?.display_name || user.username}
+                  {me?.verified && <Verified label={me.verified_label} />}
+                </b>
+                <span>@{user.username}</span>
+              </div>
+            </div>
+            {me?.bio ? <p className="cn-bio">{me.bio}</p> : <p className="cn-bio muted">Todavía no escribiste una bio.</p>}
+            <dl className="cn-stats">
+              {[
+                [counts.followers, counts.followers === 1 ? "seguidor" : "seguidores"],
+                [counts.following, "siguiendo"],
+                [graph.loaded ? graph.friends.size : null, graph.friends.size === 1 ? "amigo" : "amigos"],
+              ].map(([n, label]) => (
+                <div key={label}>
+                  <dd>{n ?? "—"}</dd>
+                  <dt>{label}</dt>
+                </div>
+              ))}
+            </dl>
+            <div className="cn-btns">
+              <button type="button" className="btn btn-line btn-sm" onClick={() => setEdit("all")} disabled={!me}>
+                <i className="bi bi-pencil" /> Editar
+              </button>
+              <Link to={`/u/${user.username}`} className="btn btn-line btn-sm">
+                Ver perfil público
+              </Link>
             </div>
           </div>
-          <dl className="me-stats">
-            {[
-              [counts.followers, counts.followers === 1 ? "seguidor" : "seguidores"],
-              [counts.following, "siguiendo"],
-              [graph.loaded ? graph.friends.size : null, graph.friends.size === 1 ? "amigo" : "amigos"],
-            ].map(([n, label]) => (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd>{n ?? "—"}</dd>
-              </div>
-            ))}
-          </dl>
-          {me && (
-            <div className="me-vis">
-              <small>Tu portfolio lo ve</small>
-              <VisibilitySeg value={me.visibility} onChange={setVisibility} disabled={savingVis} />
-              <span className="me-vis-hint">
-                {me.visibility === "public"
-                  ? "Cualquiera ve tus % y rendimiento, nunca los montos."
-                  : me.visibility === "friends"
-                    ? "Solo quienes te siguen y seguís ven tus % y rendimiento."
-                    : "Nadie ve tu portfolio. Tus recomendaciones siguen siendo públicas."}
-              </span>
-              {!me.verified && (
-                <button type="button" className="lnk-btn verify-cta" onClick={() => setEdit("verify")}>
-                  <i className="bi bi-patch-check" /> ¿Sos analista o creador? Pedí el verificado
+
+          <div className="cn-side">
+            <span className="cn-lbl">¿Quién ve tu portfolio?</span>
+            <div className="cn-vis" role="radiogroup" aria-label="Quién ve tu portfolio">
+              {VISIBILITY.map(([k, label, icon]) => (
+                <button
+                  key={k}
+                  type="button"
+                  role="radio"
+                  aria-checked={me?.visibility === k}
+                  className={(me?.visibility === k ? "on" : "") + (pendingVis === k ? " pending" : "")}
+                  disabled={!me || savingVis}
+                  onClick={() => (me?.visibility === k ? setPendingVis(null) : pickVisibility(k))}
+                >
+                  <i className={"bi " + icon} />
+                  <b>{label}</b>
+                  <small>{VIS_HINT[k]}</small>
                 </button>
-              )}
+              ))}
             </div>
-          )}
+            {pendingVis && (
+              <div className="cn-confirm" onKeyDown={(e) => e.key === "Escape" && setPendingVis(null)}>
+                <span>
+                  <b>{pendingVis === "public" ? "¿Hacer público tu portfolio?" : "¿Compartirlo con tus amigos?"}</b>
+                  {pendingVis === "public"
+                    ? " Cualquiera en Valeur va a ver qué tenés y cómo te va, en %. Nunca los montos."
+                    : " Los que se siguen con vos van a ver qué tenés y cómo te va, en %. Nunca los montos."}
+                </span>
+                <div>
+                  <button type="button" className="btn btn-line btn-sm" autoFocus onClick={() => setPendingVis(null)}>
+                    Cancelar
+                  </button>
+                  <button type="button" className="btn btn-pink btn-sm" onClick={() => applyVisibility(pendingVis)}>
+                    {pendingVis === "public" ? "Hacerlo público" : "Compartir"}
+                  </button>
+                </div>
+              </div>
+            )}
+            {me && !me.verified && (
+              <div className="cn-verify">
+                <i className="bi bi-patch-check" />
+                <span>
+                  <b>¿Sos analista o creador?</b> Pedí el verificado y aparecé en "A quién seguir".
+                </span>
+                <button type="button" className="btn btn-line btn-sm" onClick={() => setEdit("verify")}>
+                  Pedirlo
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </section>
+
+      {writing && (
+        <RecommendModal
+          uid={uid}
+          onClose={() => {
+            setWriting(false);
+            if (params.has("publicar")) setParams({}, { replace: true });
+          }}
+          onDone={() => setTab("following")}
+        />
+      )}
 
       <ProfileModal open={Boolean(edit)} uid={uid} profile={me} focus={edit === "all" ? null : edit} onClose={() => setEdit(null)} />
     </AppShell>

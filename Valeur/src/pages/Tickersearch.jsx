@@ -7,7 +7,7 @@ import AlertsCard from "../components/AlertsCard";
 import AlertEditor from "../components/AlertEditor";
 import AlertList from "../components/AssetAlerts";
 import Logo from "../components/Logo";
-import PostComposer from "../components/PostComposer";
+import RecommendModal from "../components/PostComposer";
 import ProfileModal from "../components/ProfileModal";
 import TradeModal from "../components/TradeModal";
 import { PostCard, GhostPosts } from "../components/Social";
@@ -831,11 +831,7 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
         </Modal>
       )}
 
-      {composer && (
-        <Modal onClose={() => setComposer(false)} label={`Recomendar ${symbol}`} className="tm cm">
-          <RecommendBody uid={uid} username={user.username} symbol={symbol} />
-        </Modal>
-      )}
+      {composer && <RecommendModal uid={uid} initialSymbol={symbol} onClose={() => setComposer(false)} />}
     </>
   );
 }
@@ -868,27 +864,6 @@ function AlertBody({ uid, symbol, name, alerts, quote }) {
           {mine.length > 0 && <span className="lbl">Nueva alerta</span>}
           <AlertEditor uid={uid} symbol={symbol} existing={alerts} onDone={close} onCancel={close} />
         </div>
-      </div>
-    </>
-  );
-}
-
-/* Recomendar un activo desde su detalle (en el Modal que nace del botón) */
-function RecommendBody({ uid, username, symbol }) {
-  const close = useModalClose();
-  return (
-    <>
-      <div className="tm-head">
-        <div>
-          <span className="kicker">Comunidad</span>
-          <h2 id="cm-title">Recomendar {symbol}</h2>
-        </div>
-        <button type="button" className="tm-x" onClick={close} aria-label="Cerrar">
-          <i className="bi bi-x-lg" />
-        </button>
-      </div>
-      <div className="cm-body">
-        <PostComposer uid={uid} username={username} initialSymbol={symbol} autoOpen onDone={close} onCancel={close} />
       </div>
     </>
   );
