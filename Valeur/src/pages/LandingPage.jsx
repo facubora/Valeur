@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
 import "../styles/landing.css";
+import { useLandingMotion } from "../lib/landingMotion";
 
 /* Fondo de partículas (estilo ReactBits) — canvas liviano */
 function Particles() {
@@ -115,6 +116,8 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [navPill, setNavPill] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const rootRef = useRef(null);
+  useLandingMotion(rootRef);
 
   const moveTo = (el) => {
     if (el) setInd({ x: el.offsetLeft, w: el.offsetWidth, o: 1 });
@@ -193,7 +196,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="landing-root">
+    <div className="landing-root" ref={rootRef}>
       <span ref={topRef} className="scroll-sentinel" aria-hidden="true" style={{ top: 0 }} />
       <span ref={deepRef} className="scroll-sentinel" aria-hidden="true" style={{ top: 480 }} />
       {/* NAV */}
