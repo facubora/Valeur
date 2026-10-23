@@ -3129,3 +3129,70 @@
     margin-top: 36px;
   }
 }
+
+/* ---------- BUSCADOR DEL MERCADO ---------- */
+/* El mismo de la barra: hundido, vidrio tenue, borde fino y radio 10, solo
+   que más alto porque acá es lo principal */
+.app-root .mkt-searchbar .search-form input {
+  height: 46px;
+  padding: 0 44px 0 42px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--surface) 55%, transparent);
+  box-shadow: inset 0 1px 2px oklch(0.25 0.03 265 / 0.06);
+  font-size: 0.92rem;
+  letter-spacing: 0;
+}
+.app-root .mkt-searchbar .search-form input:hover {
+  border-color: var(--line);
+}
+.app-root .mkt-searchbar .search-form input:focus {
+  border-color: color-mix(in oklch, var(--accent) 45%, transparent);
+  background: var(--surface);
+  box-shadow:
+    inset 0 1px 2px oklch(0.25 0.03 265 / 0.06),
+    0 0 0 3px color-mix(in oklch, var(--accent) 12%, transparent);
+}
+.app-root .mkt-searchbar .search-form .ico {
+  left: 15px;
+  font-size: 0.92rem;
+}
+.app-root .mkt-searchbar .search-form:focus-within .ico {
+  color: var(--accent-text);
+}
+.app-root .mkt-searchbar .search-go {
+  position: absolute;
+  right: 10px;
+  top: 0;
+  bottom: 0;
+  margin: auto 0;
+  pointer-events: none;
+  animation: search-go-in 0.25s ease-out;
+}
+@keyframes search-go-in {
+  from {
+    opacity: 0;
+  }
+}
+.app-root .mkt-searchbar .suggest {
+  border-color: var(--line-soft);
+  border-radius: 12px;
+}
+.app-root .mkt-searchbar .suggest li > div {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+/* angosto: los recientes pasan abajo del buscador, sin apretarlo */
+@media (max-width: 900px) {
+  .app-root .mkt-searchbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .app-root .mkt-searchbar .recents {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+}

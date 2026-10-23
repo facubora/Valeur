@@ -152,6 +152,7 @@ function SearchBar({ onOpen, recent }) {
           autoComplete="off"
           spellCheck={false}
         />
+        {input && <kbd className="search-go">↵</kbd>}
         {showSuggest && (
           <ul className="suggest" role="listbox">
             {suggestions.map((s, i) => (
