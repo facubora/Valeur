@@ -367,16 +367,21 @@ export default function AppShell({ children }) {
                         <i className="bi bi-currency-exchange" /> Ver precios en
                         <CurrencyPick />
                       </div>
+                      {/* el tema vive acá, con las mismas fichas que la moneda */}
+                      <div className="mp-cur">
+                        <i className="bi bi-circle-half" /> Tema
+                        <div className="vx-tabs sm" role="radiogroup" aria-label="Tema" style={{ "--n": 2, "--i": dark ? 1 : 0 }}>
+                          <span className="vx-tabs-thumb" aria-hidden="true" />
+                          <button type="button" role="radio" aria-checked={!dark} aria-label="Claro" title="Claro" className={!dark ? "on" : ""} onClick={() => dark && toggle()}>
+                            <i className="bi bi-sun-fill" />
+                          </button>
+                          <button type="button" role="radio" aria-checked={dark} aria-label="Oscuro" title="Oscuro" className={dark ? "on" : ""} onClick={() => !dark && toggle()}>
+                            <i className="bi bi-moon-fill" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                     <div className="mp-foot">
-                      <div className="theme-seg" role="radiogroup" aria-label="Tema">
-                        <button type="button" role="radio" aria-checked={!dark} className={!dark ? "on" : ""} onClick={() => dark && toggle()} aria-label="Modo claro">
-                          <i className="bi bi-sun-fill" />
-                        </button>
-                        <button type="button" role="radio" aria-checked={dark} className={dark ? "on" : ""} onClick={() => !dark && toggle()} aria-label="Modo oscuro">
-                          <i className="bi bi-moon-fill" />
-                        </button>
-                      </div>
                       <button type="button" className="mp-out" onClick={logout}>
                         <i className="bi bi-box-arrow-right" /> Cerrar sesión
                       </button>
@@ -407,34 +412,6 @@ export default function AppShell({ children }) {
           </NavLink>
         ))}
       </nav>
-
-      {/* Dock flotante: tema (mismo que la landing; en mobile está en el menú) */}
-      <div className="dock">
-        <div className="theme-seg" role="radiogroup" aria-label="Tema">
-          <button
-            type="button"
-            role="radio"
-            aria-checked={!dark}
-            className={!dark ? "on" : ""}
-            onClick={() => dark && toggle()}
-            aria-label="Modo claro"
-            title="Modo claro"
-          >
-            <i className="bi bi-sun-fill" />
-          </button>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={dark}
-            className={dark ? "on" : ""}
-            onClick={() => !dark && toggle()}
-            aria-label="Modo oscuro"
-            title="Modo oscuro"
-          >
-            <i className="bi bi-moon-fill" />
-          </button>
-        </div>
-      </div>
 
       <CommandPalette open={search} onClose={() => setSearch(false)} username={user?.username} />
       <ConfirmHost />

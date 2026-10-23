@@ -1184,8 +1184,19 @@
   font-size: 0.9rem;
   color: var(--ink-soft);
 }
-.app-root .mp-cur .cur-pick {
+.app-root .mp-cur .cur-pick,
+.app-root .mp-cur > .vx-tabs {
   margin-left: auto;
+}
+/* el tema, del mismo tamaño que la palanca de la moneda de arriba */
+.app-root .mp-cur > .vx-tabs {
+  height: 32px;
+}
+.app-root .mp-cur > .vx-tabs button {
+  width: 44px;
+  height: 26px;
+  padding: 0;
+  font-size: 0.8rem;
 }
 /* interruptor (mostrar u ocultar la cinta) */
 .app-root .mp-switch {
@@ -1222,7 +1233,7 @@
 .app-root .mp-foot {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
   margin-top: 6px;
   padding: 8px 2px 0;
@@ -2409,9 +2420,6 @@
   .app-root .vx-sub button {
     padding: 0 10px;
     font-size: 0.82rem;
-  }
-  .app-root .dock {
-    display: none;
   }
   .app-root.shell .app-main {
     padding-bottom: 64px;

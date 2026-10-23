@@ -951,6 +951,7 @@
 
 /* posiciones: filas de borde a borde; comprar y vender aparecen al pasar */
 .app-root .pv {
+  --row-x: 22px;
   overflow: hidden;
 }
 .app-root .pv-list {
@@ -1027,8 +1028,9 @@
   height: 100%;
   border-radius: 999px;
 }
-/* las acciones van sobre la columna de ganancia */
-.app-root .pv-acts {
+/* las acciones van sobre la columna de ganancia (más específico que
+   .nrx-acts, que viene después) */
+.app-root .pv-list .pv-acts {
   right: 18px;
 }
 .app-root .pv-list li:hover .nrx-acts,
@@ -1045,7 +1047,7 @@
   .app-root .pv-list li:hover .pv-row > :last-child {
     opacity: 1;
   }
-  .app-root .pv-acts {
+  .app-root .pv-list .pv-acts {
     padding: 0 16px 12px;
   }
 }
