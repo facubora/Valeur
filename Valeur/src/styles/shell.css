@@ -3131,9 +3131,11 @@
 }
 
 /* ---------- BUSCADOR DEL MERCADO ---------- */
-/* El mismo de la barra: hundido, vidrio tenue, borde fino y radio 10, solo
-   que más alto porque acá es lo principal */
-.app-root .mkt-searchbar .search-form input {
+/* El mismo de la barra: hundido, vidrio tenue, borde fino y radio 10 (el
+   del Mercado, más alto porque ahí es lo principal; el filtro de Explorar,
+   del alto de la barra) */
+.app-root .mkt-searchbar .search-form input,
+.app-root .search-form.filter-in input {
   height: 46px;
   padding: 0 44px 0 42px;
   border: 1px solid var(--line-soft);
@@ -3143,15 +3145,29 @@
   font-size: 0.92rem;
   letter-spacing: 0;
 }
-.app-root .mkt-searchbar .search-form input:hover {
+.app-root .search-form.filter-in input {
+  height: 40px;
+  padding-left: 38px;
+  font-size: 0.88rem;
+}
+.app-root .mkt-searchbar .search-form input:hover,
+.app-root .search-form.filter-in input:hover {
   border-color: var(--line);
 }
-.app-root .mkt-searchbar .search-form input:focus {
+.app-root .mkt-searchbar .search-form input:focus,
+.app-root .search-form.filter-in input:focus {
   border-color: color-mix(in oklch, var(--accent) 45%, transparent);
   background: var(--surface);
   box-shadow:
     inset 0 1px 2px oklch(0.25 0.03 265 / 0.06),
     0 0 0 3px color-mix(in oklch, var(--accent) 12%, transparent);
+}
+.app-root .search-form.filter-in .ico {
+  left: 14px;
+  font-size: 0.86rem;
+}
+.app-root .filter-in:focus-within .ico {
+  color: var(--accent-text);
 }
 .app-root .mkt-searchbar .search-form .ico {
   left: 15px;
@@ -3195,4 +3211,22 @@
     overflow-x: auto;
     scrollbar-width: none;
   }
+}
+
+/* "Lo que más se recomienda" sin nada todavía: fichas punteadas con la forma
+   de lo que va a haber */
+.app-root .card.talk-tile.gh-talk {
+  border: 1.5px dashed color-mix(in oklch, var(--ink) 14%, transparent);
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+}
+.app-root .gh-talk .tt-top {
+  align-items: center;
+}
+.app-root .gh-bar {
+  display: block;
+  height: 6px;
+  border-radius: 99px;
+  border: 1px dashed color-mix(in oklch, var(--ink) 18%, transparent);
 }

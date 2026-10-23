@@ -485,7 +485,11 @@ function Explore({ uid, user, ctx, recent, onOpen }) {
 
       {user && (
         <section id="comunidad" className="block">
-          <SectionHead kicker="Comunidad" title="Lo que más se recomienda" desc="Los activos de los que más habla la gente que seguís.">
+          <SectionHead
+            kicker="Comunidad"
+            title="Lo que más se recomienda"
+            desc={talk.length ? "Los activos de los que más habla la gente que seguís." : "Seguí gente en la comunidad y acá vas a ver de qué activos hablan."}
+          >
             <Link to="/comunidad" className="btn btn-line btn-sm">
               <i className="bi bi-people" /> Ir a la comunidad
             </Link>
@@ -515,11 +519,17 @@ function Explore({ uid, user, ctx, recent, onOpen }) {
               })}
             </div>
           ) : (
-            <div className="side-empty wide">
-              <p>Seguí personas en la comunidad para ver qué activos recomiendan.</p>
-              <Link to="/comunidad" className="btn btn-line btn-sm">
-                <i className="bi bi-people" /> Ir a la comunidad
-              </Link>
+            <div className="talk-grid" aria-hidden="true">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="card talk-tile gh-talk">
+                  <div className="tt-top">
+                    <span className="gh-av" />
+                    <span className="gh-ln w60" />
+                  </div>
+                  <span className="gh-bar" />
+                  <span className="gh-ln w40" />
+                </div>
+              ))}
             </div>
           )}
         </section>
