@@ -3,6 +3,9 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import Logo from "../components/Logo";
 import ProfileModal from "../components/ProfileModal";
+import RecommendModal from "../components/PostComposer";
+import Pill from "../components/Pill";
+import { SectionNav, SectionHead } from "../components/Sections";
 import { Avatar, Verified, FollowButton, PostCard, GhostPosts, SetupNotice } from "../components/Social";
 import { useAuth } from "../context/AuthContext";
 import { useBatch, useMep, assetCurrency, convert, formatDate } from "../lib/market";
@@ -19,7 +22,7 @@ import {
 /* Paleta de la composición (misma idea que el dashboard) */
 const HUES = [230, 300, 150, 30, 190, 60, 340, 100];
 
-const pctTxt = (n) => (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
+const pctTxt = (n) => (n >= 0 ? "+" : "−") + Math.abs(n).toFixed(2).replace(".", ",") + "%";
 
 /* Composición y rendimiento a partir de las cantidades escaladas: sin montos.
    Todo se lleva a dólares con el MEP para poder sumar CEDEARs y acciones. */
@@ -69,7 +72,8 @@ export default function Profile() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const uid = user?.id;
-  const [edit, setEdit] = useState(false);
+  const [edit, setEdit] = useState(null);
+  const [writing, setWriting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -95,13 +99,14 @@ export default function Profile() {
         <SetupNotice error={prof.error} />
         <section className="page-head">
           <div>
+            <span className="kicker">Perfil</span>
             <h1>
               No encontramos a <em>@{username}</em>.
             </h1>
             <p>Puede que haya cambiado de nombre o que el link esté mal.</p>
           </div>
-          <Link to="/comunidad" className="btn btn-line btn-sm">
-            <i className="bi bi-arrow-left" /> Volver a la comunidad
+          <Link to="/comunidad#personas" className="btn btn-line">
+            <i className="bi bi-arrow-left" /> Buscar en la comunidad
           </Link>
         </section>
       </AppShell>
@@ -110,205 +115,213 @@ export default function Profile() {
 
   const vis = VISIBILITY.find(([k]) => k === p?.visibility);
   const canSee = isMe || p?.visibility === "public" || (p?.visibility === "friends" && graph.friends.has(p?.id));
-  const followsMe = p && graph.followers.has(p.id);
-  const friends = p && graph.friends.has(p.id);
+  const since = p && new Date(p.created_at).toLocaleDateString("es-AR", { month: "long", year: "numeric" });
 
   return (
     <AppShell>
-      <section className="card profile-head">
-        {p ? (
-          <>
-            <Avatar name={p.username} size={84} />
-            <div className="ph-main">
-              <h1>
-                {p.display_name || p.username}
-                {p.verified && <Verified label={p.verified_label} />}
-              </h1>
-              <div className="ph-sub">
-                <span>@{p.username}</span>
-                {p.verified && <span className="tag verified-tag">{p.verified_label}</span>}
-                {friends ? (
-                  <span className="tag soft">
-                    <i className="bi bi-people-fill" /> Son amigos
-                  </span>
-                ) : (
-                  followsMe && <span className="tag soft">Te sigue</span>
-                )}
-              </div>
-              {p.bio && <p className="ph-bio">{p.bio}</p>}
-              <div className="ph-counts">
-                <span>
-                  <b>{counts.followers ?? "—"}</b> {counts.followers === 1 ? "seguidor" : "seguidores"}
-                </span>
-                <span>
-                  <b>{counts.following ?? "—"}</b> siguiendo
-                </span>
-                <span className="muted">
-                  Desde {new Date(p.created_at).toLocaleDateString("es-AR", { month: "long", year: "numeric" })}
-                </span>
-              </div>
+      <SetupNotice error={prof.error || posts.error} />
+
+      {/* mismo encabezado que el activo: la vuelta arriba, avatar y nombre
+          como título, pastillas abajo; a la derecha la bio y qué hacer */}
+      <section className="page-head ad-head up-head">
+        <div className="ad-id">
+          <span className="kicker ad-kicker">
+            <Link to="/comunidad">
+              <i className="bi bi-arrow-left" /> Comunidad
+            </Link>
+            {p?.verified && p.verified_label && <span>{p.verified_label}</span>}
+            {since && <span>Desde {since}</span>}
+          </span>
+          <div className="ad-title">
+            {p ? <Avatar name={p.username} size={44} /> : <span className="gh-av" />}
+            <h1>
+              {p ? p.display_name || p.username : <span className="ph-line" />}
+              {p && (
+                <small>
+                  @{p.username}
+                  {p.verified && <Verified label={p.verified_label} />}
+                </small>
+              )}
+            </h1>
+          </div>
+          {p && (
+            <div className="hpills">
+              <Pill label={counts.followers === 1 ? "Seguidor" : "Seguidores"} value={counts.followers ?? "—"} />
+              <Pill label="Siguiendo" value={counts.following ?? "—"} />
+              {record && <Pill to="#recomendaciones" label="Aciertos" value={`${record.hits} de ${record.n}`} delta={record.avg} />}
+              {vis && <Pill to="#portfolio" icon={vis[2]} label="Portfolio" value={vis[1]} />}
             </div>
-            <div className="ph-act">
+          )}
+        </div>
+
+        <div className="ad-quote up-side">
+          {p?.bio ? (
+            <p className="up-bio">{p.bio}</p>
+          ) : (
+            isMe && (
+              <button type="button" className="lnk-btn up-bio" onClick={() => setEdit("bio")}>
+                <i className="bi bi-plus" /> Sumá una bio para que sepan quién sos
+              </button>
+            )
+          )}
+          {p && (
+            <div className="ad-acts">
               {isMe ? (
-                <button type="button" className="btn btn-line btn-sm" onClick={() => setEdit(true)}>
-                  <i className="bi bi-pencil" /> Editar perfil
-                </button>
+                <>
+                  <button type="button" className="btn btn-line" onClick={() => setEdit("all")}>
+                    <i className="bi bi-pencil" /> Editar perfil
+                  </button>
+                  <button type="button" className="btn btn-pink" onClick={() => setWriting(true)}>
+                    <i className="bi bi-chat-square-quote" /> Recomendar
+                  </button>
+                </>
               ) : (
-                <FollowButton uid={uid} target={p.id} graph={graph} name={p.username} />
+                <FollowButton uid={uid} target={p.id} graph={graph} size={null} name={p.username} />
               )}
             </div>
-          </>
+          )}
+        </div>
+      </section>
+
+      <SectionNav
+        items={[
+          ["recomendaciones", "Recomendaciones", "bi-chat-square-quote"],
+          ["portfolio", "Portfolio", "bi-pie-chart"],
+        ]}
+      />
+
+      {/* Recomendaciones, como en la comunidad */}
+      <section id="recomendaciones" className="block">
+        <SectionHead
+          kicker="Jugadas"
+          title="Recomendaciones"
+          desc={
+            record
+              ? `${record.hits} de ${record.n} fueron para el lado que ${isMe ? "dijiste" : "dijo"}, con ${pctTxt(record.avg)} a favor en promedio.`
+              : posts.data.length
+                ? `${posts.data.length} ${posts.data.length === 1 ? "publicada" : "publicadas"}, con cómo le fue a cada una desde ese día.`
+                : isMe
+                  ? "Lo que recomiendes va a aparecer acá, con cómo le fue desde ese día."
+                  : "Todavía no recomendó nada."
+          }
+        />
+        {!posts.loaded ? (
+          <GhostPosts n={3} />
+        ) : posts.data.length ? (
+          <div className="feed-grid">
+            {posts.data.map((post) => (
+              <PostCard key={post.id} post={post} uid={uid} quote={quotes[post.symbol]} />
+            ))}
+          </div>
         ) : (
-          <div className="ph-loading loading-box" />
+          <GhostPosts n={3} />
         )}
       </section>
 
-      <section className="profile-grid">
-        <div className="profile-main">
-          {/* Portfolio */}
-          <div className="card pf-share">
-            <div className="side-head">
-              <h3>
-                <i className="bi bi-pie-chart" /> Portfolio
-              </h3>
-              {vis && (
-                <span className="tag soft">
-                  <i className={"bi " + vis[2]} /> {vis[1]}
-                </span>
-              )}
-            </div>
+      {/* Portfolio: proporciones y rendimiento, nunca montos */}
+      <section id="portfolio" className="block">
+        <SectionHead kicker="Cartera" title="Portfolio" desc="Sin montos: qué tiene, cuánto pesa cada cosa y cómo le va desde que compró.">
+          {vis && (
+            <span className="tag soft">
+              <i className={"bi " + vis[2]} /> {vis[1]}
+            </span>
+          )}
+        </SectionHead>
 
-            {canSee && comp.rows.length > 0 ? (
-              <>
-                <div className="pf-ret">
-                  <div>
-                    <small>Rendimiento total</small>
-                    <b className={comp.ret >= 0 ? "txt-up" : "txt-down"}>{comp.ret == null ? "—" : pctTxt(comp.ret)}</b>
-                  </div>
-                  <div>
-                    <small>Activos</small>
-                    <b>{comp.rows.length}</b>
-                  </div>
+        {canSee && comp.rows.length > 0 ? (
+          <div className={"up-pf" + (shared.trades.length ? "" : " solo")}>
+            <div className="card pf-share">
+              <div className="pf-ret">
+                <div>
+                  <small>Rendimiento total</small>
+                  <b className={comp.ret >= 0 ? "txt-up" : "txt-down"}>{comp.ret == null ? "—" : pctTxt(comp.ret)}</b>
                 </div>
-                <div className="alloc-bar">
-                  {comp.rows.map((r, i) => (
-                    <span key={r.symbol} style={{ flex: Math.max(r.weight, 0.5), background: `oklch(0.62 0.16 ${HUES[i % HUES.length]})` }} title={`${r.symbol} ${r.weight.toFixed(1)}%`} />
-                  ))}
+                <div>
+                  <small>Activos</small>
+                  <b>{comp.rows.length}</b>
                 </div>
-                <ul className="share-list">
-                  {comp.rows.map((r, i) => (
-                    <li key={r.symbol}>
-                      <span className="dot" style={{ background: `oklch(0.62 0.16 ${HUES[i % HUES.length]})` }} />
-                      <Link to={`/tickersearch?symbol=${encodeURIComponent(r.symbol)}`} className="share-id">
-                        <Logo symbol={r.symbol} size={28} />
-                        <div>
-                          <b>{r.symbol}</b>
-                          <span>{r.name || lookup(r.symbol)?.name || " "}</span>
-                        </div>
-                      </Link>
-                      <span className="w">{r.weight.toFixed(1)}%</span>
-                      <span className={"r " + (r.ret >= 0 ? "txt-up" : "txt-down")}>{pctTxt(r.ret)}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="muted small foot-note">
-                  <i className="bi bi-shield-lock" /> Sin montos: solo proporciones y rendimiento desde que compró.
-                </p>
-              </>
-            ) : (
-              <div className="pf-locked">
-                <div className="gh-alloc" aria-hidden="true">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-                <div className="pf-locked-msg">
-                  <i className={canSee ? "bi bi-inbox" : "bi bi-lock"} />
-                  <b>
-                    {!shared.loaded && canSee
-                      ? "Cargando…"
-                      : canSee
-                        ? isMe
-                          ? "Todavía no cargaste operaciones"
-                          : "Todavía no cargó operaciones"
-                        : p?.visibility === "friends"
-                          ? "Solo lo ven sus amigos"
-                          : "Portfolio privado"}
-                  </b>
-                  {!canSee && p?.visibility === "friends" && <span>Si se siguen mutuamente, lo vas a poder ver.</span>}
-                  {isMe && !comp.rows.length && (
-                    <Link to="/dashboard" className="btn btn-line btn-sm">
-                      Ir a mi portfolio
+              </div>
+              <div className="alloc-bar">
+                {comp.rows.map((r, i) => (
+                  <span key={r.symbol} style={{ flex: Math.max(r.weight, 0.5), background: `oklch(0.62 0.16 ${HUES[i % HUES.length]})` }} title={`${r.symbol} ${r.weight.toFixed(1)}%`} />
+                ))}
+              </div>
+              <ul className="share-list">
+                {comp.rows.map((r, i) => (
+                  <li key={r.symbol}>
+                    <span className="dot" style={{ background: `oklch(0.62 0.16 ${HUES[i % HUES.length]})` }} />
+                    <Link to={`/tickersearch?symbol=${encodeURIComponent(r.symbol)}`} className="share-id">
+                      <Logo symbol={r.symbol} size={28} />
+                      <div>
+                        <b>{r.symbol}</b>
+                        <span>{r.name || lookup(r.symbol)?.name || " "}</span>
+                      </div>
                     </Link>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Últimas operaciones */}
-          {canSee && shared.trades.length > 0 && (
-            <div className="card side-card">
-              <div className="side-head">
-                <h3>
-                  <i className="bi bi-clock-history" /> Últimos movimientos
-                </h3>
-              </div>
-              <ul className="moves">
-                {shared.trades.map((t, i) => (
-                  <li key={i} className={t.side}>
-                    <span className="side-ic">
-                      <i className={t.side === "buy" ? "bi bi-plus-lg" : "bi bi-dash-lg"} />
-                    </span>
-                    <span>
-                      {t.side === "buy" ? "Compró" : "Vendió"}{" "}
-                      <Link to={`/tickersearch?symbol=${encodeURIComponent(t.symbol)}`}>
-                        <b>{t.symbol}</b>
-                      </Link>
-                    </span>
-                    <small>{formatDate(t.executed_at)}</small>
+                    <span className="w">{r.weight.toFixed(1).replace(".", ",")}%</span>
+                    <span className={"r " + (r.ret >= 0 ? "txt-up" : "txt-down")}>{pctTxt(r.ret)}</span>
                   </li>
                 ))}
               </ul>
             </div>
-          )}
-        </div>
 
-        {/* Recomendaciones */}
-        <div className="profile-posts">
-          <div className="sec-head">
-            <div className="sec-title">
-              <h2>Recomendaciones</h2>
-              {posts.data.length > 0 && <span className="sub">{posts.data.length} publicadas</span>}
+            {shared.trades.length > 0 && (
+              <div className="card up-moves">
+                <span className="up-lbl">Últimos movimientos</span>
+                <ul className="moves">
+                  {shared.trades.map((t, i) => (
+                    <li key={i} className={t.side}>
+                      <span className="side-ic">
+                        <i className={t.side === "buy" ? "bi bi-plus-lg" : "bi bi-dash-lg"} />
+                      </span>
+                      <span>
+                        {t.side === "buy" ? "Compró" : "Vendió"}{" "}
+                        <Link to={`/tickersearch?symbol=${encodeURIComponent(t.symbol)}`}>
+                          <b>{t.symbol}</b>
+                        </Link>
+                      </span>
+                      <small>{formatDate(t.executed_at)}</small>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="up-locked">
+            <div className="gh-alloc" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="up-locked-msg">
+              <i className={canSee ? "bi bi-inbox" : "bi bi-lock"} />
+              <span>
+                <b>
+                  {!p || (!shared.loaded && canSee)
+                    ? "Cargando…"
+                    : canSee
+                      ? isMe
+                        ? "Todavía no cargaste operaciones"
+                        : "Todavía no cargó operaciones"
+                      : p.visibility === "friends"
+                        ? "Solo lo ven sus amigos"
+                        : "Portfolio privado"}
+                </b>
+                {p && !canSee && p.visibility === "friends" && <small>Si se siguen mutuamente, lo vas a poder ver.</small>}
+                {p && !canSee && p.visibility === "private" && <small>Eligió no mostrarlo. Sus recomendaciones sí las ves.</small>}
+              </span>
+              {isMe && !comp.rows.length && shared.loaded && (
+                <Link to="/dashboard?operar=1" className="btn btn-line">
+                  Registrar una operación
+                </Link>
+              )}
             </div>
           </div>
-          {record && (
-            <div className="card record">
-              <div>
-                <small>Aciertos</small>
-                <b>
-                  {record.hits}/{record.n}
-                </b>
-              </div>
-              <div>
-                <small>Movimiento a favor, promedio</small>
-                <b className={record.avg >= 0 ? "txt-up" : "txt-down"}>{pctTxt(record.avg)}</b>
-              </div>
-            </div>
-          )}
-          {posts.data.length ? (
-            <div className="post-list">
-              {posts.data.map((post) => (
-                <PostCard key={post.id} post={post} uid={uid} quote={quotes[post.symbol]} />
-              ))}
-            </div>
-          ) : (
-            <GhostPosts n={2} />
-          )}
-        </div>
+        )}
       </section>
 
-      {isMe && <ProfileModal open={edit} uid={uid} profile={p} onClose={() => setEdit(false)} />}
+      {isMe && writing && <RecommendModal uid={uid} onClose={() => setWriting(false)} />}
+      {isMe && <ProfileModal open={Boolean(edit)} uid={uid} profile={p} focus={edit === "all" ? null : edit} onClose={() => setEdit(null)} />}
     </AppShell>
   );
 }

@@ -3148,90 +3148,6 @@
 /* ============================================================
    PERFIL PÚBLICO
    ============================================================ */
-.app-root .profile-head {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  padding: 26px;
-}
-.app-root .profile-head::after {
-  content: "";
-  position: absolute;
-  width: 360px;
-  height: 360px;
-  right: -120px;
-  top: -200px;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in oklch, var(--accent) 45%, transparent), transparent 62%);
-  filter: blur(40px);
-  opacity: 0.3;
-  pointer-events: none;
-}
-.app-root .ph-main {
-  flex: 1;
-  min-width: 0;
-}
-.app-root .ph-main h1 {
-  display: flex;
-  align-items: center;
-  font-size: clamp(1.6rem, 3vw, 2.2rem);
-  line-height: 1.05;
-}
-.app-root .ph-sub {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 6px;
-  font-size: 0.9rem;
-  color: var(--ink-soft);
-}
-.app-root .ph-bio {
-  margin-top: 10px;
-  max-width: 60ch;
-  font-size: 0.96rem;
-}
-.app-root .ph-counts {
-  display: flex;
-  gap: 18px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-  font-size: 0.88rem;
-}
-.app-root .ph-counts b {
-  font-variant-numeric: tabular-nums;
-}
-.app-root .ph-act {
-  align-self: flex-start;
-  position: relative;
-  z-index: 1;
-}
-.app-root .ph-loading {
-  width: 100%;
-  height: 84px;
-  border-radius: 14px;
-}
-.app-root .profile-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  gap: 22px;
-  align-items: start;
-  margin-top: -20px;
-}
-.app-root .profile-main {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-}
-.app-root .profile-posts {
-  min-width: 0;
-}
-.app-root .profile-posts .sec-head {
-  margin-bottom: 14px;
-}
 .app-root .pf-share {
   padding: 18px;
 }
@@ -3317,11 +3233,6 @@
   margin-top: 10px;
   font-size: 0.76rem;
 }
-.app-root .pf-locked {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
 .app-root .gh-alloc {
   display: flex;
   gap: 3px;
@@ -3334,25 +3245,6 @@
 .app-root .gh-alloc span:nth-child(1) { flex: 5; }
 .app-root .gh-alloc span:nth-child(2) { flex: 3; }
 .app-root .gh-alloc span:nth-child(3) { flex: 2; }
-.app-root .pf-locked-msg {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 14px 0 6px;
-  text-align: center;
-}
-.app-root .pf-locked-msg > i {
-  font-size: 1.3rem;
-  color: var(--ink-soft);
-}
-.app-root .pf-locked-msg span {
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-}
-.app-root .pf-locked-msg .btn {
-  margin-top: 6px;
-}
 .app-root .moves {
   list-style: none;
 }
@@ -3385,23 +3277,6 @@
   color: var(--ink-soft);
   font-size: 0.78rem;
 }
-.app-root .record {
-  display: flex;
-  gap: 28px;
-  padding: 14px 18px;
-  margin-bottom: 12px;
-}
-.app-root .record small {
-  display: block;
-  font-size: 0.74rem;
-  color: var(--ink-soft);
-}
-.app-root .record b {
-  font-family: var(--font-display);
-  font-size: 1.3rem;
-  font-variant-numeric: tabular-nums;
-}
-
 /* ============================================================
    RESPONSIVE
    ============================================================ */
@@ -3502,8 +3377,7 @@
     flex: 0 0 160px;
     scroll-snap-align: start;
   }
-  .app-root .asset-grid,
-  .app-root .profile-grid {
+  .app-root .asset-grid {
     grid-template-columns: 1fr;
   }
   .app-root .asset-row {
@@ -3668,28 +3542,6 @@
   }
   .app-root .vis-opts {
     grid-template-columns: 1fr;
-  }
-  .app-root .profile-head {
-    flex-wrap: wrap;
-    padding: 20px;
-    gap: 14px;
-  }
-  .app-root .profile-head .p-avatar {
-    width: 64px !important;
-    height: 64px !important;
-  }
-  .app-root .ph-main {
-    flex-basis: calc(100% - 80px);
-  }
-  .app-root .ph-act {
-    width: 100%;
-  }
-  .app-root .ph-act .btn {
-    width: 100%;
-    justify-content: center;
-  }
-  .app-root .profile-grid {
-    margin-top: -10px;
   }
   .app-root .composer-btns {
     width: 100%;

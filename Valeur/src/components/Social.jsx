@@ -4,7 +4,7 @@ import Logo from "./Logo";
 import { initials } from "../lib/session";
 import { lookup } from "../lib/catalog";
 import { STANCE, follow, unfollow, setLike, deletePost, changed, timeAgo } from "../lib/social";
-import { confirmDialog, attempt } from "../lib/feedback";
+import { attempt } from "../lib/feedback";
 
 /* Piezas chicas de la comunidad: avatar, verificado, persona, seguir y post */
 
@@ -51,22 +51,16 @@ export function Person({ p, size = 36, sub = null }) {
 /* Seguir / Siguiendo / Amigos. `graph` viene de useFollowGraph */
 export function FollowButton({ uid, target, graph, size = "sm", name = null }) {
   const [busy, setBusy] = useState(false);
+  const [asking, setAsking] = useState(false);
   if (!uid || uid === target) return null;
   const following = graph.following.has(target);
   const followsMe = graph.followers.has(target);
   const label = following ? (followsMe ? "Amigos" : "Siguiendo") : followsMe ? "Seguir también" : "Seguir";
   const who = name ? `@${name}` : "esta persona";
   const toggle = async () => {
-    // dejar de seguir a un amigo corta la amistad: se confirma
-    if (following && followsMe) {
-      const ok = await confirmDialog({
-        title: `¿Dejar de seguir a ${who}?`,
-        body: "Dejan de ser amigos: no vas a ver su portfolio si lo comparte solo con amigos, ni sus recomendaciones privadas.",
-        confirmText: "Dejar de seguir",
-        danger: true,
-      });
-      if (!ok) return;
-    }
+    // dejar de seguir a un amigo corta la amistad: se confirma en el mismo botón
+    if (following && followsMe && !asking) return setAsking(true);
+    setAsking(false);
     setBusy(true);
     await attempt(following ? unfollow(uid, target) : follow(uid, target), {
       ok: following ? `Dejaste de seguir a ${who}` : `Ahora seguís a ${who}`,
@@ -77,13 +71,15 @@ export function FollowButton({ uid, target, graph, size = "sm", name = null }) {
   return (
     <button
       type="button"
-      className={"btn btn-" + size + (following ? " btn-line on" : " btn-pink") + " follow-btn"}
+      className={"btn" + (size ? " btn-" + size : "") + (following ? " btn-line on" : " btn-pink") + " follow-btn" + (asking ? " sure" : "")}
       onClick={toggle}
+      onBlur={() => setAsking(false)}
+      onKeyDown={(e) => e.key === "Escape" && setAsking(false)}
       disabled={busy || !graph.loaded}
-      title={following ? "Dejar de seguir" : undefined}
+      title={asking ? "Dejan de ser amigos: no vas a ver lo que comparte solo con amigos" : following ? "Dejar de seguir" : undefined}
     >
-      <i className={following ? (followsMe ? "bi bi-people-fill" : "bi bi-check2") : "bi bi-person-plus"} />
-      <span>{label}</span>
+      <i className={asking ? "bi bi-person-dash" : following ? (followsMe ? "bi bi-people-fill" : "bi bi-check2") : "bi bi-person-plus"} />
+      <span>{asking ? "¿Dejar de ser amigos? Sí" : label}</span>
     </button>
   );
 }

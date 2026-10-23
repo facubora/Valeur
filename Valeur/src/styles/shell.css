@@ -4080,3 +4080,154 @@
     flex-wrap: wrap;
   }
 }
+
+/* ---------- PERFIL ---------- */
+/* El encabezado es el del activo (ad-head): la vuelta, avatar y nombre,
+   pastillas; a la derecha la bio arriba y qué hacer abajo */
+.app-root .ad-kicker a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: inherit;
+}
+.app-root .ad-kicker a i {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .ad-kicker a:hover i {
+  transform: translateX(-3px);
+}
+.app-root .up-head .ad-title h1 small .verified {
+  font-size: 0.95rem;
+}
+.app-root .up-head .ad-title > .gh-av {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.app-root .up-head .ad-title h1 .ph-line {
+  width: 220px;
+  height: 0.8em;
+}
+.app-root .up-side {
+  gap: 12px;
+}
+.app-root .up-bio {
+  max-width: 340px;
+  margin: 0;
+  text-align: right;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.app-root button.up-bio {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+.app-root .up-side .ad-acts {
+  margin-top: auto;
+}
+.app-root .follow-btn.sure {
+  color: var(--down);
+  border-color: color-mix(in oklch, var(--down) 40%, transparent);
+  background: color-mix(in srgb, var(--down) 10%, color-mix(in srgb, var(--surface) 60%, transparent));
+}
+
+/* portfolio: la composición y, al lado, los últimos movimientos */
+.app-root .up-pf {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+.app-root .up-pf.solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+.app-root .up-pf .pf-share {
+  padding: 22px 24px;
+}
+.app-root .up-moves {
+  padding: 20px 22px;
+}
+.app-root .up-lbl {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* sin portfolio para ver: la barra punteada y por qué */
+.app-root .up-locked {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px 24px;
+  border: 1px dashed color-mix(in oklch, var(--ink) 18%, transparent);
+  border-radius: 20px;
+}
+.app-root .up-locked-msg {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.app-root .up-locked-msg > i {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  color: var(--ink-soft);
+  background: color-mix(in oklch, var(--ink) 5%, transparent);
+}
+.app-root .up-locked-msg > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.app-root .up-locked-msg small {
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+}
+.app-root .up-locked-msg .btn {
+  margin-left: auto;
+}
+
+@media (max-width: 860px) {
+  .app-root .up-bio {
+    order: 3;
+    max-width: none;
+    text-align: left;
+  }
+  .app-root button.up-bio {
+    margin-left: 0;
+  }
+  .app-root .up-head .ad-acts {
+    display: flex;
+  }
+  .app-root .up-head .ad-acts .btn {
+    flex: 1;
+    justify-content: center;
+  }
+  .app-root .up-pf {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app-root .up-locked-msg {
+    flex-wrap: wrap;
+  }
+  .app-root .up-locked-msg .btn {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+  }
+}
