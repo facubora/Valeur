@@ -1525,6 +1525,12 @@
 .app-root.shell .page-head > :last-child:not(:first-child) {
   align-self: center;
 }
+/* el bloque del título no se estira más que la pantalla (las pastillas se
+   deslizan adentro) */
+.app-root.shell .page-head > :first-child {
+  min-width: 0;
+  max-width: 100%;
+}
 @media (max-width: 600px) {
   .app-root.shell .home-hero,
   .app-root.shell .page-head {
@@ -3229,4 +3235,263 @@
   height: 6px;
   border-radius: 99px;
   border: 1px dashed color-mix(in oklch, var(--ink) 18%, transparent);
+}
+
+/* ---------- COMUNIDAD ---------- */
+/* buscador de personas: el de la barra, sin tope de ancho propio */
+.app-root .people-search .filter-in {
+  max-width: none;
+}
+.app-root .people-drop {
+  border-color: var(--line-soft);
+  border-radius: 12px;
+}
+
+/* filtro por postura: "Comprar" verde y "Vender" rojo al elegirlos */
+.app-root .stance-tabs button.on.buy {
+  color: var(--up);
+}
+.app-root .stance-tabs button.on.sell {
+  color: var(--down);
+}
+
+/* a quién seguir, vacío: fichas punteadas con la forma de una persona */
+.app-root .card.person-card.gh-person {
+  gap: 12px;
+  min-height: 150px;
+  border: 1.5px dashed color-mix(in oklch, var(--ink) 14%, transparent);
+  background: transparent;
+  box-shadow: none;
+}
+.app-root .gh-person .pc-id {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.app-root .gh-person .pc-id .gh-ln {
+  flex: 0 0 45%;
+}
+
+/* a quién seguís: una fila por persona, de borde a borde */
+.app-root .pr-block {
+  margin-top: 28px;
+}
+.app-root .pr-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+  overflow: hidden;
+}
+.app-root .pr-row,
+.app-root .pr-ask {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 22px;
+}
+.app-root .pr-row {
+  transition: background 0.2s;
+}
+.app-root .pr-row:hover {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+.app-root .pr-id {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+.app-root .pr-id > span {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.app-root .pr-id b {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+.app-root .pr-id small {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+/* "Amigos" / "Siguiendo"; al pasar el mouse dice qué hace */
+.app-root .pr-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in oklch, var(--accent) 26%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  color: var(--accent-text);
+  font: 600 0.82rem var(--font-body);
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+.app-root .pr-state .pr-off {
+  display: none;
+}
+.app-root .pr-state:hover {
+  border-color: color-mix(in srgb, var(--down) 35%, transparent);
+  background: color-mix(in srgb, var(--down) 9%, transparent);
+  color: var(--down);
+}
+.app-root .pr-state:hover .pr-now {
+  display: none;
+}
+.app-root .pr-state:hover .pr-off {
+  display: inline;
+}
+.app-root .pr-state:hover i {
+  display: none;
+}
+.app-root .pr-ask {
+  margin: 4px 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--down) 5%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--down) 18%, transparent);
+  animation: nf-edit-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .pr-ask-txt {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.app-root .pr-ask b {
+  font-size: 0.9rem;
+}
+.app-root .pr-ask small {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.app-root .pr-ask > div {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* tu perfil: quién sos, tus números y quién ve tu portfolio */
+.app-root .me-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) auto minmax(0, 1.2fr);
+  align-items: center;
+  gap: 32px;
+  padding: 24px 26px;
+}
+.app-root .me-id {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.app-root .me-id > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.app-root .me-id b {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+}
+.app-root .me-id span {
+  font-size: 0.86rem;
+  color: var(--ink-soft);
+}
+.app-root .me-id p {
+  margin: 6px 0 0;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+.app-root .me-stats {
+  display: flex;
+  margin: 0;
+}
+.app-root .me-stats > div {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 2px;
+  padding: 0 22px;
+}
+.app-root .me-stats > div + div {
+  border-left: 1px solid var(--line-soft);
+}
+.app-root .me-stats dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+.app-root .me-stats dt {
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+}
+.app-root .me-card .me-vis {
+  display: grid;
+  gap: 8px;
+}
+.app-root .me-card .me-vis small {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.app-root .me-vis-hint {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.app-root .me-card .verify-cta {
+  width: fit-content;
+  font-size: 0.8rem;
+}
+@media (max-width: 1000px) {
+  .app-root .me-card {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .app-root .me-stats {
+    justify-content: flex-start;
+  }
+  .app-root .me-stats > div:first-child {
+    padding-left: 0;
+  }
+}
+@media (max-width: 600px) {
+  .app-root .pr-row,
+  .app-root .pr-ask {
+    padding-inline: 16px;
+  }
+  .app-root .pr-ask {
+    flex-wrap: wrap;
+  }
+  .app-root .pr-ask > div {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .app-root .me-card {
+    padding: 20px;
+  }
 }

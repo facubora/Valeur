@@ -21,6 +21,7 @@ import {
   usePeople,
   usePeopleSearch,
   useSuggestedPeople,
+  unfollow,
 } from "../lib/social";
 
 const FEED_TABS = [
@@ -31,7 +32,13 @@ const FEED_TABS = [
 
 function VisibilitySeg({ value, onChange, disabled }) {
   return (
-    <div className="seg full vis-seg" role="radiogroup" aria-label="Quién ve tu portfolio">
+    <div
+      className="vx-tabs sm vis-tabs"
+      role="radiogroup"
+      aria-label="Quién ve tu portfolio"
+      style={{ "--n": VISIBILITY.length, "--i": Math.max(0, VISIBILITY.findIndex(([k]) => k === value)) }}
+    >
+      <span className="vx-tabs-thumb" aria-hidden="true" />
       {VISIBILITY.map(([k, label, icon]) => (
         <button
           key={k}
@@ -49,6 +56,90 @@ function VisibilitySeg({ value, onChange, disabled }) {
   );
 }
 
+/* Pestañas chicas con ficha deslizante: [[clave, texto, clase?]] */
+function Tabs({ items, value, onChange, label, className = "" }) {
+  return (
+    <div
+      className={"vx-tabs sm " + className}
+      role="tablist"
+      aria-label={label}
+      style={{ "--n": items.length, "--i": Math.max(0, items.findIndex(([k]) => k === value)) }}
+    >
+      <span className="vx-tabs-thumb" aria-hidden="true" />
+      {items.map(([k, text, cls = ""]) => (
+        <button key={k} type="button" role="tab" aria-selected={value === k} className={(value === k ? "on " : "") + cls} onClick={() => onChange(k)}>
+          {text}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* Alguien que seguís, en una fila. Dejar de seguir a un amigo corta la
+   amistad: se confirma ahí mismo, en la fila */
+function PersonRow({ p, uid, graph }) {
+  const [asking, setAsking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const friend = graph.followers.has(p.id);
+  const stop = async () => {
+    setAsking(false);
+    setBusy(true);
+    await attempt(unfollow(uid, p.id), {
+      ok: `Dejaste de seguir a @${p.username}`,
+      fail: "No se pudo dejar de seguir",
+    });
+    setBusy(false);
+  };
+
+  if (asking) {
+    return (
+      <li className="pr-ask" onKeyDown={(e) => e.key === "Escape" && setAsking(false)}>
+        <Avatar name={p.username} size={36} />
+        <span className="pr-ask-txt">
+          <b>¿Dejar de seguir a @{p.username}?</b>
+          <small>Dejan de ser amigos: no vas a ver su portfolio si es solo para amigos.</small>
+        </span>
+        <div>
+          <button type="button" className="btn btn-line btn-sm" autoFocus onClick={() => setAsking(false)}>
+            Cancelar
+          </button>
+          <button type="button" className="btn btn-danger btn-sm" onClick={stop}>
+            Dejar de seguir
+          </button>
+        </div>
+      </li>
+    );
+  }
+  return (
+    <li className="pr-row">
+      <Link to={`/u/${p.username}`} className="pr-id">
+        <Avatar name={p.username} size={36} />
+        <span>
+          <b>
+            {p.display_name || p.username}
+            {p.verified && <Verified label={p.verified_label} />}
+          </b>
+          <small>
+            @{p.username}
+            {p.bio ? ` · ${p.bio}` : ""}
+          </small>
+        </span>
+      </Link>
+      <button
+        type="button"
+        className={"pr-state" + (friend ? " friend" : "")}
+        onClick={() => (friend ? setAsking(true) : stop())}
+        disabled={busy}
+        title="Dejar de seguir"
+      >
+        <i className={friend ? "bi bi-people-fill" : "bi bi-check2"} />
+        <span className="pr-now">{friend ? "Amigos" : "Siguiendo"}</span>
+        <span className="pr-off">Dejar de seguir</span>
+      </button>
+    </li>
+  );
+}
+
 function PeopleSearch({ uid, graph }) {
   const [q, setQ] = useState("");
   const [focus, setFocus] = useState(false);
@@ -56,7 +147,7 @@ function PeopleSearch({ uid, graph }) {
   const open = focus && q.trim().length >= 2;
   return (
     <div className="people-search" onFocus={() => setFocus(true)} onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && setFocus(false)}>
-      <div className="search-form compact">
+      <div className="search-form filter-in">
         <i className="bi bi-search ico" aria-hidden="true" />
         <input
           value={q}
@@ -231,13 +322,7 @@ export default function Community() {
 
       <section id="recomendaciones" className="block">
         <SectionHead kicker="Feed" title="Recomendaciones" desc="Qué recomiendan comprar, mantener o vender, y cómo les fue desde que lo dijeron.">
-          <div className="seg" role="tablist" aria-label="Qué mostrar">
-            {FEED_TABS.map(([k, label]) => (
-              <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>
-                {label}
-              </button>
-            ))}
-          </div>
+          <Tabs items={FEED_TABS} value={tab} onChange={setTab} label="Qué mostrar" />
         </SectionHead>
 
         <PostComposer key={composerKey} uid={uid} username={user.username} autoOpen={composerKey > 0 || params.has("publicar")} onDone={() => setTab("following")} />
@@ -253,13 +338,13 @@ export default function Community() {
 
         {posts.length > 0 && (
           <div className="list-filters">
-            <div className="seg" role="radiogroup" aria-label="Filtrar por postura">
-              {[["all", "Todas"], ...STANCES.map(([k, label]) => [k, label])].map(([k, label]) => (
-                <button key={k} type="button" role="radio" aria-checked={stanceFilter === k} className={stanceFilter === k ? "on" : ""} onClick={() => setStanceFilter(k)}>
-                  {label}
-                </button>
-              ))}
-            </div>
+            <Tabs
+              items={[["all", "Todas"], ...STANCES.map(([k, label]) => [k, label, k])]}
+              value={stanceFilter}
+              onChange={setStanceFilter}
+              label="Filtrar por postura"
+              className="stance-tabs"
+            />
             <div className="search-form compact filter-in">
               <i className="bi bi-funnel ico" aria-hidden="true" />
               <input value={symFilter} onChange={(e) => setSymFilter(e.target.value)} placeholder="Filtrar por activo o persona" aria-label="Filtrar recomendaciones" />
@@ -312,7 +397,15 @@ export default function Community() {
       </section>
 
       <section id="personas" className="block">
-        <SectionHead kicker="Personas" title="A quién seguir" desc="Verificados y perfiles públicos. Si se siguen mutuamente, son amigos y ven su portfolio." />
+        <SectionHead
+          kicker="Personas"
+          title="A quién seguir"
+          desc={
+            suggested.loaded && !suggested.rows.length
+              ? "Ya seguís a todos los perfiles públicos. Buscá a alguien por su usuario arriba."
+              : "Verificados y perfiles públicos. Si se siguen mutuamente, son amigos y ven su portfolio."
+          }
+        />
         {suggested.rows.length ? (
           <div className="people-grid">
             {suggested.rows.map((p) => (
@@ -320,23 +413,32 @@ export default function Community() {
             ))}
           </div>
         ) : (
-          <div className="side-empty wide">
-            <p>{suggested.loaded ? "Ya seguís a todos los perfiles públicos. Buscá a alguien por su usuario." : "Cargando…"}</p>
+          <div className="people-grid" aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="card person-card gh-person">
+                <div className="pc-id">
+                  <span className="gh-av" />
+                  <span className="gh-ln w60" />
+                </div>
+                <span className="gh-ln w90" />
+                <span className="gh-ln w40" />
+              </div>
+            ))}
           </div>
         )}
 
         {following.data.length > 0 && (
-          <>
+          <div className="pr-block">
             <h3 className="sub-title">
               Seguís a {following.data.length} {following.data.length === 1 ? "persona" : "personas"}
               {graph.friends.size > 0 && <span> · {graph.friends.size === 1 ? "1 amigo" : `${graph.friends.size} amigos`}</span>}
             </h3>
-            <div className="people-grid compact">
+            <ul className="card pr-list">
               {following.data.map((p) => (
-                <PersonCard key={p.id} p={p} uid={uid} graph={graph} compact />
+                <PersonRow key={p.id} p={p} uid={uid} graph={graph} />
               ))}
-            </div>
-          </>
+            </ul>
+          </div>
         )}
       </section>
 
@@ -349,8 +451,8 @@ export default function Community() {
             <i className="bi bi-pencil" /> Editar
           </button>
         </SectionHead>
-        <div className="card me-strip">
-          <div className="me-top">
+        <div className="card me-card">
+          <div className="me-id">
             <Avatar name={user.username} size={56} />
             <div>
               <b>
@@ -358,27 +460,32 @@ export default function Community() {
                 {me?.verified && <Verified label={me.verified_label} />}
               </b>
               <span>@{user.username}</span>
-              {me?.bio && <p className="me-bio">{me.bio}</p>}
+              {me?.bio && <p>{me.bio}</p>}
             </div>
           </div>
-          <div className="me-counts">
-            <div>
-              <b>{counts.followers ?? "—"}</b>
-              <span>{counts.followers === 1 ? "seguidor" : "seguidores"}</span>
-            </div>
-            <div>
-              <b>{counts.following ?? "—"}</b>
-              <span>siguiendo</span>
-            </div>
-            <div>
-              <b>{graph.loaded ? graph.friends.size : "—"}</b>
-              <span>{graph.friends.size === 1 ? "amigo" : "amigos"}</span>
-            </div>
-          </div>
+          <dl className="me-stats">
+            {[
+              [counts.followers, counts.followers === 1 ? "seguidor" : "seguidores"],
+              [counts.following, "siguiendo"],
+              [graph.loaded ? graph.friends.size : null, graph.friends.size === 1 ? "amigo" : "amigos"],
+            ].map(([n, label]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{n ?? "—"}</dd>
+              </div>
+            ))}
+          </dl>
           {me && (
             <div className="me-vis">
               <small>Tu portfolio lo ve</small>
               <VisibilitySeg value={me.visibility} onChange={setVisibility} disabled={savingVis} />
+              <span className="me-vis-hint">
+                {me.visibility === "public"
+                  ? "Cualquiera ve tus % y rendimiento, nunca los montos."
+                  : me.visibility === "friends"
+                    ? "Solo quienes te siguen y seguís ven tus % y rendimiento."
+                    : "Nadie ve tu portfolio. Tus recomendaciones siguen siendo públicas."}
+              </span>
               {!me.verified && (
                 <button type="button" className="lnk-btn verify-cta" onClick={() => setEdit("verify")}>
                   <i className="bi bi-patch-check" /> ¿Sos analista o creador? Pedí el verificado
