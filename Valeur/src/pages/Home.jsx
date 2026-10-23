@@ -8,7 +8,6 @@ import PortfolioSummary, { PortfolioSummaryEmpty } from "../components/Portfolio
 import Pill from "../components/Pill";
 import AlertRows from "../components/AlertRows";
 import { SectionNav, SectionHead } from "../components/Sections";
-import { ForYouCards, ForYouStart } from "../components/MarketBits";
 import { useAuth } from "../context/AuthContext";
 import {
   useBatch,
@@ -23,11 +22,9 @@ import {
   tickerUrl,
 } from "../lib/market";
 import { POPULAR } from "../lib/onboarding";
-import { SECTORS, lookup } from "../lib/catalog";
+import { lookup } from "../lib/catalog";
 import { useTrades, useWatchlist, computePositions, addWatch, removeWatch } from "../lib/portfolio";
 import { useAlerts } from "../lib/alerts";
-import { useMyProfile, updateProfile, useFollowGraph, useFeed } from "../lib/social";
-import { useForYou } from "../lib/foryou";
 import { toast, attempt } from "../lib/feedback";
 
 export default function Home() {
@@ -37,9 +34,6 @@ export default function Home() {
   const watch = useWatchlist(uid);
   const trades = useTrades(uid);
   const alerts = useAlerts(uid);
-  const profile = useMyProfile(uid);
-  const graph = useFollowGraph(uid);
-  const feed = useFeed({ uid, mode: "following", following: graph.loaded ? graph.following : null, limit: 30 });
   const [busy, setBusy] = useState("");
   const [leaving, setLeaving] = useState("");
   // ficha que está preguntando "¿dejar de seguir?" (la confirmación va en la ficha)
@@ -68,7 +62,6 @@ export default function Home() {
     if (!authLoading && !user) navigate("/login");
   }, [authLoading, user, navigate]);
 
-  const fy = useForYou({ uid, profile: profile.data, watchRows: watch.rows, tradeRows: trades.rows, posts: feed.data, limit: 8 });
   const watchSymbols = useMemo(() => watch.rows.map((w) => w.symbol), [watch.rows]);
   const posSymbols = useMemo(() => [...new Set(trades.rows.map((t) => t.symbol))], [trades.rows]);
   const activeAlerts = useMemo(() => alerts.data.filter((a) => a.active), [alerts.data]);
@@ -78,9 +71,8 @@ export default function Home() {
     ...watchSymbols,
     ...posSymbols,
     ...activeAlerts.map((a) => a.symbol),
-    ...fy.recs.map((r) => r.symbol),
   ]);
-  const { quotes, sparks } = mkt;
+  const { quotes } = mkt;
   const ago = useAgo(mkt.updatedAt);
   const { positions, totals } = useMemo(() => computePositions(trades.rows, quotes, cur, fx.mep), [trades.rows, quotes, cur, fx.mep]);
 
@@ -97,7 +89,6 @@ export default function Home() {
 
   if (!user) return null;
 
-  const followed = new Set(watchSymbols);
   const held = Object.fromEntries(positions.map((p) => [p.symbol, p.qty]));
   const follow = async ({ symbol, name }) => {
     // si la ficha se había ido hace un rato, que no vuelva "yéndose"
@@ -133,12 +124,6 @@ export default function Home() {
     await new Promise((r) => setTimeout(r, 300));
     // si salió bien, la ficha ya no vuelve (se va con el reload); si falló, reaparece
     if (!(await unfollow(symbol))) setLeaving("");
-  };
-  const addInterest = async (k) => {
-    if (!profile.data) return;
-    setBusy(k);
-    await attempt(updateProfile(uid, { interests: [...new Set([...fy.interests, k])] }), { fail: "No se pudo guardar el rubro" });
-    setBusy("");
   };
 
   const now = new Date();
@@ -208,7 +193,6 @@ export default function Home() {
           ["movimientos", "Movimientos", "bi-activity"],
           ...(activeAlerts.length ? [["alertas", "Alertas", "bi-bell"]] : []),
           ["seguidos", "Seguidos", "bi-star"],
-          ["para-vos", "Para vos", "bi-stars"],
         ]}
       />
 
@@ -363,31 +347,6 @@ export default function Home() {
               ))}
             </div>
           </div>
-        )}
-      </section>
-
-      {/* Para vos */}
-      <section id="para-vos" className="block">
-        <SectionHead kicker="Ideas" title="Para vos" desc="Según tus rubros, lo que seguís y lo que recomienda tu comunidad.">
-          <Link to="/tickersearch#para-vos" className="btn btn-line btn-sm">
-            Ver más ideas
-          </Link>
-        </SectionHead>
-        {fy.recs.length ? (
-          <ForYouCards
-            compact
-            recs={fy.recs.slice(0, 4)}
-            quotes={quotes}
-            sparks={sparks}
-            cur={cur}
-            rate={rate}
-            followed={followed}
-            busy={busy}
-            onStar={(r) => (followed.has(r.symbol) ? dropTile(r.symbol) : follow(r))}
-            onHide={fy.hide}
-          />
-        ) : (
-          <ForYouStart sectors={SECTORS} busy={busy} disabled={!profile.data} onPick={addInterest} wide />
         )}
       </section>
 

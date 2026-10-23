@@ -30,7 +30,6 @@ const DRAWER = {
     ["resumen", "Tu portfolio", "bi-wallet2"],
     ["movimientos", "Movimientos", "bi-activity"],
     ["seguidos", "Seguidos", "bi-star"],
-    ["para-vos", "Para vos", "bi-stars"],
   ],
   "/dashboard": [
     ["resumen", "Resumen", "bi-pie-chart"],

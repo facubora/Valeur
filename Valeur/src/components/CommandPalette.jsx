@@ -12,9 +12,9 @@ import Modal from "./Modal";
 
 /* Secciones de la app (filtradas por lo que se escribe) */
 const PAGES = [
-  ["/home", "Inicio", "bi-house-door", "Resumen del día, seguidos e ideas"],
+  ["/home", "Inicio", "bi-house-door", "Resumen del día, tu portfolio y lo que seguís"],
   ["/dashboard", "Portfolio", "bi-wallet2", "Tus posiciones y operaciones"],
-  ["/tickersearch", "Mercado", "bi-graph-up-arrow", "Explorar CEDEARs, acciones, cripto y monedas"],
+  ["/tickersearch", "Mercado", "bi-graph-up-arrow", "Ideas para vos y CEDEARs, acciones, cripto y monedas"],
   ["/comunidad", "Comunidad", "bi-people", "Recomendaciones y personas"],
 ];
 
