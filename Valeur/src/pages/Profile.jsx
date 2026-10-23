@@ -185,38 +185,10 @@ export default function Profile() {
 
       <SectionNav
         items={[
-          ["recomendaciones", "Recomendaciones", "bi-chat-square-quote"],
           ["portfolio", "Portfolio", "bi-pie-chart"],
+          ["recomendaciones", "Recomendaciones", "bi-chat-square-quote"],
         ]}
       />
-
-      {/* Recomendaciones, como en la comunidad */}
-      <section id="recomendaciones" className="block">
-        <SectionHead
-          kicker="Jugadas"
-          title="Recomendaciones"
-          desc={
-            record
-              ? `${record.hits} de ${record.n} fueron para el lado que ${isMe ? "dijiste" : "dijo"}, con ${pctTxt(record.avg)} a favor en promedio.`
-              : posts.data.length
-                ? `${posts.data.length} ${posts.data.length === 1 ? "publicada" : "publicadas"}, con cómo le fue a cada una desde ese día.`
-                : isMe
-                  ? "Lo que recomiendes va a aparecer acá, con cómo le fue desde ese día."
-                  : "Todavía no recomendó nada."
-          }
-        />
-        {!posts.loaded ? (
-          <GhostPosts n={3} />
-        ) : posts.data.length ? (
-          <div className="feed-grid">
-            {posts.data.map((post) => (
-              <PostCard key={post.id} post={post} uid={uid} quote={quotes[post.symbol]} />
-            ))}
-          </div>
-        ) : (
-          <GhostPosts n={3} />
-        )}
-      </section>
 
       {/* Portfolio: proporciones y rendimiento, nunca montos */}
       <section id="portfolio" className="block">
@@ -317,6 +289,34 @@ export default function Profile() {
               )}
             </div>
           </div>
+        )}
+      </section>
+
+      {/* Recomendaciones, como en la comunidad */}
+      <section id="recomendaciones" className="block">
+        <SectionHead
+          kicker="Jugadas"
+          title="Recomendaciones"
+          desc={
+            record
+              ? `${record.hits} de ${record.n} fueron para el lado que ${isMe ? "dijiste" : "dijo"}, con ${pctTxt(record.avg)} a favor en promedio.`
+              : posts.data.length
+                ? `${posts.data.length} ${posts.data.length === 1 ? "publicada" : "publicadas"}, con cómo le fue a cada una desde ese día.`
+                : isMe
+                  ? "Lo que recomiendes va a aparecer acá, con cómo le fue desde ese día."
+                  : "Todavía no recomendó nada."
+          }
+        />
+        {!posts.loaded ? (
+          <GhostPosts n={3} />
+        ) : posts.data.length ? (
+          <div className="feed-grid">
+            {posts.data.map((post) => (
+              <PostCard key={post.id} post={post} uid={uid} quote={quotes[post.symbol]} />
+            ))}
+          </div>
+        ) : (
+          <GhostPosts n={3} />
         )}
       </section>
 
