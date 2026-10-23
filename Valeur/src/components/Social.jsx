@@ -261,15 +261,26 @@ export function GhostPosts({ n = 2 }) {
 
 /* Aviso para el desarrollador si falta correr la migración de comunidad */
 export function SetupNotice({ error }) {
-  if (!/column|relation|does not exist|schema cache/i.test(error || "")) return null;
+  if (!error) return null;
+  // falta correr la migración: se explica cómo; cualquier otra falla, se muestra
+  const setup = /column|relation|does not exist|schema cache/i.test(error) && !/more than one relationship/i.test(error);
   return (
     <div className="net-notice" role="alert">
       <i className="bi bi-database-exclamation" />
       <div>
-        <b>Falta preparar la base para la comunidad.</b>
-        <span>
-          Corré <code>supabase/migrations/0003_community.sql</code> en Supabase → SQL Editor y recargá.
-        </span>
+        {setup ? (
+          <>
+            <b>Falta preparar la base para la comunidad.</b>
+            <span>
+              Corré <code>supabase/migrations/0003_community.sql</code> en Supabase → SQL Editor y recargá.
+            </span>
+          </>
+        ) : (
+          <>
+            <b>No pudimos traer las recomendaciones.</b>
+            <span>{/failed to fetch|network/i.test(error) ? "Sin conexión con el servidor. Probá de nuevo." : error}</span>
+          </>
+        )}
       </div>
     </div>
   );

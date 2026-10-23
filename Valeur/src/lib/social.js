@@ -237,7 +237,9 @@ export function useFeed({
       const inner = mode === "verified" ? "!inner" : "";
       let q = db
         .from("posts")
-        .select(`*, author:profiles${inner}(${AUTHOR_COLS}), post_likes(user_id)`)
+        // el autor por la FK de posts: "profiles" a secas es ambiguo porque
+        // post_likes también une posts con profiles (Supabase devuelve PGRST201)
+        .select(`*, author:profiles!posts_user_id_fkey${inner}(${AUTHOR_COLS}), post_likes(user_id)`)
         .order("created_at", { ascending: false })
         .limit(limit);
       if (postId) q = q.eq("id", postId);
