@@ -11,7 +11,7 @@ import RecommendModal from "../components/PostComposer";
 import ProfileModal from "../components/ProfileModal";
 import TradeModal from "../components/TradeModal";
 import { PostCard, GhostPosts } from "../components/Social";
-import { Delta, AssetRow, ForYouCards, ForYouStart } from "../components/MarketBits";
+import { AssetRow, ForYouCards, ForYouStart } from "../components/MarketBits";
 import { SectionNav, SectionHead } from "../components/Sections";
 import Modal from "../components/Modal";
 import Pill from "../components/Pill";
@@ -222,21 +222,9 @@ function Explore({ uid, user, ctx, recent, onOpen }) {
     return SECTORS.filter(([k]) => all.has(k) && k !== tab && !(tab === "etf" && k === "etf"));
   }, [tab]);
 
-  // lo más mencionado en la comunidad últimamente (posts de quienes seguís + propios)
-  const talk = useMemo(() => {
-    const m = new Map();
-    for (const p of feed.data) {
-      const e = m.get(p.symbol) || { symbol: p.symbol, n: 0, buy: 0, hold: 0, sell: 0 };
-      e.n += 1;
-      e[p.stance] += 1;
-      m.set(p.symbol, e);
-    }
-    return [...m.values()].sort((a, b) => b.n - a.n).slice(0, 8);
-  }, [feed.data]);
-
   // lista y recomendaciones por separado: las recomendaciones (pocas) llegan rápido
   const list = useBatch(rows.map((r) => r.symbol));
-  const side = useBatch([...fy.recs.map((r) => r.symbol), ...talk.map((t) => t.symbol)]);
+  const side = useBatch(fy.recs.map((r) => r.symbol));
   const ago = useAgo(list.updatedAt);
 
   const sorted = useMemo(() => {
@@ -275,7 +263,6 @@ function Explore({ uid, user, ctx, recent, onOpen }) {
     ...(user ? [["para-vos", "Para vos", "bi-stars"]] : []),
     ["explorar", "Explorar", "bi-grid"],
     ...(user && alerts.data.length ? [["alertas", "Alertas", "bi-bell"]] : []),
-    ...(user ? [["comunidad", "Comunidad", "bi-people"]] : []),
   ];
 
   return (
@@ -480,58 +467,6 @@ function Explore({ uid, user, ctx, recent, onOpen }) {
         <section id="alertas" className="block">
           <SectionHead kicker="Avisos" title="Tus alertas" desc="Te avisamos por notificación cuando un activo llega al precio o se mueve fuerte en el día." />
           <AlertsCard uid={uid} alerts={alerts.data} wide />
-        </section>
-      )}
-
-      {user && (
-        <section id="comunidad" className="block">
-          <SectionHead
-            kicker="Comunidad"
-            title="Lo que más se recomienda"
-            desc={talk.length ? "Los activos de los que más habla la gente que seguís." : "Seguí gente en la comunidad y acá vas a ver de qué activos hablan."}
-          >
-            <Link to="/comunidad" className="btn btn-line btn-sm">
-              <i className="bi bi-people" /> Ir a la comunidad
-            </Link>
-          </SectionHead>
-          {talk.length ? (
-            <div className="talk-grid">
-              {talk.map((t) => {
-                const q = side.quotes[t.symbol];
-                return (
-                  <Link key={t.symbol} to={tickerUrl(t.symbol)} className="card talk-tile">
-                    <div className="tt-top">
-                      <Logo symbol={t.symbol} size={34} />
-                      <div>
-                        <b>{lookup(t.symbol)?.name || t.symbol}</b>
-                        <span>{t.symbol}</span>
-                      </div>
-                      {q && <Delta value={q.change_pct} />}
-                    </div>
-                    <div className="cons-bar">
-                      {["buy", "hold", "sell"].map((k) => (t[k] ? <span key={k} className={k} style={{ flex: t[k] }} /> : null))}
-                    </div>
-                    <span className="tt-foot">
-                      {t.n} {t.n === 1 ? "recomendación" : "recomendaciones"} · <b>{Math.round((t.buy / t.n) * 100)}% compra</b>
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="talk-grid" aria-hidden="true">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className="card talk-tile gh-talk">
-                  <div className="tt-top">
-                    <span className="gh-av" />
-                    <span className="gh-ln w60" />
-                  </div>
-                  <span className="gh-bar" />
-                  <span className="gh-ln w40" />
-                </div>
-              ))}
-            </div>
-          )}
         </section>
       )}
 

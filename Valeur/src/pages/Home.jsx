@@ -7,7 +7,6 @@ import TradeModal from "../components/TradeModal";
 import PortfolioSummary, { PortfolioSummaryEmpty } from "../components/PortfolioSummary";
 import Pill from "../components/Pill";
 import AlertRows from "../components/AlertRows";
-import { PostTile } from "../components/Social";
 import { SectionNav, SectionHead } from "../components/Sections";
 import { ForYouCards, ForYouStart } from "../components/MarketBits";
 import { useAuth } from "../context/AuthContext";
@@ -72,7 +71,6 @@ export default function Home() {
   const fy = useForYou({ uid, profile: profile.data, watchRows: watch.rows, tradeRows: trades.rows, posts: feed.data, limit: 8 });
   const watchSymbols = useMemo(() => watch.rows.map((w) => w.symbol), [watch.rows]);
   const posSymbols = useMemo(() => [...new Set(trades.rows.map((t) => t.symbol))], [trades.rows]);
-  const posts = useMemo(() => feed.data.filter((p) => p.user_id !== uid).slice(0, 6), [feed.data, uid]);
   const activeAlerts = useMemo(() => alerts.data.filter((a) => a.active), [alerts.data]);
 
   const mkt = useBatch([
@@ -81,7 +79,6 @@ export default function Home() {
     ...posSymbols,
     ...activeAlerts.map((a) => a.symbol),
     ...fy.recs.map((r) => r.symbol),
-    ...posts.map((p) => p.symbol),
   ]);
   const { quotes, sparks } = mkt;
   const ago = useAgo(mkt.updatedAt);
@@ -212,7 +209,6 @@ export default function Home() {
           ...(activeAlerts.length ? [["alertas", "Alertas", "bi-bell"]] : []),
           ["seguidos", "Seguidos", "bi-star"],
           ["para-vos", "Para vos", "bi-stars"],
-          ["comunidad", "Comunidad", "bi-people"],
         ]}
       />
 
@@ -392,35 +388,6 @@ export default function Home() {
           />
         ) : (
           <ForYouStart sectors={SECTORS} busy={busy} disabled={!profile.data} onPick={addInterest} wide />
-        )}
-      </section>
-
-      {/* Comunidad */}
-      <section id="comunidad" className="block">
-        <SectionHead kicker="Comunidad" title="Lo que recomiendan" desc="Lo último de las personas que seguís.">
-          <Link to="/comunidad" className="btn btn-line btn-sm">
-            <i className="bi bi-people" /> Ir a la comunidad
-          </Link>
-        </SectionHead>
-        {posts.length ? (
-          <div className="post-grid">
-            {posts.map((p) => (
-              <PostTile key={p.id} post={p} quote={quotes[p.symbol]} />
-            ))}
-          </div>
-        ) : (
-          <div className="post-grid ghosted" aria-hidden="true">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="card post-tile gh-tile">
-                <div className="pt-head">
-                  <span className="gh-av" />
-                  <span className="gh-ln w40" />
-                </div>
-                <span className="gh-ln w60" />
-                <span className="gh-ln w90" />
-              </div>
-            ))}
-          </div>
         )}
       </section>
 

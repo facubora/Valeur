@@ -41,7 +41,6 @@ const DRAWER = {
     ["para-vos", "Para vos", "bi-stars"],
     ["explorar", "Explorar", "bi-grid"],
     ["alertas", "Alertas", "bi-bell"],
-    ["comunidad", "Lo que se recomienda", "bi-chat-square-quote"],
   ],
   "/comunidad": [
     ["recomendaciones", "Recomendaciones", "bi-chat-square-quote"],
