@@ -1,53 +1,49 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "./Logo";
-import { ALERT_KINDS, ALERT_KIND, alertText, alertError, alertGap, addAlert, updateAlert, deleteAlert } from "../lib/alerts";
+import AlertEditor from "./AlertEditor";
+import { alertText, alertGap, addAlert, deleteAlert, setAlertActive } from "../lib/alerts";
 import { fmtPrice, tickerUrl } from "../lib/market";
 import { toast, attempt } from "../lib/feedback";
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-/* Una alerta: cuánto le falta y, al pasar el mouse, editar o borrar.
-   Editar se hace ahí mismo (tipo + valor), con las mismas validaciones que
-   al crearla. Borrar se puede deshacer desde el aviso. */
+
+/* Pedir permiso para avisos del navegador (solo si todavía no se respondió) */
+export function BrowserNotifyAsk() {
+  const [perm, setPerm] = useState(() => ("Notification" in window ? Notification.permission : "denied"));
+  if (perm !== "default") return null;
+  return (
+    <button type="button" className="lnk-btn notify-ask" onClick={() => Notification.requestPermission().then(setPerm)}>
+      <i className="bi bi-app-indicator" /> Avisarme también en el navegador
+    </button>
+  );
+}
+
+/* Una alerta: cuánto le falta y, al pasar el mouse, editar o borrar. Editar
+   abre el mismo editor que en el activo, ahí en la fila. Borrar se confirma
+   en la fila y se puede deshacer desde el aviso. Si ya avisó, se reactiva
+   con un toque. */
 function AlertRow({ a, q, existing }) {
-  const [editing, setEditing] = useState(false);
-  const [kind, setKind] = useState(a.kind);
-  const [value, setValue] = useState(String(Number(a.value)));
-  const [error, setError] = useState("");
+  const [mode, setMode] = useState(""); // "" | "edit" | "ask"
   const [busy, setBusy] = useState(false);
   // animaciones: "out" se va (al borrar), "back" vuelve de editar, "saved" destella
   const [fx, setFx] = useState("");
-  // confirmar el borrado en la misma fila, sin tapar la pantalla
-  const [asking, setAsking] = useState(false);
-  const gap = alertGap(a, q);
+  const gap = a.active ? alertGap(a, q) : null;
   const close = (next) => {
-    setEditing(false);
+    setMode("");
     setFx(next);
   };
 
-  const open = () => {
-    setKind(a.kind);
-    setValue(String(Number(a.value)));
-    setError("");
-    setEditing(true);
-  };
-  const save = async (e) => {
-    e.preventDefault();
-    const v = Number(String(value).replace(",", "."));
-    const bad = alertError({ symbol: a.symbol, kind, value: v, quote: q, existing, selfId: a.id });
-    if (bad) return setError(bad);
+  const reactivate = async () => {
     setBusy(true);
-    const ok = await attempt(updateAlert(a.id, { kind, value: v }), { fail: "No se pudo guardar la alerta" });
+    const ok = await attempt(setAlertActive(a.id, true), { ok: `Alerta de ${a.symbol} vigilando de nuevo`, fail: "No se pudo reactivar la alerta" });
     setBusy(false);
-    if (ok) {
-      toast(`Alerta de ${a.symbol}: ${alertText({ symbol: a.symbol, kind, value: v }).replace(/^S/, "s")}`);
-      close("saved");
-    }
+    if (ok) setFx("saved");
   };
   // primero la fila se va (se desliza y se cierra) y después se borra; si
   // falla, vuelve
   const remove = async () => {
-    setAsking(false);
+    setMode("");
     setBusy(true);
     setFx("out");
     await wait(320);
@@ -61,16 +57,16 @@ function AlertRow({ a, q, existing }) {
     }
   };
 
-  if (asking) {
+  if (mode === "ask") {
     return (
-      <li className="nrx-ask" onKeyDown={(e) => e.key === "Escape" && setAsking(false)}>
+      <li className="nrx-ask" onKeyDown={(e) => e.key === "Escape" && setMode("")}>
         <Logo symbol={a.symbol} size={28} />
         <span className="nrx-ask-txt">
           <b>¿Borrar la alerta de {a.symbol}?</b>
           <small>{alertText(a)}. Ya no te va a avisar.</small>
         </span>
         <div className="nrx-btns">
-          <button type="button" className="btn btn-line btn-sm" autoFocus onClick={() => setAsking(false)}>
+          <button type="button" className="btn btn-line btn-sm" autoFocus onClick={() => setMode("")}>
             Cancelar
           </button>
           <button type="button" className="btn btn-danger btn-sm" onClick={remove}>
@@ -81,49 +77,21 @@ function AlertRow({ a, q, existing }) {
     );
   }
 
-  if (editing) {
-    const unit = ALERT_KIND[kind].unit;
+  if (mode === "edit") {
     return (
       <li className="nrx-edit">
-        <form onSubmit={save} onKeyDown={(e) => e.key === "Escape" && close("back")}>
+        <div className="nrx-edit-head">
           <Logo symbol={a.symbol} size={28} />
-          <b className="nrx-sym">{a.symbol}</b>
-          <div className="seg nrx-kinds" role="radiogroup" aria-label="Tipo de alerta">
-            {ALERT_KINDS.map(([k, label]) => (
-              <button key={k} type="button" role="radio" aria-checked={kind === k} className={kind === k ? "on" : ""} onClick={() => setKind(k)}>
-                {label}
-              </button>
-            ))}
-          </div>
-          <label className="nrx-val">
-            <input
-              autoFocus
-              inputMode="decimal"
-              value={value}
-              onChange={(e) => {
-                setValue(e.target.value);
-                setError("");
-              }}
-              aria-label={unit === "pct" ? "Porcentaje" : "Precio"}
-            />
-            <span>{unit === "pct" ? "%" : q ? `hoy ${fmtPrice(a.symbol, q.price)}` : ""}</span>
-          </label>
-          <div className="nrx-btns">
-            <button type="button" className="btn btn-line btn-sm" onClick={() => close("back")}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn btn-pink btn-sm" disabled={busy}>
-              Guardar
-            </button>
-          </div>
-        </form>
-        {error && <p className="nrx-err">{error}</p>}
+          <b>{a.symbol}</b>
+          <small>{a.active ? "Editando" : "Editala y vuelve a vigilar"}</small>
+        </div>
+        <AlertEditor symbol={a.symbol} alert={a} existing={existing} onDone={() => close("saved")} onCancel={() => close("back")} />
       </li>
     );
   }
 
   return (
-    <li className={fx ? "nrx-" + fx : ""} onAnimationEnd={(e) => e.target === e.currentTarget && fx !== "out" && setFx("")}>
+    <li className={(a.active ? "" : "off ") + (fx ? "nrx-" + fx : "")} onAnimationEnd={(e) => e.target === e.currentTarget && fx !== "out" && setFx("")}>
       <Link to={tickerUrl(a.symbol)}>
         <Logo symbol={a.symbol} size={28} />
         <span className="pfx-name">
@@ -131,18 +99,31 @@ function AlertRow({ a, q, existing }) {
           <small>{alertText(a)}</small>
         </span>
         <span className="nrx-gap">
-          <span className="nrx-bar">
-            <span style={{ width: `${(gap?.progress ?? 0) * 100}%` }} />
-          </span>
-          <small>{gap?.text || "sin datos"}</small>
+          {a.active ? (
+            <>
+              <span className="nrx-bar">
+                <span style={{ width: `${(gap?.progress ?? 0) * 100}%` }} />
+              </span>
+              <small>{gap?.text || "sin datos"}</small>
+            </>
+          ) : (
+            <small>
+              <i className="bi bi-check2" /> Ya avisó, no está vigilando
+            </small>
+          )}
         </span>
         <span className="pfx-val">{q ? fmtPrice(a.symbol, q.price) : "—"}</span>
       </Link>
       <span className="nrx-acts">
-        <button type="button" onClick={open} disabled={busy} aria-label={`Editar la alerta de ${a.symbol}`} title="Editar">
+        {!a.active && (
+          <button type="button" className="again" onClick={reactivate} disabled={busy}>
+            <i className="bi bi-arrow-repeat" /> Reactivar
+          </button>
+        )}
+        <button type="button" onClick={() => setMode("edit")} disabled={busy} aria-label={`Editar la alerta de ${a.symbol}`} title="Editar">
           <i className="bi bi-pencil" />
         </button>
-        <button type="button" className="danger" onClick={() => setAsking(true)} disabled={busy} aria-label={`Borrar la alerta de ${a.symbol}`} title="Borrar">
+        <button type="button" className="danger" onClick={() => setMode("ask")} disabled={busy} aria-label={`Borrar la alerta de ${a.symbol}`} title="Borrar">
           <i className="bi bi-trash3" />
         </button>
       </span>
@@ -150,7 +131,7 @@ function AlertRow({ a, q, existing }) {
   );
 }
 
-/* Las alertas activas en el Inicio, una fila cada una */
+/* Alertas, una fila cada una (Inicio y Mercado) */
 export default function AlertRows({ alerts, quotes, existing }) {
   return (
     <div className="card nrx">

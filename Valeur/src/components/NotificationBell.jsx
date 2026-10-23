@@ -6,7 +6,7 @@ import { Avatar } from "./Social";
 import { timeAgo } from "../lib/social";
 import { useAlerts } from "../lib/alerts";
 import { attempt } from "../lib/feedback";
-import { BrowserNotifyAsk } from "./AlertsCard";
+import { BrowserNotifyAsk } from "./AlertRows";
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 

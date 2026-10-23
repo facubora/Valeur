@@ -3,7 +3,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import AppShell from "../components/AppShell";
 import AssetChart from "../components/AssetChart";
-import AlertsCard from "../components/AlertsCard";
+import AlertRows, { BrowserNotifyAsk } from "../components/AlertRows";
+import SymbolSearch from "../components/SymbolSearch";
 import AlertEditor from "../components/AlertEditor";
 import AlertList from "../components/AssetAlerts";
 import Logo from "../components/Logo";
@@ -262,7 +263,7 @@ function Explore({ uid, user, ctx, recent, onOpen }) {
   const navItems = [
     ...(user ? [["para-vos", "Para vos", "bi-stars"]] : []),
     ["explorar", "Explorar", "bi-grid"],
-    ...(user && alerts.data.length ? [["alertas", "Alertas", "bi-bell"]] : []),
+    ...(user ? [["alertas", "Alertas", "bi-bell"]] : []),
   ];
 
   return (
@@ -463,16 +464,125 @@ function Explore({ uid, user, ctx, recent, onOpen }) {
         )}
       </section>
 
-      {user && alerts.data.length > 0 && (
-        <section id="alertas" className="block">
-          <SectionHead kicker="Avisos" title="Tus alertas" desc="Te avisamos por notificación cuando un activo llega al precio o se mueve fuerte en el día." />
-          <AlertsCard uid={uid} alerts={alerts.data} wide />
-        </section>
-      )}
+      {user && <MyAlerts uid={uid} alerts={alerts} />}
 
       {user && (
         <ProfileModal open={editInterests} uid={uid} profile={profile.data} focus="interests" onClose={() => setEditInterests(false)} />
       )}
+    </>
+  );
+}
+
+/* Tus alertas: las que vigilan y las que ya avisaron, para editar, borrar o
+   reactivar en la fila; y crear otra de cualquier activo */
+function MyAlerts({ uid, alerts }) {
+  const on = alerts.data.filter((a) => a.active);
+  const off = alerts.data.filter((a) => !a.active);
+  const [show, setShow] = useState(null);
+  const [adding, setAdding] = useState(false);
+  const { quotes } = useQuotes(alerts.data.map((a) => a.symbol));
+  // arranca en las que vigilan; si no hay, en las que ya avisaron
+  const tab = show || (on.length || !off.length ? "on" : "off");
+  const listed = tab === "on" ? on : off;
+  const TABS_A = [
+    ["on", `Vigilando · ${on.length}`],
+    ["off", `Ya avisaron · ${off.length}`],
+  ];
+
+  return (
+    <section id="alertas" className="block">
+      <SectionHead kicker="Avisos" title="Tus alertas" desc="Te llega a la campanita cuando un activo llega al precio o se mueve fuerte en el día.">
+        {off.length > 0 && (
+          <div className="vx-tabs sm" role="radiogroup" aria-label="Qué alertas ver" style={{ "--n": 2, "--i": tab === "on" ? 0 : 1 }}>
+            <span className="vx-tabs-thumb" aria-hidden="true" />
+            {TABS_A.map(([k, label]) => (
+              <button key={k} type="button" role="radio" aria-checked={tab === k} className={tab === k ? "on" : ""} onClick={() => setShow(k)}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+        <button type="button" className="btn btn-line btn-sm" onClick={() => setAdding(true)}>
+          <i className="bi bi-bell" /> Nueva alerta
+        </button>
+      </SectionHead>
+
+      {!alerts.loaded ? (
+        <GhostAlerts />
+      ) : listed.length ? (
+        <AlertRows alerts={listed} quotes={quotes} existing={alerts.data} />
+      ) : (
+        <GhostAlerts />
+      )}
+      <BrowserNotifyAsk />
+
+      {adding && (
+        <Modal onClose={() => setAdding(false)} label="Nueva alerta" className="tm am">
+          <NewAlertBody uid={uid} alerts={alerts.data} />
+        </Modal>
+      )}
+    </section>
+  );
+}
+
+/* Sin alertas: filas punteadas con la forma de las de verdad */
+function GhostAlerts() {
+  return (
+    <div className="card nrx gh-nrx" aria-hidden="true">
+      {[40, 60, 25].map((w) => (
+        <div key={w} className="gh-nrx-row">
+          <span className="gh-av" />
+          <span className="gh-nrx-txt">
+            <span className="gh-ln w40" />
+            <span className={"gh-ln w" + w} />
+          </span>
+          <span className="gh-nrx-bar" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* Crear una alerta de cualquier activo: elegirlo y después el editor */
+function NewAlertBody({ uid, alerts }) {
+  const close = useModalClose();
+  const [symbol, setSymbol] = useState("");
+  const meta = symbol ? lookup(symbol) : null;
+  return (
+    <>
+      <div className="tm-head">
+        <div>
+          <span className="kicker">Alertas</span>
+          <h2>{symbol ? `¿Cuándo te avisamos de ${symbol}?` : "¿De qué activo?"}</h2>
+          <p className="am-sub">Te llega a la campanita, en cualquier pantalla de Valeur.</p>
+        </div>
+        <button type="button" className="tm-x" onClick={close} aria-label="Cerrar">
+          <i className="bi bi-x-lg" />
+        </button>
+      </div>
+      <div className="am-body">
+        {symbol ? (
+          <>
+            <div className="rc-picked">
+              <Logo symbol={symbol} size={36} />
+              <span>
+                <b>{symbol}</b>
+                <small>{meta?.name || "Activo"}</small>
+              </span>
+              <span className="rc-px">
+                <button type="button" className="lnk-btn" onClick={() => setSymbol("")}>
+                  Cambiar
+                </button>
+              </span>
+            </div>
+            <AlertEditor key={symbol} uid={uid} symbol={symbol} existing={alerts} onDone={close} onCancel={close} />
+          </>
+        ) : (
+          <div className="rc-pick">
+            <SymbolSearch onPick={({ symbol: s }) => setSymbol(s.toUpperCase())} placeholder="AAPL, MELI.BA, bitcoin…" autoFocus />
+          </div>
+        )}
+      </div>
     </>
   );
 }

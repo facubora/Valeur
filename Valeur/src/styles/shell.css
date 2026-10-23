@@ -2287,11 +2287,6 @@
   color: var(--ink);
 }
 
-.app-root .alert-filter {
-  align-self: flex-start;
-  margin-bottom: 12px;
-}
-
 /* ---------- PESTAÑAS EN MOBILE ---------- */
 .app-root .tabbar {
   display: none;
@@ -4364,4 +4359,86 @@
     width: 100%;
     justify-content: center;
   }
+}
+
+/* ---------- TUS ALERTAS (Inicio y Mercado) ---------- */
+/* editar abre el mismo editor que en el activo, en la fila */
+.app-root .nrx-edit-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.app-root .nrx-edit-head b {
+  font-size: 0.95rem;
+}
+.app-root .nrx-edit-head small {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+/* las que ya avisaron: apagadas, con reactivar siempre a mano */
+.app-root .nrx-list li.off a > :first-child {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+.app-root .nrx-list li.off .pfx-name b,
+.app-root .nrx-list li.off .pfx-name small {
+  color: var(--ink-soft);
+}
+.app-root .nrx-list li.off .nrx-gap small {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.app-root .nrx-list li.off .pfx-val {
+  opacity: 0;
+}
+.app-root .nrx-list li.off .nrx-acts {
+  opacity: 1;
+  transform: translate(0, -50%);
+  pointer-events: auto;
+}
+.app-root .nrx-acts button.again {
+  width: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 11px;
+  color: var(--accent-text);
+  font: 600 0.8rem var(--font-body);
+}
+/* sin alertas: filas punteadas */
+.app-root .card.nrx.gh-nrx {
+  border: 1px dashed color-mix(in oklch, var(--ink) 18%, transparent);
+  background: transparent;
+  box-shadow: none;
+}
+.app-root .gh-nrx-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(120px, 220px);
+  align-items: center;
+  gap: 16px;
+  padding: 16px var(--row-x);
+}
+.app-root .gh-nrx-row + .gh-nrx-row {
+  border-top: 1px dashed color-mix(in oklch, var(--ink) 12%, transparent);
+}
+.app-root .gh-nrx-txt {
+  display: grid;
+  gap: 7px;
+}
+.app-root .gh-nrx-bar {
+  height: 6px;
+  border-radius: 999px;
+  border: 1px dashed color-mix(in oklch, var(--ink) 22%, transparent);
+}
+@media (hover: none) {
+  .app-root .nrx-list li.off .nrx-acts {
+    transform: none;
+  }
+}
+/* nueva alerta: mientras se elige el activo el modal es corto, así que no
+   recorta y las sugerencias se ven enteras por debajo */
+.app-root .vx-modal.am:has(.rc-pick) {
+  overflow: visible;
 }

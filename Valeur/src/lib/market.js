@@ -355,7 +355,7 @@ export const money = (n, digits, cur = "USD") => {
 export const signed = (n, digits, cur = "USD") =>
   n == null || !Number.isFinite(n) ? "—" : (n >= 0 ? "+" : "-") + money(Math.abs(n), digits, cur);
 
-export const pct = (n) => (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
+export const pct = (n) => (n >= 0 ? "+" : "−") + Math.abs(n).toFixed(2).replace(".", ",") + "%";
 
 const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 export function formatDate(d) {
