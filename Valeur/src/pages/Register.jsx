@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import AuthLayout, { PasswordField, FormError, SubmitButton } from "../components/AuthLayout";
+import AuthLayout, { PasswordField, IconField, FormError, SubmitButton } from "../components/AuthLayout";
 import { useAuth } from "../context/AuthContext";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -62,105 +62,88 @@ export default function Register() {
 
   if (done) {
     return (
-      <AuthLayout
-        headline={
-          <>
-            Un paso <em>más</em>.
-          </>
-        }
-      >
+      <AuthLayout headline="Ya casi estás adentro.">
         <span className="done-ic" aria-hidden="true">
           <i className="bi bi-envelope-check" />
         </span>
-        <h1>Revisá tu email.</h1>
+        <h1>
+          Revisá tu <em>email</em>.
+        </h1>
         <p>
-          Te mandamos un enlace a <b>{form.email.trim()}</b> para confirmar la
-          cuenta. Cuando lo abras, ya podés iniciar sesión.
+          Te mandamos un enlace a <b>{form.email.trim()}</b> para confirmar la cuenta. Cuando lo abras, ya podés entrar.
         </p>
         <p className="auth-alt">
-          <Link to="/login">Ir a iniciar sesión</Link>
+          <Link to="/login">Ir a entrar</Link>
         </p>
       </AuthLayout>
     );
   }
 
   return (
-    <AuthLayout
-      headline={
-        <>
-          Empezá a invertir <em>hoy</em>.
-        </>
-      }
-    >
-      <h1>Creá tu cuenta.</h1>
+    <AuthLayout headline="Empezá hoy, aunque nunca hayas invertido." sub="Gratis, sin tarjeta. Cargá lo que tenés, seguí activos y aprendé de tu gente.">
+      <span className="kicker">Cuenta nueva</span>
+      <h1>
+        Empezá a invertir <em>hoy</em>.
+      </h1>
       <p>Gratis, en un minuto y sin tarjeta.</p>
 
       <form onSubmit={handleSubmit} className="auth-form" noValidate>
-        <div className="field">
-          <label htmlFor="username">Usuario</label>
-          <input
-            id="username"
-            type="text"
-            name="username"
-            placeholder="tunombre"
-            value={form.username}
+        <IconField
+          label="Usuario"
+          prefix="@"
+          id="username"
+          type="text"
+          name="username"
+          placeholder="tunombre"
+          value={form.username}
+          onChange={handleChange}
+          required
+          autoComplete="username"
+          autoFocus
+        />
+        <IconField
+          label="Email"
+          icon="bi-envelope"
+          id="email"
+          type="email"
+          name="email"
+          placeholder="tu@email.com"
+          value={form.email}
+          onChange={handleChange}
+          required
+          autoComplete="email"
+        />
+        <div className="row-2">
+          <PasswordField
+            label="Contraseña"
+            name="password"
+            placeholder="8 o más"
+            value={form.password}
             onChange={handleChange}
             required
-            autoComplete="username"
-            autoFocus
+            minLength={8}
+            autoComplete="new-password"
+          />
+          <PasswordField
+            label="Repetila"
+            name="confirm"
+            placeholder="••••••••"
+            value={form.confirm}
+            onChange={handleChange}
+            required
+            autoComplete="new-password"
           />
         </div>
 
-        <div className="field">
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            name="email"
-            placeholder="tu@email.com"
-            value={form.email}
-            onChange={handleChange}
-            required
-            autoComplete="email"
-          />
-        </div>
-
-        <PasswordField
-          label="Contraseña"
-          name="password"
-          placeholder="Mínimo 8 caracteres"
-          value={form.password}
-          onChange={handleChange}
-          required
-          minLength={8}
-          autoComplete="new-password"
-        />
-
-        <PasswordField
-          label="Confirmá la contraseña"
-          name="confirm"
-          placeholder="••••••••"
-          value={form.confirm}
-          onChange={handleChange}
-          required
-          autoComplete="new-password"
-        />
-
-        <FormError
-          error={
-            !configured
-              ? "Falta configurar Supabase: copiá .env.example a .env"
-              : error
-          }
-        />
+        <FormError error={!configured ? "Falta configurar Supabase: copiá .env.example a .env" : error} />
 
         <SubmitButton loading={loading} loadingText="Creando cuenta…" disabled={loading || !configured}>
-          Crear cuenta gratis
+          Crear cuenta gratis <i className="bi bi-arrow-right" />
         </SubmitButton>
       </form>
 
       <p className="auth-alt">
-        ¿Ya tenés cuenta? <Link to="/login">Iniciar sesión</Link>
+        ¿Ya tenés cuenta? <Link to="/login">Entrar</Link>
       </p>
     </AuthLayout>
   );
