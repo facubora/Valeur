@@ -149,6 +149,15 @@ function ProfileForm({ uid, profile, focus = null }) {
   );
 }
 
+const CAT_ICON = {
+  analista: "bi-graph-up-arrow",
+  asesor: "bi-briefcase",
+  broker: "bi-bank",
+  creador: "bi-camera-video",
+  periodista: "bi-newspaper",
+  otro: "bi-three-dots",
+};
+
 /* Verificado: estado actual o pedido */
 function VerifySection({ uid, profile }) {
   const req = useMyVerification(uid);
@@ -199,17 +208,18 @@ function VerifySection({ uid, profile }) {
       </div>
       {r?.status === "rejected" && !open && <p className="muted small">El último pedido no se aprobó. Podés volver a intentarlo.</p>}
       {open && (
-        <form className="auth-form verify-form" onSubmit={send} noValidate>
-          <div className="field">
-            <label htmlFor="vf-cat">Sos…</label>
-            <select id="vf-cat" value={category} onChange={(e) => setCategory(e.target.value)}>
+        <form className="verify-form" onSubmit={send} noValidate>
+          <fieldset className="field">
+            <legend>¿Qué sos?</legend>
+            <div className="vf-cats" role="radiogroup" aria-label="Qué sos">
               {VERIFY_CATEGORIES.map(([k, label]) => (
-                <option key={k} value={k}>
+                <button key={k} type="button" role="radio" aria-checked={category === k} className={"vf-cat" + (category === k ? " on" : "")} onClick={() => setCategory(k)}>
+                  <i className={"bi " + (CAT_ICON[k] || "bi-person")} />
                   {label}
-                </option>
+                </button>
               ))}
-            </select>
-          </div>
+            </div>
+          </fieldset>
           <div className="field">
             <label htmlFor="vf-link">Link que lo respalde (opcional)</label>
             <input id="vf-link" value={link} maxLength={200} onChange={(e) => setLink(e.target.value)} placeholder="LinkedIn, matrícula CNV, canal…" />
@@ -220,11 +230,11 @@ function VerifySection({ uid, profile }) {
           </div>
           <FormError error={error} />
           <div className="row-btns">
-            <button type="button" className="btn btn-line btn-sm" onClick={() => setOpen(false)}>
+            <button type="button" className="btn btn-line" onClick={() => setOpen(false)}>
               Cancelar
             </button>
-            <button type="submit" className="btn btn-pink btn-sm" disabled={saving}>
-              {saving ? "Enviando…" : "Enviar pedido"}
+            <button type="submit" className="btn btn-pink" disabled={saving}>
+              <i className="bi bi-send" /> {saving ? "Enviando…" : "Enviar pedido"}
             </button>
           </div>
         </form>
