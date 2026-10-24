@@ -14,6 +14,8 @@ function translate(error) {
   if (/email not confirmed/i.test(m)) return "Confirmá tu email antes de ingresar";
   if (/already registered|already been registered/i.test(m)) return "Ese email ya está registrado";
   if (/password should be at least/i.test(m)) return "La contraseña es demasiado corta";
+  if (/should be different from the old/i.test(m)) return "Tiene que ser distinta de la anterior";
+  if (/auth session missing|session.*expired|invalid.*(token|grant)/i.test(m)) return "El enlace venció. Pedí uno nuevo";
   if (/unable to validate email|invalid email/i.test(m)) return "El email no es válido";
   if (/rate limit|too many requests/i.test(m)) return "Demasiados intentos, probá en un rato";
   if (/failed to fetch|network/i.test(m)) return "No se pudo conectar con Supabase";
@@ -85,6 +87,21 @@ export function AuthProvider({ children }) {
     return { error: "", needsConfirmation: !data.session };
   };
 
+  // Recuperar la contraseña: manda el mail con el enlace que vuelve a /nueva-clave
+  const resetPassword = async (email) => {
+    if (!supabase) return { error: NOT_CONFIGURED };
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + "/nueva-clave",
+    });
+    return { error: translate(error) };
+  };
+
+  const updatePassword = async (password) => {
+    if (!supabase) return { error: NOT_CONFIGURED };
+    const { error } = await supabase.auth.updateUser({ password });
+    return { error: translate(error) };
+  };
+
   const signOut = async () => {
     if (supabase) await supabase.auth.signOut();
   };
@@ -97,6 +114,8 @@ export function AuthProvider({ children }) {
         configured: supabaseConfigured,
         signIn,
         signUp,
+        resetPassword,
+        updatePassword,
         signOut,
       }}
     >

@@ -1252,6 +1252,11 @@
   border: 1px solid color-mix(in oklch, var(--accent) 30%, transparent);
   animation: done-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
+.app-root .done-ic.warn {
+  color: var(--down);
+  background: color-mix(in oklch, var(--down) 10%, transparent);
+  border-color: color-mix(in oklch, var(--down) 28%, transparent);
+}
 @keyframes done-pop {
   from {
     opacity: 0;
@@ -1289,7 +1294,17 @@
   font-weight: 600;
   color: var(--accent-text);
 }
-.app-root .auth-alt a:hover {
+.app-root .auth-alt .link-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent-text);
+  cursor: pointer;
+}
+.app-root .auth-alt a:hover,
+.app-root .auth-alt .link-btn:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -2162,6 +2177,12 @@
   cursor: pointer;
 }
 .app-root .field label .link-btn:hover {
+  text-decoration: underline;
+}
+.app-root .field label a.link-btn {
+  text-decoration: none;
+}
+.app-root .field label a.link-btn:hover {
   text-decoration: underline;
 }
 .app-root .trade-total {

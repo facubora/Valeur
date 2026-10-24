@@ -1,9 +1,12 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
-import { BrowserRouter, Routes, Route, useLocation, useNavigationType } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, useNavigate, useNavigationType } from "react-router-dom";
+import { supabase } from "./lib/supabase";
 import LandingPage from "./pages/LandingPage";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import NewPassword from "./pages/NewPassword";
 import Dashboard from "./pages/Dashboard";
 import Tickersearch from "./pages/Tickersearch";
 import Community from "./pages/Community";
@@ -59,14 +62,32 @@ function ScrollManager() {
   return null;
 }
 
+/* Si el enlace de "recuperar contraseña" cae en otra página (por ejemplo, si
+   Supabase no tiene /nueva-clave entre las URLs permitidas y vuelve al
+   inicio), igual se lleva a elegir la contraseña nueva */
+function RecoveryRedirect() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!supabase) return;
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY" && window.location.pathname !== "/nueva-clave") navigate("/nueva-clave", { replace: true });
+    });
+    return () => data.subscription.unsubscribe();
+  }, [navigate]);
+  return null;
+}
+
 function App() {
   return (
     <BrowserRouter>
       <ScrollManager />
+      <RecoveryRedirect />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/recuperar" element={<ForgotPassword />} />
+        <Route path="/nueva-clave" element={<NewPassword />} />
         <Route path="/home" element={<Home />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/tickersearch" element={<Tickersearch />} />

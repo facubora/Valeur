@@ -66,6 +66,11 @@ export default function Login() {
           onChange={handleChange}
           required
           autoComplete="current-password"
+          aside={
+            <Link to="/recuperar" state={{ email: form.email.trim() }} className="link-btn">
+              ¿La olvidaste?
+            </Link>
+          }
         />
 
         <FormError error={!configured ? "Falta configurar Supabase: copiá .env.example a .env" : error} />
