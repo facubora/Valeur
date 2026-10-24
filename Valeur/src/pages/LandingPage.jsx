@@ -1,702 +1,423 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "../context/ThemeContext";
-import "../styles/landing.css";
+import MarketTape from "../components/MarketTape";
+import Showcase from "../components/Showcase";
+import { PortfolioMock, MarketMock, AlertsMock, CommunityMock, PrivacyMock } from "../components/LandingMocks";
 import { useLandingMotion } from "../lib/landingMotion";
-
-/* Fondo de partículas (estilo ReactBits) — canvas liviano */
-function Particles() {
-  const ref = useRef(null);
-  useEffect(() => {
-    const c = ref.current;
-    if (!c) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const ctx = c.getContext("2d");
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const parent = c.parentElement;
-    let W,
-      H,
-      parts = [],
-      mx = -999,
-      my = -999,
-      raf;
-
-    function build() {
-      parts = [];
-      let n = Math.round((W * H) / (dpr * dpr * 14000));
-      n = Math.max(36, Math.min(90, n));
-      for (let i = 0; i < n; i++) {
-        parts.push({
-          x: Math.random() * W,
-          y: Math.random() * H,
-          z: Math.random(),
-          vx: (Math.random() - 0.5) * 0.12 * dpr,
-          vy: (Math.random() - 0.5) * 0.12 * dpr,
-        });
-      }
-    }
-    function resize() {
-      const r = parent.getBoundingClientRect();
-      W = c.width = r.width * dpr;
-      H = c.height = r.height * dpr;
-      c.style.width = r.width + "px";
-      c.style.height = r.height + "px";
-      build();
-    }
-    function tick() {
-      ctx.clearRect(0, 0, W, H);
-      // Igual que la landing: solo es oscuro con data-theme="dark" explícito
-      const dark = document.documentElement.getAttribute("data-theme") === "dark";
-      const base = dark ? "255,255,255" : "37,99,235";
-      const accent = dark ? "194,92,245" : "20,71,230";
-      for (const p of parts) {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0) p.x = W;
-        if (p.x > W) p.x = 0;
-        if (p.y < 0) p.y = H;
-        if (p.y > H) p.y = 0;
-        const dx = p.x - mx,
-          dy = p.y - my,
-          dist = Math.sqrt(dx * dx + dy * dy);
-        const r = (0.7 + p.z * 1.8) * dpr,
-          op = 0.18 + p.z * 0.34;
-        if (dist < 120 * dpr) {
-          const pull = (1 - dist / (120 * dpr)) * 0.4;
-          p.x += (dx / dist) * pull;
-          p.y += (dy / dist) * pull;
-        }
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, r, 0, 6.28);
-        ctx.fillStyle =
-          p.z > 0.86
-            ? "rgba(" + accent + "," + (op + 0.15) + ")"
-            : "rgba(" + base + "," + op + ")";
-        ctx.fill();
-      }
-      raf = requestAnimationFrame(tick);
-    }
-    function onMove(e) {
-      const r = c.getBoundingClientRect();
-      mx = (e.clientX - r.left) * dpr;
-      my = (e.clientY - r.top) * dpr;
-    }
-    function onLeave() {
-      mx = -999;
-      my = -999;
-    }
-
-    parent.addEventListener("mousemove", onMove);
-    parent.addEventListener("mouseleave", onLeave);
-    window.addEventListener("resize", resize);
-    resize();
-    tick();
-    return () => {
-      cancelAnimationFrame(raf);
-      parent.removeEventListener("mousemove", onMove);
-      parent.removeEventListener("mouseleave", onLeave);
-      window.removeEventListener("resize", resize);
-    };
-  }, []);
-  return <canvas ref={ref} className="particles" aria-hidden="true" />;
-}
+import { useMarketStatus } from "../lib/market";
+import "../styles/app.css";
+import "../styles/social.css";
+import "../styles/shell.css";
+import "../styles/landing.css";
 
 const NAV = [
-  ["#features", "Producto"],
+  ["#producto", "Producto"],
   ["#como", "Cómo funciona"],
-  ["#comunidad", "Comunidad"],
-  ["#gratis", "Arrancá"],
+  ["#privacidad", "Privacidad"],
+  ["#preguntas", "Preguntas"],
 ];
 
+/* Lo que hay adentro, cada cosa con un pedazo de la app al lado */
+const FEATURES = [
+  {
+    id: "portfolio",
+    kicker: "Portfolio",
+    title: (
+      <>
+        Cuánto vale lo que tenés, <em>hoy</em>.
+      </>
+    ),
+    text: "Cargá tus compras y ventas y Valeur hace las cuentas: precio en vivo de cada posición, cuánto ganaste y cuánto pesa cada cosa.",
+    points: ["Ganancia en plata y en %", "En pesos o en dólar MEP, como prefieras", "CEDEARs, acciones, cripto y dólar en el mismo lugar"],
+    Mock: PortfolioMock,
+    hint: "Probá cambiar la moneda",
+  },
+  {
+    id: "mercado",
+    kicker: "Mercado",
+    title: (
+      <>
+        BYMA y Wall Street, <em>sin vueltas</em>.
+      </>
+    ),
+    text: "Explorá por tipo y por rubro, mirá el gráfico de velas de cualquier activo y seguí los que te interesan sin necesidad de comprarlos.",
+    points: ["Más de 90 activos ordenados por rubro", "Ideas para vos según lo que seguís", "Buscador con ⌘K desde cualquier pantalla"],
+    Mock: MarketMock,
+    hint: "Tocá las pestañas",
+  },
+  {
+    id: "alertas",
+    kicker: "Alertas",
+    title: (
+      <>
+        Enterate <em>antes</em>.
+      </>
+    ),
+    text: "Decile a Valeur a qué precio querés comprar o vender, o cuánto se tiene que mover en el día, y te avisa a la campanita apenas pasa.",
+    points: ["Por precio o por movimiento del día", "Ves cuánto le falta a cada una", "Se editan y se borran ahí mismo"],
+    Mock: AlertsMock,
+  },
+  {
+    id: "comunidad",
+    kicker: "Comunidad",
+    title: (
+      <>
+        Mirá qué recomienda <em>tu gente</em>.
+      </>
+    ),
+    text: "Cada recomendación guarda el precio del día en que se hizo, así ves si fue para el lado que dijo. Seguí a analistas verificados y a tus amigos.",
+    points: ["Comprar, mantener o vender, y por qué", "Cómo le fue a cada una desde ese día", "Para todos o solo para tus amigos"],
+    Mock: CommunityMock,
+  },
+];
+
+const STEPS = [
+  ["Creá tu cuenta", "Gratis, en un minuto y sin tarjeta. Solo un usuario, tu email y una contraseña."],
+  ["Cargá lo que tenés", "Registrá tus compras, o seguí activos sin comprarlos. Valeur arma tu portfolio solo."],
+  ["Seguí, aprendé y compartí", "Poné alertas, mirá qué recomienda la comunidad y contá qué harías vos."],
+];
+
+const FAQ = [
+  ["¿Necesito saber de inversiones para empezar?", "No. Valeur está pensado para quien recién arranca: sin jerga, con cada número explicado y una comunidad para aprender de otros."],
+  ["¿Cuánto cuesta?", "Nada. Valeur es gratis y lo va a seguir siendo: sin planes pagos, sin tarjeta y sin funciones trabadas detrás de un pago."],
+  ["¿Puedo comprar y vender desde Valeur?", "No, Valeur no es un broker. Operás donde ya operás y acá registrás lo que hiciste para ver todo junto y bien calculado."],
+  ["¿Los precios son en vivo?", "Se actualizan solos cada minuto con datos de Yahoo Finance, con la demora habitual de cada mercado. El dólar MEP sale del cierre del día."],
+  ["¿Quién ve mi portfolio?", "Nadie, salvo que vos lo elijas. Podés compartirlo con tus amigos o con todos, y aun así nunca se ven tus montos: solo qué tenés en % y cómo te va."],
+];
+
+/* La puerta de entrada: qué es Valeur, con pedazos de la app de verdad */
 export default function LandingPage() {
   const { dark, toggle } = useTheme();
-  const navRef = useRef(null);
-  const activeRef = useRef(null);
-  const [ind, setInd] = useState({ x: 0, w: 0, o: 0 });
-  const [scrolled, setScrolled] = useState(false);
-  const [navPill, setNavPill] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const rootRef = useRef(null);
-  useLandingMotion(rootRef);
+  const root = useRef(null);
+  const [menu, setMenu] = useState(false);
+  const [active, setActive] = useState("");
+  const markets = useMarketStatus();
+  useLandingMotion(root);
 
-  const moveTo = (el) => {
-    if (el) setInd({ x: el.offsetLeft, w: el.offsetWidth, o: 1 });
-  };
-  const setActive = (el) => {
-    if (el && el !== activeRef.current) {
-      activeRef.current = el;
-      moveTo(el);
-    }
-  };
-  const toTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
-
-  // Menú mobile: se cierra con Escape y al volver a ancho desktop
+  // menú del teléfono: se cierra con Escape o al volver a ancho de compu
   useEffect(() => {
-    if (!menuOpen) return;
-    const onKey = (e) => e.key === "Escape" && setMenuOpen(false);
+    if (!menu) return;
+    const onKey = (e) => e.key === "Escape" && setMenu(false);
     const mq = window.matchMedia("(min-width: 901px)");
-    const onMq = (e) => e.matches && setMenuOpen(false);
+    const onMq = (e) => e.matches && setMenu(false);
     window.addEventListener("keydown", onKey);
     mq.addEventListener("change", onMq);
     return () => {
       window.removeEventListener("keydown", onKey);
       mq.removeEventListener("change", onMq);
     };
-  }, [menuOpen]);
+  }, [menu]);
 
-  useLayoutEffect(() => {
-    const first = navRef.current?.querySelector("a");
-    if (first) {
-      activeRef.current = first;
-      moveTo(first);
-    }
-    const onResize = () => moveTo(activeRef.current);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  // El indicador sigue la sección visible mientras el usuario scrollea
+  // qué sección se está viendo, para marcarla en la barra
   useEffect(() => {
-    const links = {};
-    navRef.current?.querySelectorAll("a").forEach((a) => {
-      links[a.getAttribute("href")] = a;
+    const obs = new IntersectionObserver(
+      (entries) => entries.forEach((e) => e.isIntersecting && setActive("#" + e.target.id)),
+      { rootMargin: "-45% 0px -50% 0px" },
+    );
+    NAV.forEach(([href]) => {
+      const el = document.getElementById(href.slice(1));
+      if (el) obs.observe(el);
     });
-    const sections = NAV.map(([href]) =>
-      document.getElementById(href.slice(1)),
-    ).filter(Boolean);
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) setActive(links["#" + e.target.id]);
-        });
-      },
-      { rootMargin: "-45% 0px -50% 0px", threshold: 0 },
-    );
-    sections.forEach((s) => obs.observe(s));
-    return () => obs.disconnect();
-  }, []);
-
-  // Estado de scroll vía sentinels (funciona sin importar qué elemento scrollee):
-  // pill del navbar al pasar el tope, botón "volver arriba" tras ~480px.
-  const topRef = useRef(null);
-  const deepRef = useRef(null);
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((e) => {
-          if (e.target === topRef.current) setNavPill(!e.isIntersecting);
-          if (e.target === deepRef.current) setScrolled(!e.isIntersecting);
-        });
-      },
-      { threshold: 0 },
-    );
-    if (topRef.current) obs.observe(topRef.current);
-    if (deepRef.current) obs.observe(deepRef.current);
     return () => obs.disconnect();
   }, []);
 
   return (
-    <div className="landing-root" ref={rootRef}>
-      <span ref={topRef} className="scroll-sentinel" aria-hidden="true" style={{ top: 0 }} />
-      <span ref={deepRef} className="scroll-sentinel" aria-hidden="true" style={{ top: 480 }} />
-      {/* NAV */}
-      <header
-        className={
-          "top" + (navPill ? " scrolled" : "") + (menuOpen ? " menu-open" : "")
-        }
-      >
-        <div className="wrap top-in">
-          <div className="brand">
+    <div className="app-root shell lx" ref={root}>
+      <MarketTape />
+
+      <header className={"lx-nav" + (menu ? " open" : "")}>
+        <div className="wrap lx-nav-in">
+          <Link to="/" className="brand" aria-label="Valeur, ir arriba">
             <span className="mark" />
             Valeur
-          </div>
-          <nav ref={navRef} onMouseLeave={() => moveTo(activeRef.current)}>
+          </Link>
+          <nav className="lx-links" aria-label="Secciones">
             {NAV.map(([href, label]) => (
-              <a
-                key={href}
-                href={href}
-                onMouseEnter={(e) => moveTo(e.currentTarget)}
-                onClick={(e) => {
-                  activeRef.current = e.currentTarget;
-                }}
-              >
+              <a key={href} href={href} className={active === href ? "on" : ""}>
                 {label}
               </a>
             ))}
-            <span
-              className="nav-ind"
-              style={{
-                transform: `translateX(${ind.x}px)`,
-                width: ind.w,
-                opacity: ind.o,
-              }}
-            />
           </nav>
-          <div className="right">
-            <Link to="/login" className="link-strong">
-              Iniciar Sesión
+          <div className="lx-right">
+            <button type="button" className="icon-btn lx-theme" onClick={toggle} aria-label={dark ? "Modo claro" : "Modo oscuro"} title={dark ? "Modo claro" : "Modo oscuro"}>
+              <i className={dark ? "bi bi-sun-fill" : "bi bi-moon-fill"} />
+            </button>
+            <Link to="/login" className="btn btn-line lx-in">
+              Entrar
             </Link>
-            <Link to="/register" className="btn btn-pink">
+            <Link to="/register" className="btn btn-pink lx-up">
               Crear cuenta
             </Link>
-            <button
-              type="button"
-              className="burger"
-              aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
-              aria-expanded={menuOpen}
-              aria-controls="mobile-menu"
-              onClick={() => setMenuOpen((o) => !o)}
-            >
-              <span />
-              <span />
-              <span />
+            <button type="button" className="icon-btn lx-burger" onClick={() => setMenu((m) => !m)} aria-expanded={menu} aria-label={menu ? "Cerrar menú" : "Abrir menú"}>
+              <i className={menu ? "bi bi-x-lg" : "bi bi-list"} />
             </button>
           </div>
         </div>
-
-        {/* Menú desplegable (solo mobile / tablet) */}
-        <div
-          id="mobile-menu"
-          className="mobile-menu"
-          inert={!menuOpen || undefined}
-        >
-          <div className="wrap mobile-menu-in">
-            <nav aria-label="Secciones">
-              {NAV.map(([href, label]) => (
-                <a key={href} href={href} onClick={() => setMenuOpen(false)}>
-                  {label}
-                </a>
-              ))}
-            </nav>
-            <div className="mobile-menu-cta">
+        <div className="lx-menu" inert={!menu}>
+          <div className="lx-menu-in">
+            {NAV.map(([href, label]) => (
+              <a key={href} href={href} onClick={() => setMenu(false)}>
+                {label}
+              </a>
+            ))}
+            <div className="lx-menu-btns">
               <Link to="/login" className="btn btn-line">
-                Iniciar Sesión
+                Entrar
               </Link>
               <Link to="/register" className="btn btn-pink">
-                Crear cuenta
+                Crear cuenta gratis
               </Link>
             </div>
           </div>
         </div>
       </header>
 
-      {/* HERO */}
-      <section className="hero">
-        <Particles />
-        <span className="hero-glow" aria-hidden="true" />
-        <div className="wrap hero-in">
-          <div className="hero-copy">
-            <h1>
-              <span className="l">Invertí con</span>
-              <span className="l">
-                inteligencia,
-              </span>
-              <span className="l">crecé con <em>amigos</em>.</span>
-            </h1>
-            <p className="lead">
-              La forma simple, social y accesible de empezar a invertir — aunque
-              nunca lo hayas hecho. Seguí el mercado, aprendé de otros y decidí
-              con contexto.
-            </p>
-            <div className="cta-row">
-              <Link to="/register" className="btn btn-pink">
-                Empezar gratis
-              </Link>
-              <a href="#como" className="btn btn-line">
-                Ver cómo funciona
-              </a>
-            </div>
-          </div>
-          <div className="orbit" aria-hidden="true">
-            <div className="ring r3">
-              <span
-                className="node"
-                style={{ background: "oklch(0.62 0.16 230)" }}
-              >
-                FA
-              </span>
-              <span
-                className="node node2"
-                style={{ background: "oklch(0.6 0.18 300)" }}
-              >
-                FB
-              </span>
-            </div>
-            <div className="ring r2">
-              <span
-                className="node"
-                style={{ background: "oklch(0.65 0.15 150)" }}
-              >
-                RS
-              </span>
-              <span className="node dot-m" />
-            </div>
-            <div className="core">Valeur</div>
-          </div>
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section className="blk wrap" id="features">
-        <div className="head-2">
-          <h2>
-            Todo lo que necesitás para <em>empezar</em>.
-          </h2>
-          <p>
-            Cuatro herramientas que trabajan juntas para que invertir deje de
-            sentirse un salto al vacío.
-          </p>
-        </div>
-        <div className="flist">
-          <div className="frow">
-            <div className="fico">
-              <svg viewBox="0 0 24 24">
-                <path d="M3 17l5-5 3 3 7-8" />
-                <path d="M17 4h4v4" />
-              </svg>
-            </div>
-            <h3>Mercado en vivo</h3>
-            <div>
-              <p>
-                Precios, gráficos e histórico completo de cualquier activo, en
-                tiempo real y sin ruido. Todo lo que pasa, cuando pasa.
+      <main>
+        {/* HERO */}
+        <section className="lx-hero">
+          <div className="wrap lx-hero-in">
+            <div className="lx-hero-copy">
+              <span className="kicker">Gratis · sin tarjeta · para siempre</span>
+              <h1>
+                Tu plata, el mercado y tu gente, en <em>un solo lugar</em>.
+              </h1>
+              <p className="lx-lead">
+                Cargá lo que tenés y mirá cuánto vale hoy, en pesos o en dólares. Seguí CEDEARs, acciones y cripto, poné alertas y mirá qué recomienda la gente que sabés que sabe.
               </p>
-              <Link to="/tickersearch" className="more">
-                Explorar
-              </Link>
-            </div>
-          </div>
-          <div className="frow">
-            <div className="fico">
-              <svg viewBox="0 0 24 24">
-                <circle cx="9" cy="8" r="3" />
-                <path d="M2 20a7 7 0 0 1 14 0" />
-                <path d="M16 6a3 3 0 0 1 0 6" />
-                <path d="M22 20a6 6 0 0 0-4-5.6" />
-              </svg>
-            </div>
-            <h3>Comunidad</h3>
-            <div>
-              <p>
-                Descubrí cómo invierten otras personas, seguí estrategias y
-                compartí tu actividad. Invertir deja de ser algo solitario.
-              </p>
-              <a className="more">Conocer</a>
-            </div>
-          </div>
-          <div className="frow">
-            <div className="fico">
-              <svg viewBox="0 0 24 24">
-                <path d="M4 5h16v14H4z" />
-                <path d="M8 9h8M8 13h5" />
-              </svg>
-            </div>
-            <h3>Noticias con contexto</h3>
-            <div>
-              <p>
-                Valeur analiza tu portfolio y te muestra las noticias que de
-                verdad importan para tus inversiones. Nada de scroll infinito.
-              </p>
-              <a className="more">Ver ejemplo</a>
-            </div>
-          </div>
-          <div className="frow">
-            <div className="fico">
-              <svg viewBox="0 0 24 24">
-                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M10.5 21a1.5 1.5 0 0 0 3 0" />
-              </svg>
-            </div>
-            <h3>Alertas inteligentes</h3>
-            <div>
-              <p>
-                Definí lo que te importa y recibí avisos claros cuando algo se
-                mueve. Sin estar todo el día mirando la pantalla.
-              </p>
-              <a className="more">Configurar</a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* STEPS */}
-      <section className="blk steps" id="como">
-        <div className="wrap">
-          <div className="head-2">
-            <h2>Empezá en tres pasos.</h2>
-            <p>
-              De cero a tu primera inversión en minutos. Sin papeleo ni vueltas.
-            </p>
-          </div>
-          <div className="steps-grid">
-            <div className="step">
-              <div className="n">01</div>
-              <h3>Creá tu cuenta</h3>
-              <p>
-                Registrate gratis en un minuto. Sin costos ni mínimos para
-                arrancar.
-              </p>
-            </div>
-            <div className="step">
-              <div className="n">02</div>
-              <h3>Seguí tus activos</h3>
-              <p>
-                Armá tu lista, explorá el mercado y entendé cómo se mueve tu
-                portfolio.
-              </p>
-            </div>
-            <div className="step">
-              <div className="n">03</div>
-              <h3>Aprendé y compartí</h3>
-              <p>
-                Mirá qué hace la comunidad, recibí noticias con contexto y
-                crecé.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* COMUNIDAD */}
-      <section className="blk wrap comm" id="comunidad">
-        <h2>
-          No invertís <em>solo</em>.
-        </h2>
-        <p>
-          Miles de personas aprendiendo, compartiendo y creciendo juntas. La
-          inversión también es una conversación.
-        </p>
-        <div className="cluster">
-          <div className="av" style={{ background: "oklch(0.6 0.18 300)" }}>
-            ML
-          </div>
-          <div className="av" style={{ background: "oklch(0.62 0.16 230)" }}>
-            LJ
-          </div>
-          <div className="av" style={{ background: "oklch(0.65 0.15 150)" }}>
-            RS
-          </div>
-          <div className="av" style={{ background: "oklch(0.6 0.17 30)" }}>
-            FB
-          </div>
-          <div className="av" style={{ background: "oklch(0.55 0.16 280)" }}>
-            AG
-          </div>
-          <div className="more">+8k</div>
-        </div>
-      </section>
-
-      {/* SIEMPRE GRATIS */}
-      <section className="blk wrap free" id="gratis">
-        <span className="free-glow" aria-hidden="true" />
-        <div className="free-head">
-          <span className="free-tag">
-            <span className="dot" /> Sin costo · para siempre
-          </span>
-          <h2>
-            Valeur es <em>gratis</em>. Y siempre lo va a ser.
-          </h2>
-          <p>
-            Nada de planes, ni tarjetas, ni funciones trabadas detrás de un
-            pago. Creemos que aprender a invertir no debería tener un precio de
-            entrada.
-          </p>
-        </div>
-        <div className="free-points">
-          <div className="fp">
-            <span className="fp-ic">
-              <svg viewBox="0 0 24 24">
-                <path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" />
-                <path d="M9 12l2 2 4-4" />
-              </svg>
-            </span>
-            <div>
-              <b>Sin comisiones ocultas</b>
-              <span>Lo que ves es lo que hay. Cero letra chica.</span>
-            </div>
-          </div>
-          <div className="fp">
-            <span className="fp-ic">
-              <svg viewBox="0 0 24 24">
-                <rect x="3" y="5" width="18" height="14" rx="2" />
-                <path d="M3 10h18" />
-              </svg>
-            </span>
-            <div>
-              <b>Sin tarjeta</b>
-              <span>Creás tu cuenta y arrancás. No pedimos nada más.</span>
-            </div>
-          </div>
-          <div className="fp">
-            <span className="fp-ic">
-              <svg viewBox="0 0 24 24">
-                <rect x="5" y="11" width="14" height="9" rx="2" />
-                <path d="M8 11V7a4 4 0 0 1 7.5-2" />
-              </svg>
-            </span>
-            <div>
-              <b>Sin límites artificiales</b>
-              <span>Todas las funciones, para todos, siempre.</span>
-            </div>
-          </div>
-        </div>
-        <div className="free-cta">
-          <Link to="/register" className="btn btn-pink">
-            Crear cuenta gratis
-          </Link>
-        </div>
-        <p className="free-note">Se crea en un minuto. Sin tarjeta.</p>
-      </section>
-
-      {/* FAQ */}
-      <section className="blk wrap faq-block">
-        <div className="head-2">
-          <h2>Preguntas frecuentes.</h2>
-          <p>Lo que casi todos preguntan antes de empezar.</p>
-        </div>
-        <div className="faq">
-          <details open>
-            <summary>
-              ¿Necesito saber de inversiones para empezar?
-              <span className="ic" />
-            </summary>
-            <p>
-              Para nada. Valeur está pensado justamente para quien nunca
-              invirtió: sin jerga, con explicaciones claras y una comunidad para
-              aprender de otros.
-            </p>
-          </details>
-          <details>
-            <summary>
-              ¿Cuánto cuesta?
-              <span className="ic" />
-            </summary>
-            <p>
-              Nada. Valeur es gratis y siempre lo va a ser: sin planes pagos,
-              sin tarjeta y sin funciones trabadas detrás de un pago. Todas las
-              herramientas están disponibles para todos.
-            </p>
-          </details>
-          <details>
-            <summary>
-              ¿Los datos son en tiempo real?
-              <span className="ic" />
-            </summary>
-            <p>
-              Sí. Precios, gráficos y variaciones se actualizan en vivo, con
-              histórico completo para que veas cómo se movió cada activo.
-            </p>
-          </details>
-          <details>
-            <summary>
-              ¿Es seguro?
-              <span className="ic" />
-            </summary>
-            <p>
-              Tus datos están protegidos y tu actividad es privada por defecto:
-              vos elegís qué compartir con la comunidad y qué no.
-            </p>
-          </details>
-        </div>
-      </section>
-
-      {/* CLOSING */}
-      <section className="closing">
-        <span className="cglow" aria-hidden="true" />
-        <div className="wrap">
-          <p style={{ opacity: 0.7, fontSize: ".95rem" }}>
-            Empezá hoy, gratis.
-          </p>
-          <h2>
-            Invertir no debería sentirse <em>complicado</em>.
-          </h2>
-          <p>
-            Sin jerga, sin vueltas. Aprendé mientras avanzás y llevá tus
-            inversiones a un solo lugar.
-          </p>
-          <Link to="/register" className="btn btn-pink">
-            Crear cuenta gratis
-          </Link>
-        </div>
-      </section>
-
-      {/* FOOTER */}
-      <footer className="site-footer">
-        <div className="wrap">
-          <div className="foot-grid">
-            <div>
-              <div className="brand">
-                Valeur
+              <div className="lx-ctas">
+                <Link to="/register" className="btn btn-pink lx-cta">
+                  <i className="bi bi-arrow-right" /> Crear cuenta gratis
+                </Link>
+                <a href="#producto" className="btn btn-line lx-cta">
+                  Ver qué hay adentro
+                </a>
               </div>
+              <div className="hpills lx-proof">
+                {markets.map((m) => (
+                  <span key={m.key} className={"hp lx-mk" + (m.open ? " open" : "")} title={m.hint}>
+                    <i /> {m.key} {m.open ? "abierto" : "cerrado"}
+                  </span>
+                ))}
+                <span className="hp">
+                  <i className="bi bi-currency-exchange hp-ic" /> Pesos o dólar MEP
+                </span>
+                <span className="hp">
+                  <i className="bi bi-shield-lock hp-ic" /> Nunca se ven tus montos
+                </span>
+              </div>
+            </div>
+            <Showcase className="lx-show" />
+          </div>
+        </section>
+
+        {/* PRODUCTO */}
+        <section id="producto" className="lx-block">
+          <div className="wrap">
+            <div className="lx-head">
+              <span className="kicker">Producto</span>
+              <h2>
+                Cuatro cosas, <em>bien hechas</em>.
+              </h2>
+              <p>Todo lo que necesitás para seguir tus inversiones sin planillas ni diez apps abiertas.</p>
+            </div>
+            <div className="lx-feats">
+              {FEATURES.map(({ id, kicker, title, text, points, Mock, hint }, i) => (
+                <article key={id} id={id} className={"lx-feat" + (i % 2 ? " flip" : "")}>
+                  <div className="lx-feat-copy">
+                    <span className="kicker">{kicker}</span>
+                    <h3>{title}</h3>
+                    <p>{text}</p>
+                    <ul>
+                      {points.map((t) => (
+                        <li key={t}>
+                          <i className="bi bi-check2" /> {t}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="lx-feat-mock">
+                    <Mock />
+                    {hint && (
+                      <span className="lx-hint">
+                        <i className="bi bi-hand-index" /> {hint}
+                      </span>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CÓMO FUNCIONA */}
+        <section id="como" className="lx-block">
+          <div className="wrap">
+            <div className="lx-head">
+              <span className="kicker">Cómo funciona</span>
+              <h2>
+                De cero a tu portfolio en <em>tres pasos</em>.
+              </h2>
+            </div>
+            <ol className="lx-steps">
+              <span className="lx-steps-line" aria-hidden="true" />
+              {STEPS.map(([t, d], i) => (
+                <li key={t} className="card lx-step">
+                  <span className="lx-step-n">{String(i + 1).padStart(2, "0")}</span>
+                  <h3>{t}</h3>
+                  <p>{d}</p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* PRIVACIDAD */}
+        <section id="privacidad" className="lx-block">
+          <div className="wrap lx-priv">
+            <div className="lx-head left">
+              <span className="kicker">Privacidad</span>
+              <h2>
+                Vos elegís quién ve <em>tu portfolio</em>.
+              </h2>
+              <p>Arranca privado. Si lo compartís, los demás ven qué tenés y cómo te va en porcentaje. Tus montos no los ve nadie, nunca.</p>
+            </div>
+            <PrivacyMock />
+          </div>
+        </section>
+
+        {/* GRATIS */}
+        <section id="gratis" className="lx-block">
+          <div className="wrap">
+            <div className="card lx-free">
+              <span className="lx-free-glow" aria-hidden="true" />
+              <div className="lx-head">
+                <span className="kicker">Sin costo</span>
+                <h2>
+                  Gratis. Y siempre lo va a <em>ser</em>.
+                </h2>
+                <p>Creemos que aprender a invertir no debería tener precio de entrada.</p>
+              </div>
+              <div className="lx-free-pts">
+                {[
+                  ["bi-receipt", "Sin comisiones", "Valeur no cobra por nada: ni por cargar, ni por seguir, ni por avisarte."],
+                  ["bi-credit-card", "Sin tarjeta", "Creás tu cuenta y arrancás. No te pedimos ningún dato de pago."],
+                  ["bi-unlock", "Sin funciones trabadas", "Todo está disponible para todos, desde el primer día."],
+                ].map(([ic, t, d]) => (
+                  <div key={t} className="lx-free-pt">
+                    <span className="lx-ic">
+                      <i className={"bi " + ic} />
+                    </span>
+                    <b>{t}</b>
+                    <span>{d}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* PREGUNTAS */}
+        <section id="preguntas" className="lx-block">
+          <div className="wrap lx-faq-wrap">
+            <div className="lx-head left">
+              <span className="kicker">Preguntas</span>
+              <h2>Lo que casi todos preguntan.</h2>
               <p>
-                La plataforma que convierte las inversiones en algo simple,
-                social y accesible.
+                ¿Te quedó otra? <Link to="/register">Creá tu cuenta</Link> y preguntale a la comunidad.
               </p>
             </div>
-            <div className="fcol">
-              <h4>Producto</h4>
-              <Link to="/tickersearch">Mercado</Link>
-              <a href="#comunidad">Comunidad</a>
-              <a href="#features">Noticias</a>
-              <a href="#gratis">Gratis</a>
-            </div>
-            <div className="fcol">
-              <h4>Compañía</h4>
-              <a href="#">Sobre nosotros</a>
-              <a href="#">Blog</a>
-              <a href="#">Contacto</a>
-            </div>
-            <div className="fcol">
-              <h4>Legal</h4>
-              <a href="#">Términos</a>
-              <a href="#">Privacidad</a>
-              <a href="#">Cookies</a>
+            <div className="card lx-faq">
+              {FAQ.map(([q, a], i) => (
+                <details key={q} open={i === 0}>
+                  <summary>
+                    {q}
+                    <i className="bi bi-plus-lg" aria-hidden="true" />
+                  </summary>
+                  <p>{a}</p>
+                </details>
+              ))}
             </div>
           </div>
-          <div className="foot-bot">
-            <span>© 2026 Valeur — Invertí con inteligencia.</span>
-            <span>Hecho con foco en vos.</span>
+        </section>
+
+        {/* CIERRE */}
+        <section className="lx-block lx-close-wrap">
+          <div className="wrap">
+            <div className="lx-close">
+              <span className="kicker">Empezá hoy</span>
+              <h2>
+                Invertir no debería sentirse <em>complicado</em>.
+              </h2>
+              <p>Tu cuenta se crea en un minuto. Sin tarjeta, sin letra chica.</p>
+              <Link to="/register" className="btn btn-pink lx-cta">
+                <i className="bi bi-arrow-right" /> Crear cuenta gratis
+              </Link>
+            </div>
           </div>
+        </section>
+      </main>
+
+      {/* PIE: el mismo de la app */}
+      <footer className="vx-foot">
+        <div className="wrap">
+          <div className="vf-top">
+            <div className="vf-brand">
+              <Link to="/" className="brand" aria-label="Valeur, ir arriba">
+                <span className="mark" />
+                Valeur
+              </Link>
+              <p>Tu plata, el mercado y tu gente, en un solo lugar.</p>
+            </div>
+            <nav className="vf-cols" aria-label="Pie de página">
+              <div>
+                <b>Producto</b>
+                <ul>
+                  {FEATURES.map((f) => (
+                    <li key={f.id}>
+                      <a href={"#" + f.id}>{f.kicker}</a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <b>Tu cuenta</b>
+                <ul>
+                  <li>
+                    <Link to="/register">Crear cuenta</Link>
+                  </li>
+                  <li>
+                    <Link to="/login">Entrar</Link>
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <b>Valeur</b>
+                <ul>
+                  <li>
+                    <a href="#privacidad">Privacidad</a>
+                  </li>
+                  <li>
+                    <a href="#preguntas">Preguntas</a>
+                  </li>
+                  <li>
+                    <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
+                      Volver arriba <i className="bi bi-arrow-up" />
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            </nav>
+          </div>
+          <div className="vf-bottom">
+            <span>© {new Date().getFullYear()} Valeur · Hecho en Argentina</span>
+            <span>Cotizaciones de Yahoo Finance, con demora. Lo que ves es información, no asesoramiento financiero.</span>
+          </div>
+        </div>
+        <div className="vf-word" aria-hidden="true">
+          Valeur
         </div>
       </footer>
-
-      {/* DOCK: volver arriba + tema */}
-      <div className="dock">
-        <button
-          className={"dock-up" + (scrolled ? " show" : "")}
-          onClick={toTop}
-          aria-label="Volver arriba"
-          title="Volver arriba"
-        >
-          <i className="bi bi-arrow-up" />
-        </button>
-        <div className="theme-seg" role="radiogroup" aria-label="Tema">
-          <button
-            role="radio"
-            aria-checked={!dark}
-            className={!dark ? "on" : ""}
-            onClick={() => {
-              if (dark) toggle();
-            }}
-            aria-label="Modo claro"
-            title="Modo claro"
-          >
-            <i className="bi bi-sun-fill" />
-          </button>
-          <button
-            role="radio"
-            aria-checked={dark}
-            className={dark ? "on" : ""}
-            onClick={() => {
-              if (!dark) toggle();
-            }}
-            aria-label="Modo oscuro"
-            title="Modo oscuro"
-          >
-            <i className="bi bi-moon-fill" />
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

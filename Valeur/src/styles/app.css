@@ -824,6 +824,7 @@
 }
 .app-root .as-total {
   display: block;
+  white-space: nowrap;
   margin: 8px 0 6px;
   font: 600 clamp(2rem, 3.2vw, 2.6rem) / 1 var(--font-display);
   letter-spacing: -0.04em;
