@@ -12,6 +12,7 @@ import Tickersearch from "./pages/Tickersearch";
 import Community from "./pages/Community";
 import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
+import NotFound from "./pages/NotFound";
 
 /* Dónde estaba cada pantalla del historial, para volver ahí con "atrás" */
 const positions = new Map();
@@ -95,6 +96,7 @@ function App() {
         <Route path="/comunidad" element={<Community />} />
         <Route path="/u/:username" element={<Profile />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );
