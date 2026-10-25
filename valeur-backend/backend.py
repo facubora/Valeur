@@ -250,28 +250,34 @@ MEP_TTL = 15 * 60
 _mep_cache = {"at": 0, "data": None}
 
 
-@app.route("/api/mep")
-def get_mep():
+def mep_data():
+    """Dólar MEP de hoy y su historia (con caché de 15 min). None si no hay datos."""
     import time
     import pandas as pd
 
     if _mep_cache["data"] and time.time() - _mep_cache["at"] < MEP_TTL:
-        return jsonify(_mep_cache["data"])
+        return _mep_cache["data"]
+    tickers = [p + ".BA" for p in MEP_PAIRS] + [p + "D.BA" for p in MEP_PAIRS]
+    with _download_lock:
+        df = yf.download(tickers, period="max", interval="1d", progress=False, auto_adjust=False)["Close"]
+    ratios = pd.concat([df[p + ".BA"] / df[p + "D.BA"] for p in MEP_PAIRS], axis=1)
+    mep = ratios.median(axis=1, skipna=True).dropna()
+    if mep.empty:
+        return None
+    data = {
+        "rate": round(float(mep.iloc[-1]), 2),
+        "date": mep.index[-1].strftime("%Y-%m-%d"),
+        "series": [[d.strftime("%Y-%m-%d"), round(float(v), 2)] for d, v in mep.items()],
+    }
+    _mep_cache.update(at=time.time(), data=data)
+    return data
+
+
+@app.route("/api/mep")
+def get_mep():
     try:
-        tickers = [p + ".BA" for p in MEP_PAIRS] + [p + "D.BA" for p in MEP_PAIRS]
-        with _download_lock:
-            df = yf.download(tickers, period="max", interval="1d", progress=False, auto_adjust=False)["Close"]
-        ratios = pd.concat([df[p + ".BA"] / df[p + "D.BA"] for p in MEP_PAIRS], axis=1)
-        mep = ratios.median(axis=1, skipna=True).dropna()
-        if mep.empty:
-            return jsonify({"error": "No data"}), 502
-        data = {
-            "rate": round(float(mep.iloc[-1]), 2),
-            "date": mep.index[-1].strftime("%Y-%m-%d"),
-            "series": [[d.strftime("%Y-%m-%d"), round(float(v), 2)] for d, v in mep.items()],
-        }
-        _mep_cache.update(at=time.time(), data=data)
-        return jsonify(data)
+        data = mep_data()
+        return jsonify(data) if data else (jsonify({"error": "No data"}), 502)
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
@@ -295,6 +301,13 @@ def search_symbol():
         ]})
     except Exception as e:
         return jsonify({"error": str(e)}), 502
+
+
+# ─── Modo práctica (practice.py) ──────────────────────────────────────────────
+
+import practice  # noqa: E402
+
+practice.register(app, fetch_quotes=lambda syms: fetch_quotes([s for s in syms if valid_symbol(s)]), mep_rate=lambda: (mep_data() or {}).get("rate"), valid_symbol=valid_symbol)
 
 
 # ─── Health check ─────────────────────────────────────────────────────────────

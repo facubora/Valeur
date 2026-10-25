@@ -14,20 +14,13 @@ from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 import requests
-from dotenv import load_dotenv
 
-load_dotenv()
+from supa import configured, rest as _rest
 
-SUPABASE_URL = (os.getenv("SUPABASE_URL") or "").rstrip("/")
-SERVICE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY") or ""
 EVERY = max(60, int(os.getenv("ALERTS_EVERY", "180")))
 AR = ZoneInfo("America/Argentina/Buenos_Aires")
 
 USD_CEDEARS = {t + ".BA" for t in ["AAPLD", "TSLAD", "MSFTD", "NVDAD", "AMZND", "METAD", "NFLXD", "MELID", "KOD", "VISTD"]}
-
-
-def configured():
-    return bool(SUPABASE_URL and SERVICE_KEY)
 
 
 # ─── Formato (igual que fmtPrice en el front) ────────────────────────────────
@@ -103,20 +96,6 @@ def message(a, q):
     if kind == "up_pct":
         return f"{sym} sube {pct} hoy", f"Cotiza a {now}."
     return f"{sym} cae {pct} hoy", f"Cotiza a {now}."
-
-
-# ─── Supabase (PostgREST con la service role key) ────────────────────────────
-
-def _rest(method, table, params=None, json=None, prefer=None):
-    # las keys nuevas (sb_secret_…) van solo en apikey; las viejas (JWT) también en Authorization
-    headers = {"apikey": SERVICE_KEY}
-    if SERVICE_KEY.startswith("eyJ"):
-        headers["Authorization"] = "Bearer " + SERVICE_KEY
-    if prefer:
-        headers["Prefer"] = prefer
-    r = requests.request(method, f"{SUPABASE_URL}/rest/v1/{table}", params=params, json=json, headers=headers, timeout=20)
-    r.raise_for_status()
-    return r.json() if r.content else None
 
 
 def claim(a):
