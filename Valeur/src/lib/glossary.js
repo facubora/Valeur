@@ -28,7 +28,31 @@ export const TERMS = [
   ["alerta", "Alerta de precio", "Un aviso cuando un precio llega adonde querés.", "En vez de mirar el precio todo el día, le decís a Valeur \"avisame si MELI llega a $26.000\" o \"si cae más de 4% hoy\" y te llega la notificación.", "Avisame si Bitcoin baja a US$ 78.000.", "riesgo"],
 ];
 
-export const TERM = Object.fromEntries(TERMS.map(([key, term, short, long, example, group]) => [key, { key, term, short, long, example, group }]));
+// el ícono de cada término (Bootstrap Icons), para el frente de la tarjeta
+const ICON = {
+  accion: "bi-building",
+  portfolio: "bi-briefcase",
+  cripto: "bi-currency-bitcoin",
+  indice: "bi-graph-up",
+  broker: "bi-bank",
+  cedear: "bi-globe-americas",
+  mep: "bi-currency-exchange",
+  byma: "bi-buildings",
+  variacion: "bi-arrow-down-up",
+  rendimiento: "bi-percent",
+  anual: "bi-calendar3",
+  promedio: "bi-calculator",
+  diversificar: "bi-pie-chart",
+  volatilidad: "bi-activity",
+  largoplazo: "bi-hourglass-split",
+  promediar: "bi-calendar-check",
+  postura: "bi-signpost-split",
+  alerta: "bi-bell",
+};
+
+export const TERM = Object.fromEntries(
+  TERMS.map(([key, term, short, long, example, group]) => [key, { key, term, short, long, example, group, icon: ICON[key] || "bi-book" }]),
+);
 
 const norm = (s = "") =>
   s
