@@ -6,7 +6,7 @@ import { useWatchlist } from "../lib/portfolio";
 import { useMyProfile } from "../lib/social";
 import { useAlertWatcher, useNotifications } from "../lib/alerts";
 import { BellButton, NotificationsPanel } from "./NotificationBell";
-import { Verified } from "./Social";
+import { Avatar, Verified } from "./Social";
 import { CurrencyPick } from "./MarketBits";
 import { adoptAccountCurrency } from "../lib/market";
 import MarketTape from "./MarketTape";
@@ -40,8 +40,6 @@ const DRAWER = {
     ["para-vos", "Para vos", "bi-stars"],
     ["explorar", "Explorar", "bi-grid"],
     ["alertas", "Alertas", "bi-bell"],
-    ["/simulador", "Simulador", "bi-hourglass-split"],
-    ["/practica", "Modo práctica", "bi-controller"],
   ],
   "/comunidad": [
     ["recomendaciones", "Recomendaciones", "bi-chat-square-quote"],
@@ -49,6 +47,12 @@ const DRAWER = {
     ["perfil", "Tu perfil", "bi-person"],
   ],
 };
+
+/* La sección "Herramientas" del cajón: para probar y aprender sin arriesgar */
+const TOOLS = [
+  ["/simulador", "Simulador", "bi-hourglass-split", "¿Y si hubiera invertido?"],
+  ["/aprende", "Aprendé", "bi-mortarboard", "CEDEAR, MEP y más, explicado simple"],
+];
 
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
@@ -161,8 +165,9 @@ export default function AppShell({ children }) {
     ind.style.width = `${el.offsetWidth}px`;
     ind.style.opacity = "1";
   };
-  // con el cajón de secciones abierto, la ficha se queda en "Más"
-  const activeLink = () => navRef.current?.querySelector(panel === "more" ? ".vx-more" : "a.active");
+  // con el cajón de secciones abierto (o en una herramienta, que vive ahí), la ficha se queda en "Más"
+  const inTool = TOOLS.some(([to]) => pathname.startsWith(to));
+  const activeLink = () => navRef.current?.querySelector(panel === "more" || inTool ? ".vx-more" : "a.active");
 
   // Sobre la ruta activa; se reacomoda al redimensionar o al cargar las fuentes
   useLayoutEffect(() => {
@@ -269,7 +274,7 @@ export default function AppShell({ children }) {
                     </b>
                     <small>@{user.username}</small>
                   </span>
-                  <i className="bi bi-person-circle" aria-hidden="true" />
+                  <Avatar name={user.username} size={30} />
                 </button>
                 {/* en mobile la navegación no está: el cajón se abre desde acá */}
                 <button
@@ -314,8 +319,7 @@ export default function AppShell({ children }) {
                         <ul>
                           {DRAWER[to].map(([id, sub, ic]) => (
                             <li key={id}>
-                              {/* las que empiezan con / son otra página */}
-                              <Link to={id.startsWith("/") ? id : `${to}#${id}`}>
+                              <Link to={`${to}#${id}`}>
                                 <i className={"bi " + ic} /> {sub}
                               </Link>
                             </li>
@@ -323,6 +327,23 @@ export default function AppShell({ children }) {
                         </ul>
                       </div>
                     ))}
+                  </div>
+                  <div className="dr-tools">
+                    <span className="dr-tools-lbl">Herramientas</span>
+                    <div className="dr-tools-row">
+                      {TOOLS.map(([to, label, icon, sub]) => (
+                        <Link key={to} to={to} className={"dr-tool" + (pathname.startsWith(to) ? " here" : "")}>
+                          <span className="dr-tool-ic">
+                            <i className={"bi " + icon} />
+                          </span>
+                          <span>
+                            <b>{label}</b>
+                            <small>{sub}</small>
+                          </span>
+                          <i className="bi bi-arrow-right dr-tool-go" />
+                        </Link>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>

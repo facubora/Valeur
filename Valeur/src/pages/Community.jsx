@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import { SkPosts, SkPeople } from "../components/Skeleton";
 import Pill from "../components/Pill";
+import Term from "../components/Term";
 import RecommendModal from "../components/PostComposer";
 import ProfileModal from "../components/ProfileModal";
 import { Avatar, Verified, Person, PersonCard, FollowButton, PostCard, GhostPosts, SetupNotice } from "../components/Social";
@@ -337,7 +338,12 @@ export default function Community() {
       )}
 
       <section id="recomendaciones" className="block">
-        <SectionHead kicker="Feed" title="Recomendaciones" desc="Qué recomiendan comprar, mantener o vender, y cómo les fue desde que lo dijeron.">
+        <SectionHead kicker="Feed" title="Recomendaciones" desc={
+            <>
+              Qué recomiendan <Term k="postura">comprar, mantener o vender</Term>, y cómo les fue desde que lo dijeron.
+            </>
+          }
+        >
           <Tabs items={FEED_TABS} value={tab} onChange={setTab} label="Qué mostrar" />
         </SectionHead>
 

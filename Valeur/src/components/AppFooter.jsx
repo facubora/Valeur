@@ -11,6 +11,7 @@ const COLS = [
       ["/dashboard", "Portfolio"],
       ["/tickersearch", "Mercado"],
       ["/comunidad", "Comunidad"],
+      ["/aprende", "Aprendé"],
     ],
   ],
   [

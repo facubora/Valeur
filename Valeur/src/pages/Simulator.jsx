@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import Logo from "../components/Logo";
 import Pill from "../components/Pill";
+import Term from "../components/Term";
 import PortfolioChart from "../components/PortfolioChart";
 import SymbolSearch from "../components/SymbolSearch";
 import { SectionHead } from "../components/Sections";
@@ -376,7 +377,7 @@ export default function Simulator() {
                 {cur !== assetCur && (
                   <li>
                     <i className="bi bi-currency-exchange" />
-                    <span>{symbol} cotiza en {assetCur === "ARS" ? "pesos" : "dólares"}: cada compra se pasa al dólar MEP de ese día.</span>
+                    <span>{symbol} cotiza en {assetCur === "ARS" ? "pesos" : "dólares"}: cada compra se pasa al <Term k="mep">dólar MEP</Term> de ese día.</span>
                   </li>
                 )}
               </ul>
@@ -385,11 +386,8 @@ export default function Simulator() {
                 <button type="button" className="btn btn-line btn-sm" onClick={copyLink}>
                   <i className="bi bi-link-45deg" /> Copiar link
                 </button>
-                <Link to={tickerUrl(symbol)} className="btn btn-line btn-sm">
+                <Link to={tickerUrl(symbol)} className="btn btn-pink btn-sm">
                   <i className="bi bi-graph-up" /> Ver {symbol}
-                </Link>
-                <Link to={`/practica?operar=${encodeURIComponent(symbol)}`} className="btn btn-pink btn-sm">
-                  <i className="bi bi-controller" /> Probalo con plata de mentira
                 </Link>
               </div>
               <small className="sim-note">Con los precios de cierre de Yahoo Finance, sin comisiones, impuestos ni dividendos. Lo que pasó no asegura lo que va a pasar.</small>
@@ -417,7 +415,7 @@ export default function Simulator() {
               }}
             >
               <Logo symbol={s} size={32} />
-              <span>{label}</span>
+              <span className="sim-idea-txt">{label}</span>
               <i className="bi bi-arrow-right" />
             </button>
           ))}

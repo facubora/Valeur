@@ -23,7 +23,7 @@ const ACTIONS = [
   ["/dashboard?operar=1", "Registrar una operación", "bi-arrow-left-right", "Compra o venta", "comprar vender operar cargar"],
   ["/comunidad?publicar=1#recomendaciones", "Recomendar un activo", "bi-chat-square-quote", "Contale a la comunidad qué harías", "recomendar publicar escribir"],
   ["/tickersearch#alertas", "Mis alertas", "bi-bell", "Ver y editar tus avisos de precio", "alertas avisos notificaciones"],
-  ["/practica", "Modo práctica", "bi-controller", "Invertí con US$ 10.000 de mentira y competí", "practica practicar jugar ranking mentira virtual simulacion"],
+  ["/aprende", "Aprendé", "bi-mortarboard", "Qué es un CEDEAR, el dólar MEP y más, explicado simple", "aprender glosario que es cedear mep dolar broker alyc diversificar"],
   ["/simulador", "Simular una inversión", "bi-hourglass-split", "¿Y si hubiera invertido?", "simulador simular hubiera invertido calcular rendimiento"],
 ];
 

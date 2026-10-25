@@ -303,13 +303,6 @@ def search_symbol():
         return jsonify({"error": str(e)}), 502
 
 
-# ─── Modo práctica (practice.py) ──────────────────────────────────────────────
-
-import practice  # noqa: E402
-
-practice.register(app, fetch_quotes=lambda syms: fetch_quotes([s for s in syms if valid_symbol(s)]), mep_rate=lambda: (mep_data() or {}).get("rate"), valid_symbol=valid_symbol)
-
-
 # ─── Health check ─────────────────────────────────────────────────────────────
 
 @app.route("/api/health")
