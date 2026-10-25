@@ -42,6 +42,7 @@ const DRAWER = {
     ["alertas", "Alertas", "bi-bell"],
     ["/simulador", "Simulador", "bi-hourglass-split"],
     ["/practica", "Modo práctica", "bi-controller"],
+    ["/aprende", "Aprendé", "bi-mortarboard"],
   ],
   "/comunidad": [
     ["recomendaciones", "Recomendaciones", "bi-chat-square-quote"],

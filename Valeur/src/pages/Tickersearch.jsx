@@ -32,6 +32,10 @@ import {
   assetCurrency,
 } from "../lib/market";
 import { SECTOR, SECTORS, KIND_LABEL, TABS, listFor, lookup, similarTo } from "../lib/catalog";
+import Term from "../components/Term";
+
+// el tipo de activo, con su explicación de Aprendé
+const KIND_TERM = { stock: "accion", cedear: "cedear", crypto: "cripto", index: "indice" };
 import { markMarketVisited } from "../lib/onboarding";
 import { useWatchlist, addWatch, removeWatch, useTrades, computePositions } from "../lib/portfolio";
 import { useAlerts } from "../lib/alerts";
@@ -689,7 +693,7 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
             <button type="button" onClick={() => onOpen(null)}>
               <i className="bi bi-arrow-left" /> Mercado
             </button>
-            {kind && <span>{KIND_LABEL[kind]}</span>}
+            {kind && <span>{KIND_TERM[kind] ? <Term k={KIND_TERM[kind]}>{KIND_LABEL[kind]}</Term> : KIND_LABEL[kind]}</span>}
             {meta?.tags.map((t) => (
               <span key={t}>{SECTOR[t].label}</span>
             ))}

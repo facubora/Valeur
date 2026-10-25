@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import Logo from "../components/Logo";
 import Pill from "../components/Pill";
+import Term from "../components/Term";
 import PortfolioChart from "../components/PortfolioChart";
 import SymbolSearch from "../components/SymbolSearch";
 import { SectionHead } from "../components/Sections";
@@ -376,7 +377,7 @@ export default function Simulator() {
                 {cur !== assetCur && (
                   <li>
                     <i className="bi bi-currency-exchange" />
-                    <span>{symbol} cotiza en {assetCur === "ARS" ? "pesos" : "dólares"}: cada compra se pasa al dólar MEP de ese día.</span>
+                    <span>{symbol} cotiza en {assetCur === "ARS" ? "pesos" : "dólares"}: cada compra se pasa al <Term k="mep">dólar MEP</Term> de ese día.</span>
                   </li>
                 )}
               </ul>

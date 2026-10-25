@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import Logo from "../components/Logo";
 import Pill from "../components/Pill";
+import Term from "../components/Term";
 import SymbolSearch from "../components/SymbolSearch";
 import { SkList } from "../components/Skeleton";
 import { SectionNav, SectionHead } from "../components/Sections";
@@ -255,7 +256,7 @@ function StartCard({ ranking }) {
         <p>Comprá y vendé CEDEARs, acciones y cripto al precio real del momento, sin arriesgar nada. Es la mejor forma de aprender antes de poner plata.</p>
         <ul>
           <li>
-            <i className="bi bi-lightning-charge" /> Precios reales, y los CEDEARs al dólar MEP
+            <i className="bi bi-lightning-charge" /> Precios reales, y los <Term k="cedear">CEDEARs</Term> al <Term k="mep">dólar MEP</Term>
           </li>
           <li>
             <i className="bi bi-trophy" /> Un ranking con todos y con tus amigos
