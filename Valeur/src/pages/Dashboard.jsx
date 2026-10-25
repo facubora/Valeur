@@ -1,175 +1,131 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import PortfolioChart from "../components/PortfolioChart";
-import Sparkline from "../components/Sparkline";
-import SymbolSearch from "../components/SymbolSearch";
 import TradeModal from "../components/TradeModal";
 import Onboarding from "../components/Onboarding";
+import Logo from "../components/Logo";
+import Donut from "../components/Donut";
+import Pill from "../components/Pill";
+import { SkPortfolio, SkList } from "../components/Skeleton";
+import { SectionNav, SectionHead } from "../components/Sections";
 import { useAuth } from "../context/AuthContext";
-import {
-  useQuotes,
-  useSparks,
-  useMep,
-  useDisplayCurrency,
-  assetCurrency,
-  fmtPrice,
-  money,
-  signed,
-  pct,
-  formatDate,
-} from "../lib/market";
-import {
-  useTrades,
-  useWatchlist,
-  computePositions,
-  useHistory,
-  addWatch,
-  removeWatch,
-  deleteTrade,
-  findOversell,
-} from "../lib/portfolio";
-import { confirmDialog, toast, attempt } from "../lib/feedback";
+import { useQuotes, useMep, useDisplayCurrency, assetCurrency, fmtPrice, money, signed, pct, formatDate, tickerUrl } from "../lib/market";
+import { useTrades, useWatchlist, computePositions, useHistory, addWatch, deleteTrade, findOversell } from "../lib/portfolio";
+import { attempt } from "../lib/feedback";
 
 const RANGES = [
-  ["1m", "1M"],
-  ["6m", "6M"],
-  ["1y", "1A"],
-  ["max", "Máx"],
+  ["1m", "1M", "en el mes"],
+  ["6m", "6M", "en 6 meses"],
+  ["1y", "1A", "en el año"],
+  ["max", "Máx", "desde el inicio"],
 ];
 
-/* Paleta para la distribución (rota si hay más posiciones) */
+/* Paleta de la composición (rota si hay más posiciones) */
 const HUES = [230, 300, 150, 30, 190, 60, 340, 100];
+const color = (i) => `oklch(0.62 0.16 ${HUES[i % HUES.length]})`;
 
-function Delta({ value, className = "" }) {
-  const up = value >= 0;
+/* Portfolio "fantasma": la forma de lo que va a haber, punteada, invitando a
+   registrar la primera operación (mientras carga va el esqueleto) */
+function PortfolioGhost({ onTrade }) {
   return (
-    <span className={`delta ${up ? "up" : "down"} ${className}`}>
-      <i className={up ? "bi bi-caret-up-fill" : "bi bi-caret-down-fill"} />
-      {Math.abs(value).toFixed(2)}%
-    </span>
-  );
-}
-
-/* Dashboard "fantasma": la forma de lo que va a haber, sin datos.
-   Con `loading` hace de skeleton (barrido de luz) mientras llegan los datos. */
-function GhostDashboard({ loading = false, hideWatch = false }) {
-  const dash = <span className="gh">—</span>;
-  return (
-    <div className={"ghost" + (loading ? " loading" : "")} aria-hidden="true">
-      <section className="dash-grid">
-        <div className="card overview">
-          <div className="ov-top">
-            <div>
-              <span className="lbl">Valor del portfolio</span>
-              <div className="ov-val">$0,00</div>
-              <div className="ov-deltas gh">
-                <span>— hoy</span>
-                <span className="sep" />
-                <span>— desde que invertís</span>
-              </div>
-            </div>
-            <div className="seg">
-              <button type="button" tabIndex={-1}>1M</button>
-              <button type="button" tabIndex={-1} className="on">6M</button>
-              <button type="button" tabIndex={-1}>1A</button>
-              <button type="button" tabIndex={-1}>Máx</button>
-            </div>
-          </div>
-          <div className="ghost-chart">
-            <svg viewBox="0 0 600 200" preserveAspectRatio="none">
-              <path d="M0,150 C60,140 90,160 140,120 S220,100 280,110 S360,60 420,70 S520,30 600,20" />
+    <div className="pfd-ghost">
+      <div className="card pfr ghosted">
+        <div className="pfr-main">
+          <span className="lbl">Valor total</span>
+          <span className="gh-ln w40 big" />
+          <svg className="ghost-line" viewBox="0 0 400 120" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M0,96 C60,90 90,70 140,74 S230,40 280,46 S360,20 400,16" />
+          </svg>
+          <button type="button" className="btn btn-pink btn-sm" onClick={onTrade}>
+            <i className="bi bi-plus-lg" /> Registrá tu primera operación
+          </button>
+        </div>
+        <div className="pfr-side">
+          <span className="lbl">Composición</span>
+          <div className="donut ghost" aria-hidden="true">
+            <svg viewBox="0 0 140 140">
+              <circle cx="70" cy="70" r="54" />
             </svg>
           </div>
         </div>
-        <div className="card alloc">
-          <div className="sec-head">
-            <h2>Distribución</h2>
-            <span className="sub gh">$0 invertidos</span>
+      </div>
+      <div className="card pv ghosted" aria-hidden="true">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="gh-row">
+            <span className="gh-box">+</span>
+            <span className="gh-ln w60" />
           </div>
-          <div className="alloc-bar">
-            <span style={{ width: "45%" }} />
-            <span style={{ width: "30%" }} />
-            <span style={{ width: "25%" }} />
-          </div>
-          <ul className="alloc-list gh">
-            {[0, 1, 2].map((i) => (
-              <li key={i}>
-                <span className="dot" />
-                <b>—</b>
-                <span className="w">—%</span>
-                <span className="pl">—</span>
-              </li>
-            ))}
-          </ul>
-          <div className="alloc-foot">
-            <span>
-              <small>Posiciones</small>
-              <b className="gh">0</b>
-            </span>
-            <span>
-              <small>Operaciones</small>
-              <b className="gh">0</b>
-            </span>
-            <span>
-              <small>Seguidos</small>
-              <b className="gh">0</b>
-            </span>
-          </div>
-        </div>
-      </section>
-
-      <section>
-        <div className="sec-head">
-          <h2>Mis posiciones</h2>
-        </div>
-        <div className="card pos-list">
-          <div className="pos-row head">
-            <span>Activo</span>
-            <span className="col-shares">Cantidad</span>
-            <span className="col-avg">Precio prom.</span>
-            <span className="col-price">Precio</span>
-            <span>Valor</span>
-            <span className="col-pnl">Ganancia</span>
-            <span />
-          </div>
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="pos-row">
-              <div className="pos-sym">
-                <span className="tk">
-                  <i className="bi bi-plus" />
-                </span>
-                <div>
-                  <b className="gh">Activo</b>
-                  <span className="gh">—</span>
-                </div>
-              </div>
-              <div className="pos-num col-shares">{dash}</div>
-              <div className="pos-num col-avg">{dash}</div>
-              <div className="pos-num col-price">{dash}</div>
-              <div className="pos-num">{dash}</div>
-              <div className="pos-num col-pnl">{dash}</div>
-              <span />
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {!hideWatch && (
-        <section>
-          <div className="sec-head">
-            <h2>Seguidos</h2>
-          </div>
-          <div className="watch-grid">
-            {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="card watch gh-add">
-                <i className="bi bi-plus-lg" />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+        ))}
+      </div>
     </div>
+  );
+}
+
+/* Una operación. Borrar se confirma en la misma fila; si borrarla dejaría una
+   venta posterior sin respaldo, la fila lo explica en vez de borrar. */
+function TradeRow({ t, all, onDeleted }) {
+  const [ask, setAsk] = useState(null); // null | { bad } | "confirm"
+  const buy = t.side === "buy";
+  const what = `${buy ? "compra" : "venta"} de ${Number(t.qty)} ${t.symbol}`;
+  const tryDelete = () => {
+    const bad = findOversell(all.filter((x) => x.id !== t.id));
+    setAsk(bad ? { bad } : "confirm");
+  };
+  const remove = async () => {
+    setAsk(null);
+    if (await attempt(deleteTrade(t.id), { ok: `Borraste la ${what}`, fail: "No se pudo borrar la operación" })) onDeleted();
+  };
+
+  if (ask) {
+    const bad = ask.bad;
+    return (
+      <li className={"trx-ask" + (bad ? " info" : "")} onKeyDown={(e) => e.key === "Escape" && setAsk(null)}>
+        <span className="trx-ask-txt">
+          <b>{bad ? "No se puede borrar esta compra" : `¿Borrar la ${what}?`}</b>
+          <small>
+            {bad
+              ? `Sin ella, la venta de ${bad.sell} ${bad.symbol} del ${formatDate(bad.date)} quedaría sin respaldo. Borrá primero esa venta.`
+              : `Del ${formatDate(t.executed_at)}. Se recalculan tus posiciones y la evolución.`}
+          </small>
+        </span>
+        <div className="nrx-btns">
+          <button type="button" className="btn btn-line btn-sm" autoFocus onClick={() => setAsk(null)}>
+            {bad ? "Entendido" : "Cancelar"}
+          </button>
+          {!bad && (
+            <button type="button" className="btn btn-danger btn-sm" onClick={remove}>
+              <i className="bi bi-trash3" /> Borrar
+            </button>
+          )}
+        </div>
+      </li>
+    );
+  }
+
+  return (
+    <li>
+      <Link to={tickerUrl(t.symbol)} className="trx-row">
+        <span className={"trx-side " + t.side}>{buy ? "Compra" : "Venta"}</span>
+        <Logo symbol={t.symbol} size={28} />
+        <span className="pfx-name">
+          <b>{t.symbol}</b>
+          <small>
+            {formatDate(t.executed_at)}
+            {t.note ? ` · ${t.note}` : ""}
+          </small>
+        </span>
+        <span className="trx-qty">
+          {Number(t.qty)} × {fmtPrice(t.symbol, Number(t.price))}
+        </span>
+        <span className="pfx-val">{money(Number(t.qty) * Number(t.price), undefined, assetCurrency(t.symbol))}</span>
+      </Link>
+      <span className="nrx-acts">
+        <button type="button" className="danger" onClick={tryDelete} aria-label={`Borrar la ${what}`} title="Borrar">
+          <i className="bi bi-trash3" />
+        </button>
+      </span>
+    </li>
   );
 }
 
@@ -182,11 +138,13 @@ export default function Dashboard() {
   const watch = useWatchlist(uid);
   const [range, setRange] = useState("6m");
   const [modal, setModal] = useState(null); // null | { symbol?, name?, side? }
+  const [params, setParams] = useSearchParams();
   const [showAll, setShowAll] = useState(false);
   const [tradeSide, setTradeSide] = useState("all");
   const [tradeQuery, setTradeQuery] = useState("");
+  const [focus, setFocus] = useState(null); // posición resaltada en la composición
   const [busy, setBusy] = useState("");
-  const [cur, setCur] = useDisplayCurrency();
+  const [cur] = useDisplayCurrency();
   const fx = useMep();
 
   // Ruta protegida
@@ -195,14 +153,12 @@ export default function Dashboard() {
   }, [authLoading, user, navigate]);
 
   const posSymbols = useMemo(() => [...new Set(trades.rows.map((t) => t.symbol))], [trades.rows]);
-  const watchSymbols = useMemo(() => watch.rows.map((w) => w.symbol), [watch.rows]);
-  const { quotes, loading: quotesLoading } = useQuotes([...posSymbols, ...watchSymbols]);
+  const { quotes, loading: quotesLoading } = useQuotes(posSymbols);
   const { positions, totals } = useMemo(
     () => computePositions(trades.rows, quotes, cur, fx.mep),
     [trades.rows, quotes, cur, fx.mep],
   );
   const history = useHistory(trades.rows, range, cur, fx.mep);
-  const sparks = useSparks(watchSymbols);
 
   if (!user) return null;
 
@@ -213,13 +169,7 @@ export default function Dashboard() {
   // El portfolio se "abre" recién con la primera operación (seguir activos no cuenta)
   const empty = ready && trades.rows.length === 0;
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
-  const dateLabel = new Date().toLocaleDateString("es-AR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
+  const today = new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
 
   const follow = async ({ symbol, name }) => {
     setBusy(symbol);
@@ -227,143 +177,40 @@ export default function Dashboard() {
     setBusy("");
     watch.reload();
   };
-  const unfollow = async (symbol) => {
-    const row = watch.rows.find((w) => w.symbol === symbol);
-    setBusy(symbol);
-    const ok = await attempt(removeWatch(uid, symbol), { fail: `No se pudo dejar de seguir ${symbol}` });
-    setBusy("");
-    watch.reload();
-    if (ok) {
-      toast(`Dejaste de seguir ${symbol}`, {
-        action: { label: "Deshacer", run: () => addWatch(uid, symbol, row?.name || null).then(() => watch.reload()) },
-      });
-    }
-  };
-  const removeTrade = async (t) => {
-    const what = `${t.side === "buy" ? "compra" : "venta"} de ${Number(t.qty)} ${t.symbol}`;
-    // borrar una compra no puede dejar ventas posteriores sin respaldo
-    const bad = findOversell(trades.rows.filter((x) => x.id !== t.id));
-    if (bad) {
-      await confirmDialog({
-        title: "No se puede borrar esta compra",
-        body: `Sin ella, la venta de ${bad.sell} ${bad.symbol} del ${formatDate(bad.date)} quedaría sin respaldo. Borrá primero esa venta.`,
-        confirmText: "Entendido",
-        icon: "bi-shield-exclamation",
-        info: true,
-      });
-      return;
-    }
-    const ok = await confirmDialog({
-      title: `¿Borrar la ${what}?`,
-      body: `Del ${formatDate(t.executed_at)}. Se recalculan tus posiciones y la evolución del portfolio. No se puede deshacer.`,
-      confirmText: "Borrar",
-      danger: true,
-    });
-    if (!ok) return;
-    if (await attempt(deleteTrade(t.id), { ok: `Borraste la ${what}`, fail: "No se pudo borrar la operación" })) trades.reload();
-  };
+
+  // lo ganado en el rango, sin contar lo que pusiste en el medio
+  const pts = history.points.filter((p) => Number.isFinite(p.value) && Number.isFinite(p.invested));
+  const gainIn = (p) => p.value - p.invested;
+  const periodGain = pts.length > 1 ? gainIn(pts.at(-1)) - gainIn(pts[0]) : null;
+  const best = positions.reduce((m, p) => (!m || p.pnlPct > m.pnlPct ? p : m), null);
+  const worst = positions.reduce((m, p) => (!m || p.pnlPct < m.pnlPct ? p : m), null);
 
   // operaciones filtradas por tipo y por ticker
   const tq = tradeQuery.trim().toUpperCase();
   const filteredTrades = trades.rows.filter(
     (t) => (tradeSide === "all" || t.side === tradeSide) && (!tq || t.symbol.includes(tq) || (t.name || "").toUpperCase().includes(tq)),
   );
-
-  const shownTrades = showAll ? filteredTrades : filteredTrades.slice(0, 6);
-
-  /* Seguidos: se muestra real aunque no haya operaciones */
-  const watchSection = (
-    <section>
-      <div className="sec-head">
-        <h2>Seguidos</h2>
-        <div className="sec-tools">
-          <SymbolSearch onPick={follow} placeholder="Seguir un activo…" />
-        </div>
-      </div>
-      {watch.rows.length ? (
-        <div className="watch-grid">
-          {watch.rows.map((w) => {
-            const q = quotes[w.symbol];
-            const closes = sparks[w.symbol] || [];
-            const up = q ? q.change_pct >= 0 : closes.length > 1 && closes.at(-1) >= closes[0];
-            return (
-              <div key={w.symbol} className="card watch">
-                <Link to={`/tickersearch?symbol=${w.symbol}`} className="watch-main">
-                  <div className="watch-id">
-                    <b>{w.symbol}</b>
-                    <span>{w.name || " "}</span>
-                  </div>
-                  <Sparkline values={closes} up={up} />
-                  <div className="watch-px">
-                    <b>{q ? fmtPrice(w.symbol, q.price) : "—"}</b>
-                    {q ? <Delta value={q.change_pct} /> : <small>sin datos</small>}
-                  </div>
-                </Link>
-                <div className="watch-act">
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    title="Registrar operación"
-                    aria-label={`Operar ${w.symbol}`}
-                    onClick={() => setModal({ symbol: w.symbol, name: w.name, side: "buy" })}
-                  >
-                    <i className="bi bi-plus-lg" />
-                  </button>
-                  <button
-                    type="button"
-                    className="icon-btn danger"
-                    title="Dejar de seguir"
-                    aria-label={`Dejar de seguir ${w.symbol}`}
-                    disabled={busy === w.symbol}
-                    onClick={() => unfollow(w.symbol)}
-                  >
-                    <i className="bi bi-x-lg" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="card pad muted">
-          Todavía no seguís ningún activo. Buscalo arriba o desde el{" "}
-          <Link to="/tickersearch" className="lnk">
-            mercado
-          </Link>
-          .
-        </div>
-      )}
-    </section>
-  );
-
+  const shownTrades = showAll ? filteredTrades : filteredTrades.slice(0, 8);
 
   return (
     <AppShell>
       <section className="page-head">
         <div>
+          <span className="kicker">{today.charAt(0).toUpperCase() + today.slice(1)}</span>
           <h1>
-            {greeting}, <em>{user.username}</em>.
+            Tu <em>portfolio</em>.
           </h1>
-          <p className="date-line">{dateLabel}</p>
+          {/* el portfolio de un vistazo, como las pastillas del Inicio */}
+          {ready && !empty && (
+            <div className="hpills" aria-label="Tu portfolio en cifras">
+              <Pill label="Invertido" value={money(totals.cost, 0, cur)} />
+              <Pill label="Ganancia" value={signed(totals.pnl, 0, cur)} delta={totals.pnlPct} />
+              {best && positions.length > 1 && <Pill to={tickerUrl(best.symbol)} label="Mejor" value={best.symbol} delta={best.pnlPct} />}
+              <Pill label={positions.length === 1 ? "Activo" : "Activos"} value={positions.length} />
+            </div>
+          )}
         </div>
         <div className="head-actions">
-          <div className="cur-pick">
-            <div className="seg" role="group" aria-label="Moneda del portfolio">
-              {[
-                ["USD", "Dólar MEP"],
-                ["ARS", "Pesos"],
-              ].map(([c, label]) => (
-                <button key={c} type="button" className={c === cur ? "on" : ""} onClick={() => setCur(c)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-            {fx.mep && (
-              <small title={`Dólar MEP implícito en los CEDEARs, cierre ${formatDate(fx.mep.date)}`}>
-                MEP {money(fx.mep.rate, 0, "ARS")}
-              </small>
-            )}
-          </div>
           <button type="button" className="btn btn-pink btn-sm" onClick={() => setModal({})}>
             <i className="bi bi-plus-lg" /> Registrar operación
           </button>
@@ -372,8 +219,13 @@ export default function Dashboard() {
 
       {trades.error && <p className="form-err">{trades.error}</p>}
 
-      {/* Cargando: el mismo fantasma, con barrido de luz */}
-      {!ready && <GhostDashboard loading />}
+      {/* mientras llegan las operaciones y los precios: la forma, en gris */}
+      {!ready && (
+        <section className="block sk-page" aria-busy="true" aria-label="Cargando tu portfolio">
+          <SkPortfolio />
+          <SkList n={3} />
+        </section>
+      )}
 
       {/* Checklist de arranque (mientras falte algún paso) */}
       {ready && (
@@ -386,245 +238,210 @@ export default function Dashboard() {
         />
       )}
 
-      {/* Sin operaciones: dashboard "fantasma" (los seguidos sí son reales) */}
-      {empty && (
-        <>
-          <GhostDashboard hideWatch={watch.rows.length > 0} />
-          {watch.rows.length > 0 && watchSection}
-        </>
-      )}
+      {empty && <PortfolioGhost onTrade={() => setModal({})} />}
 
       {ready && !empty && (
         <>
-          {/* Resumen + evolución + distribución */}
-          <section className="dash-grid">
-            <div className="card overview">
-              <div className="ov-top">
-                <div>
-                  <span className="lbl">Valor del portfolio</span>
-                  <div className="ov-val">{money(totals.value, undefined, cur)}</div>
-                  <div className="ov-deltas">
-                    <Delta value={totals.dayPct} />
-                    <span className={totals.dayChange >= 0 ? "txt-up" : "txt-down"}>
-                      {signed(totals.dayChange, undefined, cur)} hoy
-                    </span>
-                    <span className="sep" />
-                    <span className={totals.pnl >= 0 ? "txt-up" : "txt-down"}>
-                      {signed(totals.pnl, undefined, cur)} ({pct(totals.pnlPct)}) desde que invertís
-                    </span>
-                  </div>
-                </div>
-                <div className="seg" role="group" aria-label="Período">
-                  {RANGES.map(([r, label]) => (
-                    <button
-                      key={r}
-                      type="button"
-                      className={r === range ? "on" : ""}
-                      onClick={() => setRange(r)}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {positions.length ? (
-                <PortfolioChart
-                  points={history.points}
-                  live={{ value: totals.value, invested: totals.cost }}
-                  currency={cur}
-                  loading={history.loading}
-                />
-              ) : (
-                <div className="ov-none">
-                  <p>Todavía no tenés posiciones abiertas.</p>
-                  <button type="button" className="btn btn-pink btn-sm" onClick={() => setModal({})}>
-                    <i className="bi bi-plus-lg" /> Registrar operación
-                  </button>
-                </div>
-              )}
-            </div>
+          <SectionNav
+            items={[
+              ["resumen", "Resumen", "bi-pie-chart"],
+              ...(positions.length ? [["posiciones", "Posiciones", "bi-list-ul"]] : []),
+              ["operaciones", "Operaciones", "bi-arrow-left-right"],
+            ]}
+          />
 
-            <div className="card alloc">
-              <div className="sec-head">
-                <h2>Distribución</h2>
-                <span className="sub">{money(totals.cost, 0, cur)} invertidos</span>
-              </div>
-              {positions.length ? (
-                <>
-                  <div className="alloc-bar" aria-hidden="true">
-                    {positions.map((p, i) => (
-                      <span
-                        key={p.symbol}
-                        style={{ width: `${p.weight}%`, background: `oklch(0.62 0.17 ${HUES[i % HUES.length]})` }}
-                        title={`${p.symbol} ${p.weight.toFixed(1)}%`}
-                      />
+          {/* Resumen: cuánto vale, cómo evolucionó y en qué está */}
+          <section id="resumen" className="block">
+            <SectionHead kicker="Hoy" title="Resumen" desc="Cuánto vale, cómo viene y en qué está repartido." />
+            <div className="card pfr">
+              <div className="pfr-main">
+                <div className="pfr-top">
+                  <span className="lbl">Valor total</span>
+                  <div className="seg pfr-range" role="radiogroup" aria-label="Período del gráfico">
+                    {RANGES.map(([k, label]) => (
+                      <button key={k} type="button" role="radio" aria-checked={range === k} className={range === k ? "on" : ""} onClick={() => setRange(k)}>
+                        {label}
+                      </button>
                     ))}
                   </div>
-                  <ul className="alloc-list">
-                    {positions.map((p, i) => (
-                      <li key={p.symbol}>
-                        <span className="dot" style={{ background: `oklch(0.62 0.17 ${HUES[i % HUES.length]})` }} />
-                        <b>{p.symbol}</b>
-                        <span className="w">{p.weight.toFixed(1)}%</span>
-                        <span className={"pl " + (p.pnl >= 0 ? "txt-up" : "txt-down")}>{signed(p.pnl, 0, cur)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              ) : (
-                <p className="muted">Se arma con tus primeras compras.</p>
-              )}
-              <div className="alloc-foot">
-                <span>
-                  <small>Posiciones</small>
-                  <b>{positions.length}</b>
-                </span>
-                <span>
-                  <small>Operaciones</small>
-                  <b>{trades.rows.length}</b>
-                </span>
-                <span>
-                  <small>Seguidos</small>
-                  <b>{watch.rows.length}</b>
-                </span>
+                </div>
+                <div className="pfr-value">
+                  <span className="pfx-num">{money(totals.value, undefined, cur)}</span>
+                  <span className={"pfx-day " + (totals.dayChange >= 0 ? "up" : "down")}>
+                    <i className={totals.dayChange >= 0 ? "bi bi-caret-up-fill" : "bi bi-caret-down-fill"} />
+                    {signed(totals.dayChange, undefined, cur)} · {pct(totals.dayPct)} hoy
+                  </span>
+                  {/* lo invertido y la ganancia total ya los muestra el gráfico (y al pasar el mouse, de cada día) */}
+                  {periodGain != null && (
+                    <span className={"pfx-day soft " + (periodGain >= 0 ? "up" : "down")}>
+                      {signed(periodGain, undefined, cur)} {RANGES.find(([k]) => k === range)?.[2]}
+                    </span>
+                  )}
+                </div>
+                {positions.length ? (
+                  <PortfolioChart points={history.points} live={{ value: totals.value, invested: totals.cost }} currency={cur} loading={history.loading} />
+                ) : (
+                  <p className="muted pfr-none">Vendiste todo: no tenés posiciones abiertas.</p>
+                )}
+              </div>
+
+              <div className="pfr-side">
+                <span className="lbl">Composición</span>
+                {positions.length > 0 && (
+                  <>
+                    <Donut
+                      items={positions.map((p, i) => ({ key: p.symbol, label: p.symbol, weight: p.weight, color: color(i) }))}
+                      focus={focus}
+                      onFocus={setFocus}
+                      center={
+                        <>
+                          <b>{positions.length}</b>
+                          <small>{positions.length === 1 ? "activo" : "activos"}</small>
+                        </>
+                      }
+                    />
+                    <ul className="pfr-legend" onMouseLeave={() => setFocus(null)}>
+                      {positions.slice(0, 6).map((p, i) => (
+                        <li key={p.symbol} className={focus && focus !== p.symbol ? "dim" : ""} onMouseEnter={() => setFocus(p.symbol)}>
+                          <i style={{ background: color(i) }} />
+                          <b>{p.symbol}</b>
+                          <span className="w">{p.weight.toFixed(1)}%</span>
+                        </li>
+                      ))}
+                      {positions.length > 6 && <li className="more">y {positions.length - 6} más</li>}
+                    </ul>
+                  </>
+                )}
+                {best && worst && positions.length > 1 && (
+                  <div className="pfr-bw">
+                    <span>
+                      <small>Mejor</small>
+                      <b>{best.symbol}</b>
+                      <em className={best.pnlPct >= 0 ? "txt-up" : "txt-down"}>{pct(best.pnlPct)}</em>
+                    </span>
+                    <span>
+                      <small>Peor</small>
+                      <b>{worst.symbol}</b>
+                      <em className={worst.pnlPct >= 0 ? "txt-up" : "txt-down"}>{pct(worst.pnlPct)}</em>
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </section>
 
           {/* Posiciones */}
           {positions.length > 0 && (
-            <section>
-              <div className="sec-head">
-                <h2>Mis posiciones</h2>
-                <span className="sub">{quotesLoading ? "actualizando precios…" : "precios en vivo"}</span>
-              </div>
-              <div className="card pos-list">
-                <div className="pos-row head" aria-hidden="true">
+            <section id="posiciones" className="block">
+              <SectionHead
+                kicker="Lo que tenés"
+                title="Posiciones"
+                desc={`${positions.length} ${positions.length === 1 ? "activo" : "activos"} · ${quotesLoading ? "actualizando precios…" : "precios en vivo"}`}
+              />
+              <div className="card pv">
+                <div className="pv-row pv-head" aria-hidden="true">
                   <span>Activo</span>
-                  <span className="col-shares">Cantidad</span>
-                  <span className="col-avg">Precio prom.</span>
-                  <span className="col-price">Precio</span>
+                  <span>Cantidad</span>
+                  <span>Precio</span>
                   <span>Valor</span>
-                  <span className="col-pnl">Ganancia</span>
-                  <span />
+                  <span>Ganancia</span>
                 </div>
-                {positions.map((p) => (
-                  <div key={p.symbol} className="pos-row">
-                    <Link to={`/tickersearch?symbol=${p.symbol}`} className="pos-sym" title={`Ver ${p.symbol}`}>
-                      <span className="tk">{p.symbol.slice(0, 4)}</span>
-                      <div>
-                        <b>{p.symbol}</b>
-                        <span>{p.name || `${p.qty} unidades`}</span>
-                      </div>
-                    </Link>
-                    <div className="pos-num col-shares">{p.qty}</div>
-                    <div className="pos-num col-avg">{fmtPrice(p.symbol, p.avgCost)}</div>
-                    <div className="pos-num col-price">
-                      {fmtPrice(p.symbol, p.price)}
-                      <small className={p.dayPct >= 0 ? "txt-up" : "txt-down"}>{pct(p.dayPct)} hoy</small>
-                    </div>
-                    <div className="pos-num">
-                      {money(p.value, undefined, cur)}
-                      <small>{p.weight.toFixed(1)}% del total</small>
-                    </div>
-                    <div className={"pos-num col-pnl " + (p.pnl >= 0 ? "txt-up" : "txt-down")}>
-                      {signed(p.pnl, undefined, cur)}
-                      <small>{pct(p.pnlPct)}</small>
-                    </div>
-                    <div className="pos-act">
-                      <button
-                        type="button"
-                        className="icon-btn"
-                        title={`Operar ${p.symbol}`}
-                        aria-label={`Operar ${p.symbol}`}
-                        onClick={() => setModal({ symbol: p.symbol, name: p.name, side: "buy" })}
-                      >
-                        <i className="bi bi-arrow-left-right" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                <ul className="pv-list">
+                  {positions.map((p, i) => (
+                    <li key={p.symbol} className={focus && focus !== p.symbol ? "dim" : ""} onMouseEnter={() => setFocus(p.symbol)} onMouseLeave={() => setFocus(null)}>
+                      <Link to={tickerUrl(p.symbol)} className="pv-row">
+                        <span className="pv-id">
+                          <Logo symbol={p.symbol} size={30} />
+                          <span className="pfx-name">
+                            <b>{p.symbol}</b>
+                            <small>{p.name || p.symbol}</small>
+                          </span>
+                        </span>
+                        <span className="pv-num">
+                          {+p.qty.toFixed(6)}
+                          <small>prom. {fmtPrice(p.symbol, p.avgCost)}</small>
+                        </span>
+                        <span className="pv-num">
+                          {fmtPrice(p.symbol, p.price)}
+                          <small className={p.dayPct >= 0 ? "txt-up" : "txt-down"}>{pct(p.dayPct)} hoy</small>
+                        </span>
+                        <span className="pv-num">
+                          {money(p.value, undefined, cur)}
+                          <span className="pv-w" title={`${p.weight.toFixed(1)}% del total`}>
+                            <span style={{ width: `${p.weight}%`, background: color(i) }} />
+                          </span>
+                        </span>
+                        <span className={"pv-num " + (p.pnl >= 0 ? "txt-up" : "txt-down")}>
+                          {signed(p.pnl, undefined, cur)}
+                          <small>{pct(p.pnlPct)}</small>
+                        </span>
+                      </Link>
+                      <span className="nrx-acts pv-acts">
+                        <button type="button" onClick={() => setModal({ symbol: p.symbol, name: p.name, side: "buy" })} title={`Comprar ${p.symbol}`}>
+                          <i className="bi bi-plus-lg" />
+                        </button>
+                        <button type="button" className="danger" onClick={() => setModal({ symbol: p.symbol, name: p.name, side: "sell" })} title={`Vender ${p.symbol}`}>
+                          <i className="bi bi-dash-lg" />
+                        </button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </section>
           )}
 
-          {watchSection}
-
           {/* Operaciones */}
-          {trades.rows.length > 0 && (
-            <section>
-              <div className="sec-head">
-                <h2>Operaciones</h2>
-                {filteredTrades.length > 6 && (
-                  <button type="button" className="lnk-btn" onClick={() => setShowAll((v) => !v)}>
-                    {showAll ? "Ver menos" : `Ver todas (${filteredTrades.length})`}
+          <section id="operaciones" className="block">
+            <SectionHead kicker="Historial" title="Operaciones" desc="Todo lo que compraste y vendiste.">
+              <div className="seg" role="radiogroup" aria-label="Tipo de operación">
+                {[
+                  ["all", "Todas"],
+                  ["buy", "Compras"],
+                  ["sell", "Ventas"],
+                ].map(([k, label]) => (
+                  <button key={k} type="button" role="radio" aria-checked={tradeSide === k} className={tradeSide === k ? "on" : ""} onClick={() => setTradeSide(k)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="search-form compact filter-in">
+                <i className="bi bi-funnel ico" aria-hidden="true" />
+                <input value={tradeQuery} onChange={(e) => setTradeQuery(e.target.value)} placeholder="Filtrar por ticker" aria-label="Filtrar operaciones" />
+                {tradeQuery && (
+                  <button type="button" className="filter-x" onClick={() => setTradeQuery("")} aria-label="Limpiar filtro">
+                    <i className="bi bi-x" />
                   </button>
                 )}
               </div>
-              <div className="list-filters">
-                <div className="seg" role="radiogroup" aria-label="Tipo de operación">
-                  {[
-                    ["all", "Todas"],
-                    ["buy", "Compras"],
-                    ["sell", "Ventas"],
-                  ].map(([k, label]) => (
-                    <button key={k} type="button" role="radio" aria-checked={tradeSide === k} className={tradeSide === k ? "on" : ""} onClick={() => setTradeSide(k)}>
-                      {label}
-                    </button>
+            </SectionHead>
+            <div className="card nrx trx">
+              {!shownTrades.length ? (
+                <p className="mvx-none">No hay operaciones que coincidan con el filtro.</p>
+              ) : (
+                <ul className="nrx-list">
+                  {shownTrades.map((t) => (
+                    <TradeRow key={t.id} t={t} all={trades.rows} onDeleted={() => trades.reload()} />
                   ))}
-                </div>
-                <div className="search-form compact filter-in">
-                  <i className="bi bi-funnel ico" aria-hidden="true" />
-                  <input value={tradeQuery} onChange={(e) => setTradeQuery(e.target.value)} placeholder="Filtrar por ticker o nombre" aria-label="Filtrar operaciones" />
-                  {tradeQuery && (
-                    <button type="button" className="filter-x" onClick={() => setTradeQuery("")} aria-label="Limpiar filtro">
-                      <i className="bi bi-x" />
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="card trade-list">
-                {!shownTrades.length && <p className="asset-none muted">No hay operaciones que coincidan con el filtro.</p>}
-                {shownTrades.map((t) => (
-                  <div key={t.id} className={"trade-row " + t.side}>
-                    <span className="side-ic" aria-hidden="true">
-                      <i className={t.side === "buy" ? "bi bi-arrow-down-left" : "bi bi-arrow-up-right"} />
-                    </span>
-                    <div className="trade-what">
-                      <b>
-                        {t.side === "buy" ? "Compra" : "Venta"} · {t.symbol}
-                      </b>
-                      <span>
-                        {formatDate(t.executed_at)}
-                        {t.note ? ` · ${t.note}` : ""}
-                      </span>
-                    </div>
-                    <div className="trade-nums">
-                      <b>{money(Number(t.qty) * Number(t.price), undefined, assetCurrency(t.symbol))}</b>
-                      <span>
-                        {Number(t.qty)} × {fmtPrice(t.symbol, Number(t.price))}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      className="icon-btn danger sm"
-                      title="Borrar operación"
-                      aria-label="Borrar operación"
-                      onClick={() => removeTrade(t)}
-                    >
-                      <i className="bi bi-trash3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+                </ul>
+              )}
+              {filteredTrades.length > 8 && (
+                <button type="button" className="pfx-go trx-more" onClick={() => setShowAll((v) => !v)}>
+                  {showAll ? "Ver menos" : `Ver todas (${filteredTrades.length})`} <i className={showAll ? "bi bi-chevron-up" : "bi bi-chevron-down"} />
+                </button>
+              )}
+            </div>
+          </section>
         </>
       )}
 
+      {/* ?operar=1 (desde Tu cuenta) abre el registro directo */}
       <TradeModal
-        open={modal !== null}
-        onClose={() => setModal(null)}
+        open={modal !== null || params.has("operar")}
+        onClose={() => {
+          setModal(null);
+          if (params.has("operar")) setParams({}, { replace: true });
+        }}
         uid={uid}
         initial={modal || {}}
         held={held}

@@ -1,10 +1,34 @@
 import { useCallback, useEffect, useState } from "react";
-import { MARKET_API } from "./supabase";
+import { MARKET_API, supabase } from "./supabase";
 
 /* ── Datos de mercado (backend Flask + yfinance) ─────────────────────────── */
 
 const QUOTE_TTL = 60_000; // 1 min: mismo precio entre dashboard y mercado
 const quoteCache = new Map(); // symbol → { at, promise }
+
+/* Últimos valores conocidos (no promesas): con esto las pantallas se pintan
+   al instante al volver a ellas, y se guardan en la sesión del navegador para
+   sobrevivir a un F5 (ver loadSnap al final). Igual se actualizan atrás. */
+const lastQuotes = new Map(); // symbol → { at, q }
+function remember(sym, q) {
+  lastQuotes.set(sym, { at: Date.now(), q });
+  saveSnap();
+}
+const isFresh = (sym) => {
+  const h = lastQuotes.get(sym);
+  return Boolean(h) && Date.now() - h.at < QUOTE_TTL;
+};
+// lo que ya se sabe de una lista "A,B,C" → { A: quote, ... }
+function pickKnown(key) {
+  const out = {};
+  if (!key) return out;
+  for (const s of key.split(",")) {
+    const h = lastQuotes.get(s.toUpperCase());
+    if (h) out[s] = h.q;
+  }
+  return out;
+}
+const allKnown = (key) => Boolean(key) && key.split(",").every((s) => lastQuotes.has(s.toUpperCase()));
 
 /* Error de red (backend caído, sin conexión): distinto de "no hay datos" */
 export class NetworkError extends Error {}
@@ -25,7 +49,11 @@ export function getQuote(symbol, force = false) {
   const hit = quoteCache.get(sym);
   if (!force && hit && Date.now() - hit.at < QUOTE_TTL) return hit.promise;
   const promise = fetchJson(`${MARKET_API}/quote/${sym}`)
-    .then((q) => (q && q.price != null ? { ...q, change_pct: parseFloat(q.change_pct) } : null))
+    .then((q) => {
+      const out = q && q.price != null ? { ...q, change_pct: parseFloat(q.change_pct) } : null;
+      remember(sym, out);
+      return out;
+    })
     .catch((e) => {
       quoteCache.delete(sym);
       throw e;
@@ -144,8 +172,9 @@ export function useQuotes(symbols, every = QUOTE_TTL) {
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
   return {
-    quotes: res.quotes,
-    loading: Boolean(key) && res.key !== key,
+    // lo ya conocido se muestra de entrada; lo recién traído lo pisa
+    quotes: { ...pickKnown(key), ...res.quotes },
+    loading: Boolean(key) && res.key !== key && !allKnown(key),
     error: res.error,
     updatedAt: res.updatedAt,
     refresh,
@@ -168,6 +197,7 @@ export function useSparks(symbols, epoch = 0) {
       results.forEach((r, i) => {
         if (r.status === "fulfilled") sparkCache.set(missing[i], r.value.map((c) => c.close));
       });
+      saveSnap();
       if (alive) setData(Object.fromEntries(sparkCache));
     });
     return () => {
@@ -180,28 +210,35 @@ export function useSparks(symbols, epoch = 0) {
 /* Cotización + cierres del mes de muchos símbolos en un solo pedido (para
    las listas del mercado). Alimenta los mismos cachés que getQuote/useSparks,
    así el resto de la app reusa lo que ya se trajo. */
-export async function getBatch(symbols) {
+export async function getBatch(symbols, force = false) {
   const uniq = [...new Set(symbols.map((s) => s.toUpperCase()))];
+  // lo que se trajo hace menos de un minuto (con su curva) no se vuelve a pedir
+  const ok = (s) => isFresh(s) && (lastQuotes.get(s).q === null || sparkCache.has(s));
+  const need = force ? uniq : uniq.filter((s) => !ok(s));
+  const known = Object.fromEntries(uniq.filter((s) => !need.includes(s)).map((s) => [s, lastQuotes.get(s).q]));
+  if (!need.length) return known;
   const chunks = [];
-  for (let i = 0; i < uniq.length; i += 40) chunks.push(uniq.slice(i, i + 40));
+  for (let i = 0; i < need.length; i += 40) chunks.push(need.slice(i, i + 40));
   // en paralelo, y un tramo caído no tira abajo a los demás
   const res = await Promise.allSettled(
     chunks.map((c) => fetchJson(`${MARKET_API}/batch?symbols=${c.map(encodeURIComponent).join(",")}`)),
   );
   if (res.every((r) => r.status === "rejected")) throw res[0].reason;
-  const out = {};
+  const out = { ...known };
   res.forEach((r, i) => {
     if (r.status !== "fulfilled") return;
     for (const s of chunks[i]) {
       const q = r.value?.quotes?.[s];
       if (!q) {
         out[s] = null;
+        remember(s, null);
         continue;
       }
       const { closes, ...quote } = q;
       out[s] = { ...quote, change_pct: parseFloat(quote.change_pct) };
       quoteCache.set(s, { at: Date.now(), promise: Promise.resolve(out[s]) });
       if (closes?.length) sparkCache.set(s, closes);
+      remember(s, out[s]);
     }
   });
   return out;
@@ -216,7 +253,7 @@ export function useBatch(symbols, every = QUOTE_TTL) {
   useEffect(() => {
     if (!key) return;
     let alive = true;
-    getBatch(key.split(",")).then(
+    getBatch(key.split(","), tick > 0).then(
       (quotes) =>
         alive && setRes((prev) => ({ key, quotes: { ...prev.quotes, ...quotes }, error: false, updatedAt: Date.now() })),
       () => alive && setRes((prev) => ({ ...prev, key, error: true })),
@@ -234,9 +271,9 @@ export function useBatch(symbols, every = QUOTE_TTL) {
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
   return {
-    quotes: res.quotes,
+    quotes: { ...pickKnown(key), ...res.quotes },
     sparks: Object.fromEntries(sparkCache),
-    loading: Boolean(key) && res.key !== key,
+    loading: Boolean(key) && res.key !== key && !allKnown(key),
     error: res.error,
     updatedAt: res.updatedAt,
     refresh,
@@ -318,7 +355,7 @@ export const money = (n, digits, cur = "USD") => {
 export const signed = (n, digits, cur = "USD") =>
   n == null || !Number.isFinite(n) ? "—" : (n >= 0 ? "+" : "-") + money(Math.abs(n), digits, cur);
 
-export const pct = (n) => (n >= 0 ? "+" : "") + n.toFixed(2) + "%";
+export const pct = (n) => (n >= 0 ? "+" : "−") + Math.abs(n).toFixed(2).replace(".", ",") + "%";
 
 const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 export function formatDate(d) {
@@ -390,6 +427,8 @@ export function isConverted(symbol, cur) {
    el MEP de ese día o del último día hábil anterior. */
 const MEP_TTL = 15 * 60_000;
 let mepCache = null; // { at, promise }
+let mepRaw = null; // { at, d }: la respuesta tal cual, para guardarla en la sesión
+let mepBuilt = null; // el último MEP armado, para pintar sin esperar
 
 function buildMep(d) {
   const dates = d.series.map((r) => r[0]);
@@ -407,13 +446,20 @@ function buildMep(d) {
     }
     return rates[lo];
   };
-  return { rate: d.rate, date: d.date, at };
+  // últimos cierres, para la curva del mes
+  return { rate: d.rate, date: d.date, at, recent: rates.slice(-23) };
 }
 
 export function getMep() {
   if (mepCache && Date.now() - mepCache.at < MEP_TTL) return mepCache.promise;
   const promise = fetchJson(`${MARKET_API}/mep`)
-    .then((d) => (d?.series?.length ? buildMep(d) : null))
+    .then((d) => {
+      if (!d?.series?.length) return null;
+      mepRaw = { at: Date.now(), d };
+      mepBuilt = buildMep(d);
+      saveSnap();
+      return mepBuilt;
+    })
     .catch((e) => {
       mepCache = null;
       throw e;
@@ -422,9 +468,9 @@ export function getMep() {
   return promise;
 }
 
-/* → { mep: { rate, date, at } | null, loaded, error } */
+/* → { mep: { rate, date, at, recent } | null, loaded, error } */
 export function useMep() {
-  const [res, setRes] = useState({ mep: null, loaded: false, error: false });
+  const [res, setRes] = useState(() => (mepBuilt ? { mep: mepBuilt, loaded: true, error: false } : { mep: null, loaded: false, error: false }));
   const [tick, setTick] = useState(0);
   useEffect(() => {
     let alive = true;
@@ -464,20 +510,68 @@ let curValue = (() => {
   }
 })();
 
+/* Cambia la moneda en toda la app (y la recuerda en este navegador) */
+function applyCurrency(c) {
+  curValue = c;
+  try {
+    localStorage.setItem(CUR_KEY, c);
+  } catch {
+    /* sin storage: queda solo en memoria */
+  }
+  curListeners.forEach((fn) => fn(c));
+}
+
+/* La moneda es de la cuenta: al entrar se toma la guardada (si hay) */
+export function adoptAccountCurrency(c) {
+  if ((c === "USD" || c === "ARS") && c !== curValue) applyCurrency(c);
+}
+
 export function useDisplayCurrency() {
   const [cur, setLocal] = useState(curValue);
   useEffect(() => {
     curListeners.add(setLocal);
     return () => curListeners.delete(setLocal);
   }, []);
+  // además de aplicarla, la guarda en la cuenta para los otros dispositivos
   const setCur = useCallback((c) => {
-    curValue = c;
-    try {
-      localStorage.setItem(CUR_KEY, c);
-    } catch {
-      /* sin storage: queda solo en memoria */
-    }
-    curListeners.forEach((fn) => fn(c));
+    applyCurrency(c);
+    supabase?.auth.updateUser({ data: { currency: c } }).catch(() => {});
   }, []);
   return [cur, setCur];
 }
+
+/* ── Instantánea en la sesión del navegador ──────────────────────────────── */
+/* Precios, curvas del mes y MEP se guardan en sessionStorage (no son datos
+   de la cuenta) para que un F5 pinte al instante. Cada valor guarda cuándo se
+   trajo, así los vencimientos de arriba siguen valiendo. */
+const SNAP_KEY = "valeur-mkt-v1";
+let snapTimer = 0;
+function saveSnap() {
+  clearTimeout(snapTimer);
+  snapTimer = setTimeout(() => {
+    try {
+      sessionStorage.setItem(SNAP_KEY, JSON.stringify({ quotes: [...lastQuotes], sparks: [...sparkCache], mep: mepRaw }));
+    } catch {
+      /* lleno o bloqueado: queda solo en memoria */
+    }
+  }, 800);
+}
+function loadSnap() {
+  try {
+    const snap = JSON.parse(sessionStorage.getItem(SNAP_KEY) || "null");
+    if (!snap) return;
+    for (const [sym, h] of snap.quotes || []) {
+      lastQuotes.set(sym, h);
+      quoteCache.set(sym, { at: h.at, promise: Promise.resolve(h.q) });
+    }
+    for (const [sym, closes] of snap.sparks || []) sparkCache.set(sym, closes);
+    if (snap.mep?.d?.series?.length) {
+      mepRaw = snap.mep;
+      mepBuilt = buildMep(snap.mep.d);
+      mepCache = { at: snap.mep.at, promise: Promise.resolve(mepBuilt) };
+    }
+  } catch {
+    /* sin almacenamiento o dato roto: arranca vacío */
+  }
+}
+loadSnap();

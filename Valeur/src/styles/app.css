@@ -734,102 +734,333 @@
 }
 
 /* ---------- AUTH ---------- */
+/* el formulario a la izquierda; a la derecha, el adelanto de la app */
 .app-root.auth {
+  --bg: oklch(0.974 0.004 265);
+  --sh-1: 0 1px 2px oklch(0.25 0.03 265 / 0.06), 0 8px 24px -12px oklch(0.25 0.03 265 / 0.16);
+  --sh-2: 0 2px 4px oklch(0.25 0.03 265 / 0.06), 0 22px 48px -20px oklch(0.25 0.03 265 / 0.28);
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 520px);
   min-height: 100vh;
+  background: var(--bg);
 }
-.app-root .auth-panel {
-  position: relative;
-  overflow: hidden;
+[data-theme="dark"] .app-root.auth {
+  --bg: #0a0a0a;
+  --sh-1: inset 0 1px 0 oklch(1 0 0 / 0.05), 0 12px 30px -14px oklch(0 0 0 / 0.85);
+  --sh-2: inset 0 1px 0 oklch(1 0 0 / 0.06), 0 26px 60px -20px oklch(0 0 0 / 0.9);
+}
+.app-root.auth .as-card {
+  border-color: var(--line-soft);
+  box-shadow: var(--sh-2);
+}
+.app-root .auth-side {
   display: flex;
   flex-direction: column;
+  padding: 30px clamp(24px, 5vw, 64px) 26px;
+}
+.app-root .auth-top {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 36px 44px;
-  background: var(--ink);
-  color: var(--ink-invert);
 }
-.app-root .auth-panel .brand {
-  color: var(--ink-invert);
+.app-root .auth-top .brand {
+  font-size: 1.2rem;
 }
-.app-root .auth-panel .mark::after {
-  background: var(--ink);
+.app-root .auth-side .auth-box {
+  /* anclado arriba (no centrado): al abrirse un error no se recentra todo */
+  margin: clamp(48px, 12vh, 120px) 0 40px;
 }
-.app-root .auth-panel h2 {
-  font-size: clamp(2.2rem, 3.6vw, 3.4rem);
-  line-height: 1;
-  max-width: 14ch;
+.app-root .auth-foot {
+  margin-top: auto;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
 }
-.app-root .auth-panel h2 em {
+.app-root .auth-box .kicker {
+  margin-bottom: 12px;
+}
+.app-root .auth-box h1 em {
+  font-style: normal;
   color: var(--accent);
 }
-[data-theme="dark"] .app-root .auth-panel h2 em {
+[data-theme="dark"] .app-root .auth-box h1 em {
   color: var(--accent-text);
 }
-.app-root .auth-panel p {
-  margin-top: 18px;
-  max-width: 40ch;
-  color: color-mix(in oklch, var(--ink-invert) 66%, transparent);
-  font-size: 1.05rem;
+
+/* el adelanto: un panel claro con las tarjetas flotando */
+.app-root .auth-show {
+  position: relative;
+  overflow: hidden;
+  margin: 16px 0 16px 16px;
+  border-radius: 28px;
+  background:
+    radial-gradient(120% 90% at 80% 0%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 60%),
+    radial-gradient(80% 60% at 0% 100%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%),
+    linear-gradient(160deg, color-mix(in srgb, var(--accent) 6%, var(--bg)), color-mix(in srgb, var(--accent) 12%, var(--bg)));
+  perspective: 1200px;
 }
-.app-root .auth-panel .pts {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 28px;
-  font-size: 0.92rem;
-  color: color-mix(in oklch, var(--ink-invert) 78%, transparent);
+.app-root .as-stage {
+  position: absolute;
+  inset: 0;
 }
-.app-root .auth-panel .pts span {
+.app-root .as-card {
+  position: absolute;
+  padding: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.app-root .as-pf {
+  left: 9%;
+  top: 9%;
+  width: min(360px, 48%);
+  padding: 22px 24px 16px;
+  rotate: -2deg;
+}
+.app-root .as-pf small {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.app-root .as-total {
+  display: block;
+  white-space: nowrap;
+  margin: 8px 0 6px;
+  font: 600 clamp(2rem, 3.2vw, 2.6rem) / 1 var(--font-display);
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .as-pf .txt-up {
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+.app-root .as-spark {
+  display: block;
+  width: 100%;
+  height: 60px;
+  margin-top: 14px;
+}
+.app-root .as-spark path {
+  fill: none;
+  stroke: var(--up);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.app-root .as-jug {
+  right: 7%;
+  top: 28%;
+  width: min(320px, 44%);
+  overflow: hidden;
+  rotate: 2.5deg;
+}
+.app-root .as-band {
   display: flex;
   align-items: center;
   gap: 10px;
+  padding: 12px 16px;
+  background: color-mix(in srgb, var(--up) 14%, var(--surface));
 }
-.app-root .auth-panel .pts i {
-  color: var(--accent);
+.app-root .as-band b {
+  font-size: 0.9rem;
 }
-[data-theme="dark"] .app-root .auth-panel .pts i {
+.app-root .as-band em {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font: 700 0.66rem var(--font-body);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-style: normal;
+  color: var(--up);
+}
+.app-root .as-jug p {
+  padding: 14px 16px 4px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.app-root .as-ft {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px 14px;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.app-root .as-ft b {
+  font: 600 1.15rem var(--font-display);
+}
+/* la franja toma el color de la postura */
+.app-root .as-jug.hold .as-band {
+  background: color-mix(in srgb, var(--ink) 6%, var(--surface));
+}
+.app-root .as-jug.hold .as-band em {
+  color: var(--ink-soft);
+}
+.app-root .as-jug.sell .as-band {
+  background: color-mix(in srgb, var(--down) 12%, var(--surface));
+}
+.app-root .as-jug.sell .as-band em {
+  color: var(--down);
+}
+.app-root .as-id {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.app-root .as-id > span {
+  display: grid;
+  line-height: 1.15;
+}
+.app-root .as-id small {
+  font-size: 0.72rem;
+  color: var(--ink-soft);
+}
+.app-root .as-spark.down path {
+  stroke: var(--down);
+}
+/* qué activo se está viendo */
+.app-root .as-dots {
+  position: absolute;
+  top: 24px;
+  right: 26px;
+  display: flex;
+  gap: 6px;
+}
+.app-root .as-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 18%, transparent);
+  transition:
+    width 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.3s;
+}
+.app-root .as-dots span.on {
+  width: 20px;
+  background: var(--accent);
+}
+.app-root .as-al {
+  left: 18%;
+  top: 56%;
+  width: min(360px, 50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  rotate: -1deg;
+}
+.app-root .as-al-txt {
+  flex: 1;
+  min-width: 0;
+}
+.app-root .as-al-txt b {
+  display: block;
+  font-size: 0.86rem;
+}
+.app-root .as-al-txt small {
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+}
+.app-root .as-bar {
+  display: block;
+  height: 4px;
+  margin-top: 7px;
+  border-radius: 9px;
+  background: color-mix(in oklch, var(--ink) 8%, transparent);
+  overflow: hidden;
+}
+.app-root .as-bar i {
+  display: block;
+  width: 82%;
+  height: 100%;
+  border-radius: 9px;
+  background: var(--accent);
+}
+.app-root .as-bell {
   color: var(--accent-text);
 }
-.app-root .auth-panel .foot {
-  font-size: 0.82rem;
-  color: color-mix(in oklch, var(--ink-invert) 45%, transparent);
-}
-.app-root .auth-glow {
+.app-root .as-cap {
   position: absolute;
-  width: 520px;
-  height: 520px;
-  right: -200px;
-  bottom: -220px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    color-mix(in oklch, var(--accent) 60%, transparent),
-    transparent 62%
-  );
-  filter: blur(70px);
-  opacity: 0.5;
+  left: 9%;
+  right: 9%;
+  bottom: 8%;
+  max-width: 420px;
+}
+.app-root .as-cap b {
+  display: block;
+  font: 600 clamp(1.4rem, 2.2vw, 1.9rem) / 1.08 var(--font-display);
+  letter-spacing: -0.03em;
+}
+.app-root .as-cap span {
+  display: block;
+  margin-top: 10px;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+/* los campos: hundidos como el buscador de la barra, con ícono */
+.app-root .field .in-ic {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  font-style: normal;
   pointer-events: none;
 }
-.app-root .auth-side {
-  position: relative;
+.app-root .field .in-ic.pre {
+  font-weight: 600;
+}
+.app-root .field .in input {
+  padding-left: 40px;
+}
+.app-root.auth .field input {
+  height: 48px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--surface) 55%, transparent);
+  box-shadow: inset 0 1px 2px oklch(0.25 0.03 265 / 0.07);
+}
+.app-root.auth .field input:focus {
+  border-color: color-mix(in oklch, var(--accent) 55%, transparent);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 16%, transparent);
+}
+.app-root.auth .field label {
   display: flex;
-  /* anclado arriba (no centrado): al abrirse un error no se recentra todo */
-  align-items: flex-start;
-  justify-content: center;
-  padding: clamp(84px, 13vh, 150px) 24px 48px;
+  justify-content: space-between;
 }
-.app-root .auth-side .icon-btn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
+/* el botón principal en tinta, como en la app (shell.css no se carga acá) */
+.app-root.auth .auth-form .btn {
+  height: 48px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--bg);
+  box-shadow:
+    0 1px 2px oklch(0 0 0 / 0.25),
+    inset 0 1px 0 oklch(1 0 0 / 0.08);
 }
-.app-root .auth-mobile-brand {
-  display: none;
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  font-size: 1.25rem;
+.app-root.auth .auth-form .btn i {
+  color: color-mix(in srgb, var(--accent) 55%, var(--bg));
+}
+.app-root.auth .auth-form .btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 10px 22px -12px oklch(0 0 0 / 0.6),
+    inset 0 1px 0 oklch(1 0 0 / 0.08);
+}
+@media (max-width: 900px) {
+  .app-root.auth {
+    grid-template-columns: 1fr;
+  }
+  .app-root .auth-show {
+    display: none;
+  }
 }
 .app-root .auth-box {
   width: min(400px, 100%);
@@ -948,12 +1179,15 @@
     box-shadow 0.25s,
     opacity 0.25s;
 }
+.app-root .auth-form .btn[aria-busy="true"] {
+  cursor: wait;
+}
 .app-root .auth-form .btn:active:not(:disabled) {
   transform: scale(0.98);
 }
 .app-root .auth-form .btn:disabled {
   opacity: 0.65;
-  cursor: wait;
+  cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
@@ -1007,13 +1241,6 @@
 .app-root .auth-form > :nth-child(5) { animation-delay: 0.4s; }
 .app-root .auth-form > :nth-child(6) { animation-delay: 0.46s; }
 .app-root .auth-box > .auth-alt { animation-delay: 0.55s; }
-.app-root .auth-panel h2,
-.app-root .auth-panel h2 + p,
-.app-root .auth-panel .pts {
-  animation: auth-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-.app-root .auth-panel h2 + p { animation-delay: 0.1s; }
-.app-root .auth-panel .pts { animation-delay: 0.2s; }
 /* check animado de "Revisá tu email" */
 .app-root .done-ic {
   width: 64px;
@@ -1028,6 +1255,11 @@
   border: 1px solid color-mix(in oklch, var(--accent) 30%, transparent);
   animation: done-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
+.app-root .done-ic.warn {
+  color: var(--down);
+  background: color-mix(in oklch, var(--down) 10%, transparent);
+  border-color: color-mix(in oklch, var(--down) 28%, transparent);
+}
 @keyframes done-pop {
   from {
     opacity: 0;
@@ -1041,9 +1273,6 @@
 @media (prefers-reduced-motion: reduce) {
   .app-root .auth-box > *,
   .app-root .auth-form > *,
-  .app-root .auth-panel h2,
-  .app-root .auth-panel h2 + p,
-  .app-root .auth-panel .pts,
   .app-root .done-ic,
   .app-root .form-err {
     animation: none;
@@ -1068,23 +1297,20 @@
   font-weight: 600;
   color: var(--accent-text);
 }
-.app-root .auth-alt a:hover {
+.app-root .auth-alt .link-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--accent-text);
+  cursor: pointer;
+}
+.app-root .auth-alt a:hover,
+.app-root .auth-alt .link-btn:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.app-root .auth-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 26px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-.app-root .auth-back:hover {
-  color: var(--accent-text);
-}
-
 /* ---------- DASHBOARD: layout ---------- */
 .app-root .date-line::first-letter {
   text-transform: uppercase;
@@ -1956,6 +2182,12 @@
 .app-root .field label .link-btn:hover {
   text-decoration: underline;
 }
+.app-root .field label a.link-btn {
+  text-decoration: none;
+}
+.app-root .field label a.link-btn:hover {
+  text-decoration: underline;
+}
 .app-root .trade-total {
   display: flex;
   justify-content: space-between;
@@ -2076,26 +2308,6 @@
     transform: rotate(360deg);
   }
 }
-.app-root .loading-box {
-  position: relative;
-  overflow: hidden;
-  border-style: dashed;
-  background: transparent;
-}
-.app-root .loading-box::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    100deg,
-    transparent 30%,
-    color-mix(in oklch, var(--accent) 10%, transparent) 50%,
-    transparent 70%
-  );
-  transform: translateX(-100%);
-  animation: shimmer 1.6s ease-in-out infinite;
-}
-
 /* logos: siempre círculo, imagen a full (misma forma para todos) */
 .app-root .logo {
   flex-shrink: 0;
@@ -2416,17 +2628,8 @@
     border-bottom: 1px solid var(--line-soft);
   }
 
-  .app-root.auth {
-    grid-template-columns: 1fr;
-  }
-  .app-root .auth-panel {
-    display: none;
-  }
   .app-root .auth-side {
-    padding: 96px 20px 40px;
-  }
-  .app-root .auth-mobile-brand {
-    display: flex;
+    padding: 20px 20px 24px;
   }
 }
 
@@ -2703,5 +2906,287 @@
   }
   .app-root .stats div {
     padding: 12px 14px;
+  }
+}
+
+/* ---------- CONTRASEÑA: requisitos en vivo ---------- */
+.app-root .pw-rules {
+  --pw: color-mix(in oklch, var(--ink) 18%, transparent);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--surface) 40%, transparent);
+  font-size: 0.8rem;
+}
+.app-root .pw-rules[data-score="0"],
+.app-root .pw-rules[data-score="1"] {
+  --pw: var(--down);
+}
+.app-root .pw-rules[data-score="2"] {
+  --pw: oklch(0.74 0.15 70);
+}
+.app-root .pw-rules[data-score="3"],
+.app-root .pw-rules[data-score="4"] {
+  --pw: var(--up);
+}
+.app-root .pw-meter {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+.app-root .pw-meter i {
+  height: 4px;
+  border-radius: 4px;
+  background: color-mix(in oklch, var(--ink) 9%, transparent);
+  transition: background 0.3s;
+}
+.app-root .pw-meter i.on {
+  background: var(--pw);
+}
+.app-root .pw-level {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.app-root .pw-level b {
+  font-weight: 600;
+  color: var(--pw);
+  transition: color 0.3s;
+}
+.app-root .pw-rules[data-score=""] .pw-level b {
+  color: var(--ink);
+}
+.app-root .pw-level span {
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+.app-root .pw-rules ul {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.app-root .pw-rules li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s;
+}
+.app-root .pw-rules li i {
+  font-size: 0.78rem;
+  color: color-mix(in oklch, var(--ink) 25%, transparent);
+  transition: color 0.2s, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.app-root .pw-rules li.ok {
+  color: var(--ink);
+}
+.app-root .pw-rules li.ok i {
+  color: var(--up);
+  transform: scale(1.12);
+}
+@media (max-width: 520px) {
+  .app-root .pw-rules {
+    grid-template-columns: 1fr;
+  }
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- RECUPERAR: el panel de los pasos ---------- */
+.app-root .auth-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 11% 9% 8%;
+}
+.app-root .auth-steps .as-cap {
+  position: static;
+  margin-top: auto;
+}
+.app-root .rs-lock {
+  margin-top: auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  color: var(--accent-text);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  border: 1px solid var(--line-soft);
+  box-shadow: var(--sh-2);
+  animation: done-pop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.app-root .rs-lock.open {
+  color: var(--up);
+}
+.app-root .rs-lock.open i {
+  animation: done-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.app-root .rs-list {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  max-width: 440px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* la línea que une los números y se llena hasta el paso actual */
+.app-root .rs-line {
+  position: absolute;
+  left: 37px;
+  top: 36px;
+  bottom: 36px;
+  width: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.app-root .rs-line::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--accent);
+  transform: scaleY(var(--fill));
+  transform-origin: top;
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .rs-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border-color: var(--line-soft);
+  box-shadow: var(--sh-1);
+  transition:
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.4s,
+    box-shadow 0.4s,
+    border-color 0.4s;
+  animation: rs-in 0.8s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(0.12s + var(--d) * 0.09s);
+}
+@keyframes rs-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+.app-root .rs-step.next {
+  opacity: 0.6;
+  box-shadow: none;
+}
+.app-root .rs-step.now {
+  transform: translateX(10px);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--accent) 10%, transparent),
+    var(--sh-2);
+}
+.app-root .rs-step.bad {
+  transform: translateX(10px);
+  border-color: color-mix(in srgb, var(--down) 45%, transparent);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--down) 10%, transparent),
+    var(--sh-2);
+}
+.app-root .rs-n {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  transition:
+    background 0.3s,
+    color 0.3s,
+    border-color 0.3s;
+}
+.app-root .rs-step.now .rs-n {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  animation: rs-pulse 2.4s ease-out infinite;
+}
+.app-root .rs-step.done .rs-n {
+  color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.app-root .rs-step.bad .rs-n {
+  color: #fff;
+  background: var(--down);
+  border-color: var(--down);
+}
+@keyframes rs-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+.app-root .rs-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.app-root .rs-txt b {
+  font-weight: 600;
+}
+.app-root .rs-txt small {
+  color: var(--ink-soft);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+.app-root .rs-step.done .rs-txt b {
+  color: var(--ink-soft);
+}
+.app-root .rs-ic {
+  font-size: 1.1rem;
+  color: var(--ink-soft);
+}
+.app-root .rs-now {
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-root .rs-lock,
+  .app-root .rs-lock i,
+  .app-root .rs-step,
+  .app-root .rs-step.now .rs-n {
+    animation: none;
   }
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import AuthLayout, { PasswordField, FormError, SubmitButton } from "../components/AuthLayout";
+import AuthLayout, { PasswordField, IconField, FormError, SubmitButton } from "../components/AuthLayout";
 import { useAuth } from "../context/AuthContext";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -36,31 +36,27 @@ export default function Login() {
   };
 
   return (
-    <AuthLayout
-      headline={
-        <>
-          Tu portfolio te <em>espera</em>.
-        </>
-      }
-    >
-      <h1>Bienvenido de vuelta.</h1>
-      <p>Ingresá a tu cuenta para continuar.</p>
+    <AuthLayout headline="Tu plata, el mercado y tu gente.">
+      <span className="kicker">Tu cuenta</span>
+      <h1>
+        Tu portfolio te <em>espera</em>.
+      </h1>
+      <p>Entrá y fijate cómo viene el día.</p>
 
       <form onSubmit={handleSubmit} className="auth-form" noValidate>
-        <div className="field">
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            name="email"
-            placeholder="tu@email.com"
-            value={form.email}
-            onChange={handleChange}
-            required
-            autoComplete="email"
-            autoFocus
-          />
-        </div>
+        <IconField
+          label="Email"
+          icon="bi-envelope"
+          id="email"
+          type="email"
+          name="email"
+          placeholder="tu@email.com"
+          value={form.email}
+          onChange={handleChange}
+          required
+          autoComplete="email"
+          autoFocus
+        />
 
         <PasswordField
           label="Contraseña"
@@ -70,23 +66,22 @@ export default function Login() {
           onChange={handleChange}
           required
           autoComplete="current-password"
-        />
-
-        <FormError
-          error={
-            !configured
-              ? "Falta configurar Supabase: copiá .env.example a .env"
-              : error
+          aside={
+            <Link to="/recuperar" state={{ email: form.email.trim() }} className="link-btn">
+              ¿La olvidaste?
+            </Link>
           }
         />
 
-        <SubmitButton loading={loading} loadingText="Ingresando…" disabled={loading || !configured}>
-          Iniciar sesión
+        <FormError error={!configured ? "Falta configurar Supabase: copiá .env.example a .env" : error} />
+
+        <SubmitButton loading={loading} loadingText="Entrando…" disabled={loading || !configured}>
+          Entrar <i className="bi bi-arrow-right" />
         </SubmitButton>
       </form>
 
       <p className="auth-alt">
-        ¿No tenés cuenta? <Link to="/register">Registrate gratis</Link>
+        ¿No tenés cuenta? <Link to="/register">Creala gratis</Link>
       </p>
     </AuthLayout>
   );

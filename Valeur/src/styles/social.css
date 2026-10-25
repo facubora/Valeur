@@ -141,6 +141,12 @@
   border-radius: 50%;
   border: 1.5px dashed color-mix(in oklch, var(--ink) 22%, transparent);
 }
+/* la caja del activo en el ejemplo de recomendación: gris, sin "+" */
+.app-root .gh-av.sq {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+}
 .app-root .gh-box {
   width: 30px;
   height: 30px;
@@ -175,10 +181,6 @@
   padding-top: 44px;
   border-top: 1px solid var(--line-soft);
   scroll-margin-top: 140px;
-}
-.app-root .sub-nav + .block {
-  border-top: 0;
-  padding-top: 12px;
 }
 .app-root .s-head {
   display: flex;
@@ -296,6 +298,32 @@
 }
 .app-root .fy-follow {
   justify-content: center;
+}
+/* "¿dejar de seguir?" en el lugar del botón */
+.app-root .fy-ask {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: nrx-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .fy-ask span {
+  flex: 1;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+/* compactas (Inicio): precio y variación en una línea, sin mini gráfico */
+.app-root .fy-cards.compact .fy-card {
+  gap: 12px;
+}
+.app-root .fy-cards.compact .fy-card-px {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+}
+.app-root .fy-chg {
+  font-size: 0.84rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 .app-root .fy-start.wide {
   padding: 22px;
@@ -444,21 +472,8 @@
 .app-root .pulse-tile.mep .muted {
   font-size: 0.72rem;
 }
-.app-root .home-loading {
-  height: 180px;
-}
 
-/* hero: fecha + mercados, saludo y resumen escrito del día */
-.app-root .home-hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px 40px;
-  flex-wrap: wrap;
-}
-.app-root .hh-main {
-  max-width: 760px;
-}
+/* hero: fecha + mercados, saludo y el día en cuatro cifras */
 .app-root .home-hero .kicker {
   flex-wrap: wrap;
   gap: 8px 14px;
@@ -481,371 +496,1117 @@
   background: var(--up);
 }
 .app-root .home-hero h1 {
-  font-size: clamp(2.2rem, 4.6vw, 3.4rem);
+  font-size: clamp(2rem, 3.6vw, 2.9rem);
   line-height: 1;
 }
-.app-root .hh-brief {
-  margin-top: 16px;
-  font-size: clamp(1.02rem, 1.6vw, 1.18rem);
-  line-height: 1.55;
+.app-root .home-hero {
+  display: flex;
+  flex-direction: column;
+}
+/* el día en pastillas: se lee de un vistazo */
+.app-root .hpills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+.app-root .hp {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.84rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s,
+    border-color 0.2s;
+}
+.app-root a.hp:hover,
+.app-root button.hp:hover {
+  border-color: var(--line);
+  transform: translateY(-1px);
+  box-shadow: var(--sh-2);
+}
+.app-root .hp-ic {
+  font-size: 0.8rem;
   color: var(--ink-soft);
 }
-.app-root .hh-brief b {
-  color: var(--ink);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+.app-root .hp-l {
+  color: var(--ink-soft);
+  font-weight: 600;
 }
-.app-root .hh-brief b.txt-up {
+.app-root .hp b {
+  font-weight: 700;
+}
+.app-root .hp em {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-style: normal;
+  font-weight: 700;
+}
+.app-root .hp em i {
+  font-size: 0.62rem;
+}
+.app-root .hp em.up {
   color: var(--up);
 }
-.app-root .hh-brief b.txt-down {
+.app-root .hp em.down {
   color: var(--down);
 }
-.app-root .hh-brief a:hover b {
+.app-root .hp-add {
+  cursor: pointer;
   color: var(--accent-text);
-}
-.app-root .hh-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  font-weight: 600;
+  border-style: dashed;
+  box-shadow: none;
+  background: transparent;
 }
 
-/* evolución del mes dentro de la tarjeta del portfolio */
-.app-root .pf-evo {
-  height: 84px;
-  margin: 2px 0;
-  display: flex;
-  align-items: flex-end;
-}
 .app-root .spark.stretch {
   display: block;
 }
-.app-root .pf-comp .lbl {
-  font-size: 0.78rem;
+/* ---------- TU PORTFOLIO (Inicio) ---------- */
+/* simple: el número y el día a la izquierda, cada activo y cómo se mueve hoy
+   a la derecha. Sin gráficos ni colores de composición */
+.app-root .pfx {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  overflow: hidden;
+}
+.app-root .pfx .lbl {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+}
+.app-root .pfx-main {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 26px 28px;
+}
+.app-root .pfx-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  align-self: stretch;
+}
+.app-root .pfx-num {
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 4.6vw, 3.3rem);
   font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.2s;
+}
+.app-root .pfx-num:hover {
+  color: var(--accent-text);
+}
+.app-root .pfx-day {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .pfx-day i {
+  font-size: 0.66rem;
+}
+.app-root .pfx-day.up {
+  color: var(--up);
+  background: color-mix(in oklch, var(--up) 12%, transparent);
+}
+.app-root .pfx-day.down {
+  color: var(--down);
+  background: color-mix(in oklch, var(--down) 12%, transparent);
+}
+/* lo ganado en el rango: mismo color, sin fondo */
+.app-root .pfx-day.soft {
+  padding: 0 4px;
+  background: transparent;
+  font-weight: 600;
+}
+.app-root .pfx-gain {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.app-root .pfx-gain b {
+  font-variant-numeric: tabular-nums;
+}
+
+.app-root .pfx-side {
+  /* las filas van de borde a borde: el hover pinta la fila entera */
+  --row-x: 22px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 6px 0 10px;
+  border-left: 1px solid var(--line-soft);
+}
+.app-root .pfx-list {
+  list-style: none;
+}
+.app-root .pfx-list li + li {
+  border-top: 1px solid var(--line-soft);
+}
+.app-root .pfx-list a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto 72px;
+  align-items: center;
+  gap: 12px;
+  padding: 11px var(--row-x, 22px);
+  font-variant-numeric: tabular-nums;
+  transition: background 0.15s;
+}
+.app-root .pfx-list a:hover {
+  background: color-mix(in oklch, var(--ink) 4%, transparent);
+}
+.app-root .pfx-name {
+  display: grid;
+  min-width: 0;
+  line-height: 1.2;
+}
+.app-root .pfx-name b {
+  font-size: 0.92rem;
+}
+.app-root .pfx-name small {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .pfx-val {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.app-root .pfx-chg {
+  text-align: right;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+.app-root .pfx-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px var(--row-x, 22px) 0;
+  padding: 4px 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--accent-text);
+}
+.app-root .pfx-go i {
+  transition: transform 0.2s;
+}
+.app-root .pfx-go:hover i {
+  transform: translateX(3px);
+}
+/* sin operaciones: filas fantasma y el botón para arrancar */
+.app-root .pfx.empty .pfx-side {
+  justify-content: center;
+  gap: 14px;
+  padding: 22px 24px;
+  opacity: 0.8;
+}
+
+/* ---------- PORTFOLIO (pantalla) ---------- */
+/* resumen: valor, evolución con rango y la composición en anillo */
+.app-root .pfr {
+  display: grid;
+  grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
+  overflow: hidden;
+}
+.app-root .pfr .lbl {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+}
+.app-root .pfr-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 24px 26px 16px;
+}
+.app-root .pfr-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.app-root .pfr-range button {
+  min-width: 40px;
+  justify-content: center;
+}
+.app-root .pfr-value {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 8px;
+}
+.app-root .pfr .pchart {
+  margin-top: 18px;
+}
+.app-root .pfr .pchart-canvas {
+  height: 240px;
+}
+.app-root .pfr-none {
+  margin-top: 24px;
+}
+.app-root .pfr-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 24px 22px 20px;
+  border-left: 1px solid var(--line-soft);
+  background: color-mix(in oklch, var(--bg) 55%, transparent);
+}
+.app-root .pfr-legend {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2px 10px;
+}
+.app-root .pfr-legend li {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: 8px;
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+  cursor: default;
+  transition:
+    opacity 0.2s,
+    background 0.2s;
+}
+.app-root .pfr-legend li:hover {
+  background: color-mix(in oklch, var(--ink) 4%, transparent);
+}
+.app-root .pfr-legend li.dim {
+  opacity: 0.4;
+}
+.app-root .pfr-legend li > i {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+}
+.app-root .pfr-legend .w {
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.app-root .pfr-legend .more {
+  grid-column: 1 / -1;
+  display: block;
+  color: var(--ink-soft);
+}
+.app-root .pfr-bw {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: auto;
+}
+.app-root .pfr-bw span {
+  display: grid;
+  gap: 1px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.app-root .pfr-bw small {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+}
+.app-root .pfr-bw b {
+  font-size: 0.95rem;
+}
+.app-root .pfr-bw em {
+  font-style: normal;
+  font-size: 0.84rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* anillo de composición */
+.app-root .donut {
+  position: relative;
+  width: 156px;
+  height: 156px;
+  align-self: center;
+}
+.app-root .donut svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  overflow: visible;
+}
+.app-root .donut-track {
+  fill: none;
+  stroke: color-mix(in oklch, var(--ink) 6%, transparent);
+  stroke-width: 14;
+}
+.app-root .donut-arc {
+  fill: none;
+  stroke-width: 14;
+  cursor: pointer;
+  transition:
+    opacity 0.2s,
+    stroke-width 0.2s;
+}
+.app-root .donut-arc:hover {
+  stroke-width: 18;
+}
+.app-root .donut-arc.dim {
+  opacity: 0.22;
+}
+.app-root .donut-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+.app-root .donut-center b {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .donut-center small {
+  margin-top: 4px;
+  font-size: 0.74rem;
+  color: var(--ink-soft);
+}
+.app-root .donut.ghost circle {
+  fill: none;
+  stroke: color-mix(in oklch, var(--ink) 16%, transparent);
+  stroke-width: 14;
+  stroke-dasharray: 6 7;
+}
+.app-root .ghost-line {
+  width: 100%;
+  height: 150px;
+  margin: 10px 0;
+}
+.app-root .ghost-line path {
+  fill: none;
+  stroke: color-mix(in oklch, var(--ink) 18%, transparent);
+  stroke-width: 2;
+  stroke-dasharray: 5 6;
+  vector-effect: non-scaling-stroke;
+}
+.app-root .pfd-ghost {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.app-root .pfd-ghost .ghosted {
+  opacity: 0.85;
+}
+.app-root .pfd-ghost .pfr-main {
+  gap: 12px;
+  align-items: flex-start;
+}
+.app-root .pfd-ghost .pv {
+  display: grid;
+  gap: 14px;
+  padding: 22px 24px;
+}
+
+/* posiciones: filas de borde a borde; comprar y vender aparecen al pasar */
+.app-root .pv {
+  --row-x: 22px;
+  overflow: hidden;
+}
+.app-root .pv-list {
+  list-style: none;
+}
+.app-root .pv-list li {
+  position: relative;
+  border-top: 1px solid var(--line-soft);
+  transition:
+    background 0.2s,
+    opacity 0.2s;
+}
+.app-root .pv-list li:hover {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+.app-root .pv-list li.dim {
+  opacity: 0.55;
+}
+.app-root .pv-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) repeat(4, minmax(0, 1fr));
+  align-items: center;
+  gap: 16px;
+  padding: 13px 24px;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .pv-head {
+  padding-block: 12px 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.09em;
   color: var(--ink-soft);
 }
-.app-root .pf-legend a:hover b {
-  color: var(--accent-text);
+.app-root .pv-head > :not(:first-child),
+.app-root .pv-num {
+  text-align: right;
 }
-.app-root button.pf-card.empty {
-  width: 100%;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-/* movimientos: subieron / bajaron */
-.app-root .movers {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-.app-root .movers-col {
-  padding: 16px 18px 8px;
-  min-width: 0;
-}
-.app-root .mc-head {
+.app-root .pv-id {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--line-soft);
-}
-.app-root .mc-head b {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-}
-.app-root .mc-head small {
-  margin-left: auto;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--ink-soft);
-}
-.app-root .mc-ic {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
-  font-size: 0.85rem;
-}
-.app-root .movers-col.up .mc-ic {
-  color: var(--up);
-  background: color-mix(in oklch, var(--up) 14%, transparent);
-}
-.app-root .movers-col.down .mc-ic {
-  color: var(--down);
-  background: color-mix(in oklch, var(--down) 14%, transparent);
-}
-.app-root .movers-col ul {
-  list-style: none;
-}
-.app-root .mv-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--line-soft);
-}
-.app-root .movers-col li:last-child .mv-row {
-  border-bottom: 0;
-}
-.app-root .mv-row > div {
   min-width: 0;
 }
-.app-root .mv-row b {
-  display: block;
-  font-size: 0.92rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.app-root .mv-row:hover b {
-  color: var(--accent-text);
-}
-.app-root .mv-row > div > span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.78rem;
-  color: var(--ink-soft);
-}
-.app-root .mv-row .tag {
-  height: 18px;
-  padding: 0 6px;
-  font-size: 0.64rem;
-}
-.app-root .mv-px {
-  font-weight: 700;
-  font-size: 0.9rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.app-root .mv-row .delta {
-  align-self: center;
-  min-width: 70px;
-  justify-content: center;
-}
-.app-root .mc-none {
-  padding: 14px 0 10px;
-}
-.app-root .movers.ghosted {
-  pointer-events: none;
-}
-.app-root .gh-col {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 18px;
-  border-style: dashed;
-  border-color: color-mix(in oklch, var(--ink) 16%, transparent);
-  background: transparent;
-}
-
-/* alertas cercanas */
-.app-root .near-grid {
+.app-root .pv-num {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-.app-root .near {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 16px 18px;
-  min-width: 0;
-  transition:
-    border-color 0.25s,
-    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.app-root .near:hover {
-  border-color: color-mix(in oklch, var(--accent) 45%, transparent);
-  transform: translateY(-3px);
-}
-.app-root .near-top {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-.app-root .near-top > div {
-  min-width: 0;
-}
-.app-root .near-top b {
-  display: block;
+  justify-items: end;
+  gap: 3px;
   font-size: 0.92rem;
+  font-weight: 600;
+  transition: opacity 0.2s;
 }
-.app-root .near-top span {
-  display: block;
-  font-size: 0.8rem;
+.app-root .pv-num small {
+  font-size: 0.76rem;
+  font-weight: 500;
   color: var(--ink-soft);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-.app-root .near-bar {
-  height: 6px;
+.app-root .pv-num small.txt-up {
+  color: var(--up);
+}
+.app-root .pv-num small.txt-down {
+  color: var(--down);
+}
+.app-root .pv-w {
+  display: block;
+  width: 72px;
+  height: 4px;
   border-radius: 999px;
   background: color-mix(in oklch, var(--ink) 8%, transparent);
   overflow: hidden;
 }
-.app-root .near-bar span {
+.app-root .pv-w span {
   display: block;
   height: 100%;
   border-radius: 999px;
-  background: var(--accent);
-  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.app-root .near-foot {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  font-variant-numeric: tabular-nums;
+/* las acciones van sobre la columna de ganancia (más específico que
+   .nrx-acts, que viene después) */
+.app-root .pv-list .pv-acts {
+  right: 18px;
 }
-.app-root .near-foot span {
-  font-weight: 700;
-  font-size: 0.92rem;
+.app-root .pv-list li:hover .nrx-acts,
+.app-root .pv-list .nrx-acts:focus-within {
+  opacity: 1;
+  transform: translate(0, -50%);
+  pointer-events: auto;
 }
-.app-root .near-foot small {
-  font-size: 0.78rem;
-  color: var(--ink-soft);
+.app-root .pv-list li:hover .pv-row > :last-child {
+  opacity: 0;
+}
+/* en pantallas táctiles las acciones van siempre abajo de la fila */
+@media (hover: none) {
+  .app-root .pv-list li:hover .pv-row > :last-child {
+    opacity: 1;
+  }
+  .app-root .pv-list .pv-acts {
+    padding: 0 16px 12px;
+  }
 }
 
-/* tarjeta de portfolio: valor a la izquierda, composición a la derecha */
-.app-root .pf-card {
-  position: relative;
-  overflow: hidden;
+/* operaciones: mismas filas que las alertas, con la etiqueta compra/venta */
+.app-root .trx .nrx-list a.trx-row {
+  grid-template-columns: 74px auto minmax(0, 1fr) auto 130px;
+  gap: 14px;
+}
+.app-root .trx-side {
+  justify-self: start;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+.app-root .trx-side.buy {
+  color: var(--up);
+  background: color-mix(in oklch, var(--up) 12%, transparent);
+}
+.app-root .trx-side.sell {
+  color: var(--down);
+  background: color-mix(in oklch, var(--down) 12%, transparent);
+}
+.app-root .trx-qty {
+  font-size: 0.84rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.app-root .nrx-list li.trx-ask {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 12px var(--row-x);
+  background: color-mix(in srgb, var(--down) 6%, transparent);
+  animation: nrx-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .nrx-list li.trx-ask.info {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+.app-root .trx-ask-txt {
+  flex: 1;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-  gap: 28px 44px;
-  padding: 26px 28px;
+  min-width: 220px;
+  line-height: 1.3;
 }
-.app-root .pf-card::after {
-  content: "";
-  position: absolute;
-  width: 340px;
-  height: 340px;
-  left: -140px;
-  top: -190px;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in oklch, var(--accent) 45%, transparent), transparent 62%);
-  filter: blur(40px);
-  opacity: 0.26;
-  pointer-events: none;
+.app-root .trx-ask-txt b {
+  font-size: 0.92rem;
 }
-.app-root .pf-main {
-  position: relative;
-  z-index: 1;
+.app-root .trx-ask-txt small {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.app-root .trx-more {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 0;
+  padding: 12px;
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.app-root .trx-more:hover {
+  background: color-mix(in oklch, var(--ink) 3%, transparent);
+}
+
+/* movimientos: una tarjeta, lo que sube y lo que baja lado a lado. Las
+   filas son las mismas que las de "Tu portfolio" */
+.app-root .mvx {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+}
+.app-root .mvx-col {
+  --row-x: 22px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
   min-width: 0;
+  padding: 16px 0 6px;
 }
-.app-root .pf-main .lbl {
+.app-root .mvx-col + .mvx-col {
+  border-left: 1px solid var(--line-soft);
+}
+.app-root .mvx-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 2px var(--row-x) 10px;
+}
+.app-root .mvx-head i {
+  font-size: 0.7rem;
+}
+.app-root .mvx-col.up .mvx-head i {
+  color: var(--up);
+}
+.app-root .mvx-col.down .mvx-head i {
+  color: var(--down);
+}
+.app-root .mvx-head b {
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+}
+.app-root .mvx-head small {
+  margin-left: auto;
   font-size: 0.78rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
   color: var(--ink-soft);
 }
-.app-root .pf-val {
-  font-family: var(--font-display);
-  font-size: clamp(2.2rem, 4.6vw, 3.1rem);
-  font-weight: 700;
-  letter-spacing: -0.04em;
-  line-height: 1;
+.app-root .mvx .pfx-name b {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.app-root .mvx-held {
+  font-size: 0.74rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+.app-root .mvx-none {
+  padding: 10px var(--row-x) 14px;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+.app-root .mvx.ghosted .mvx-col {
+  gap: 14px;
+  padding: 22px 24px;
+  opacity: 0.8;
+}
+
+/* seguidos: un tablero de fichas chicas (no filas, para no confundirse con
+   las alertas). Ticker, precio y el día; un filo de color abajo según suba
+   o baje. La cruz para dejar de seguir aparece al pasar el mouse */
+.app-root .wlt {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 10px;
+}
+.app-root .wlt-tile {
+  position: relative;
+  overflow: hidden;
+  border-radius: 14px;
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s;
+}
+.app-root .wlt-tile::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: color-mix(in oklch, var(--ink) 10%, transparent);
+}
+.app-root .wlt-tile.up::after {
+  background: color-mix(in oklch, var(--up) 70%, transparent);
+}
+.app-root .wlt-tile.down::after {
+  background: color-mix(in oklch, var(--down) 70%, transparent);
+}
+.app-root .wlt-tile:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--sh-2);
+}
+/* el filo de abajo se estira de punta a punta y el logo crece apenas */
+.app-root .wlt-tile::after {
+  transition:
+    left 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    right 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .wlt-tile:hover::after {
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 0;
+}
+.app-root .wlt-id > :first-child {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .wlt-tile:hover .wlt-id > :first-child {
+  transform: scale(1.1) rotate(-4deg);
+}
+/* entran escalonadas; al dejar de seguir, la ficha se achica y se va */
+.app-root .wlt > * {
+  animation: wlt-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.app-root .wlt > :nth-child(2) { animation-delay: 0.04s; }
+.app-root .wlt > :nth-child(3) { animation-delay: 0.08s; }
+.app-root .wlt > :nth-child(4) { animation-delay: 0.12s; }
+.app-root .wlt > :nth-child(5) { animation-delay: 0.16s; }
+.app-root .wlt > :nth-child(n + 6) { animation-delay: 0.2s; }
+@keyframes wlt-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+.app-root .wlt-tile.out {
+  pointer-events: none;
+  animation: wlt-out 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes wlt-out {
+  to {
+    opacity: 0;
+    transform: scale(0.9) translateY(4px);
+    filter: blur(2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-root .wlt > *,
+  .app-root .wlt-tile.out,
+  .app-root .nrx-list li.nrx-out,
+  .app-root .nrx-list li.nrx-back > a {
+    animation-duration: 0.01s;
+  }
+}
+.app-root .wlt-in {
+  display: grid;
+  gap: 8px;
+  padding: 14px 14px 16px;
   font-variant-numeric: tabular-nums;
-  align-self: flex-start;
 }
-.app-root .pf-val:hover {
-  color: var(--accent-text);
-}
-.app-root .pf-deltas {
+.app-root .wlt-id {
   display: flex;
-  gap: 14px 32px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding-right: 22px;
 }
-.app-root .pf-deltas small {
-  display: block;
-  font-size: 0.76rem;
+.app-root .wlt-id b {
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .wlt-px {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.app-root .wlt-chg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.82rem;
+  font-weight: 700;
   color: var(--ink-soft);
 }
-.app-root .pf-deltas b {
-  font-size: 0.98rem;
-  font-variant-numeric: tabular-nums;
+.app-root .wlt-chg i {
+  font-size: 0.62rem;
 }
-.app-root .pf-go {
-  align-self: flex-start;
-  margin-top: auto;
+.app-root .wlt-tile.up .wlt-chg {
+  color: var(--up);
 }
-.app-root .pf-comp {
+.app-root .wlt-tile.down .wlt-chg {
+  color: var(--down);
+}
+.app-root .wlt-x {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    background 0.15s,
+    color 0.15s;
+}
+.app-root .wlt-tile:hover .wlt-x,
+.app-root .wlt-x:focus-visible {
+  opacity: 1;
+}
+.app-root .wlt-x:hover {
+  color: var(--down);
+  background: color-mix(in oklch, var(--down) 10%, transparent);
+}
+@media (hover: none) {
+  .app-root .wlt-x {
+    opacity: 1;
+  }
+}
+
+/* "¿dejar de seguir?" adentro de la ficha */
+.app-root .wlt-ask {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 16px;
-  min-width: 0;
-}
-.app-root .pf-legend {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-}
-.app-root .pf-legend li {
-  display: grid;
-  grid-template-columns: 8px auto 1fr auto 76px;
-  align-items: center;
   gap: 10px;
-  padding: 8px 0;
-  border-top: 1px solid var(--line-soft);
-  font-size: 0.9rem;
-  font-variant-numeric: tabular-nums;
+  padding: 12px 14px;
+  background: color-mix(in oklch, var(--surface) 92%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: wlt-ask-in 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.app-root .pf-legend li:first-child {
-  border-top: 0;
+.app-root .wlt-ask b {
+  font-size: 0.86rem;
+  line-height: 1.25;
 }
-.app-root .pf-legend i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.app-root .wlt-ask div {
+  display: flex;
+  gap: 6px;
 }
-.app-root .pf-legend .w {
-  font-weight: 700;
+.app-root .wlt-ask .btn {
+  flex: 1;
+  justify-content: center;
+  padding-inline: 8px;
 }
-.app-root .pf-legend .r {
-  text-align: right;
-  font-size: 0.84rem;
-  font-weight: 600;
+@keyframes wlt-ask-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
 }
-.app-root .pf-legend .more {
-  display: block;
-  font-size: 0.82rem;
+.app-root .wlt-ghost {
+  display: grid;
+  place-items: center;
+  min-height: 108px;
+  border: 1.5px dashed color-mix(in oklch, var(--ink) 16%, transparent);
+  border-radius: 14px;
+  opacity: 0.75;
+  transition:
+    opacity 0.2s,
+    border-color 0.2s;
 }
-.app-root .pf-card.empty {
-  border-style: dashed;
-  border-color: color-mix(in oklch, var(--ink) 16%, transparent);
-  background: transparent;
-  transition: border-color 0.2s;
-}
-.app-root .pf-card.empty:hover {
+.app-root .wlt-ghost:hover {
+  opacity: 1;
   border-color: color-mix(in oklch, var(--accent) 45%, transparent);
 }
-.app-root .gh-ln.big {
-  height: 34px;
-  border-radius: 10px;
+
+/* alertas: una tarjeta, una fila por alerta con cuánto le falta para saltar */
+.app-root .nrx {
+  --row-x: 24px;
+  overflow: hidden;
 }
-.app-root .pf-cta {
+.app-root .nrx-list {
+  list-style: none;
+}
+.app-root .nrx-list li {
+  position: relative;
+  transition: background 0.2s;
+}
+.app-root .nrx-list li + li {
+  border-top: 1px solid var(--line-soft);
+}
+/* hover: la fila se tiñe apenas, la barra se enciende y aparecen editar y
+   borrar sobre el precio */
+.app-root .nrx-list li:not(.nrx-edit):hover {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+.app-root .nrx-list a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(140px, 220px) 110px;
+  align-items: center;
+  gap: 16px;
+  padding: 13px var(--row-x);
+  font-variant-numeric: tabular-nums;
+  transition: background 0.15s;
+}
+.app-root .nrx-list .pfx-val {
+  text-align: right;
+  transition: opacity 0.2s;
+}
+.app-root .nrx-list li:hover .pfx-val {
+  opacity: 0;
+}
+.app-root .nrx-acts {
+  position: absolute;
+  top: 50%;
+  right: calc(var(--row-x) - 4px);
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transform: translate(6px, -50%);
+  pointer-events: none;
+  transition:
+    opacity 0.2s,
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .nrx-list li:hover .nrx-acts,
+.app-root .nrx-acts:focus-within {
+  opacity: 1;
+  transform: translate(0, -50%);
+  pointer-events: auto;
+}
+.app-root .nrx-acts button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-soft);
+  border-radius: 9px;
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.app-root .nrx-acts button:hover {
+  color: var(--accent-text);
+  border-color: color-mix(in oklch, var(--accent) 40%, transparent);
+}
+.app-root .nrx-acts button.danger:hover {
+  color: var(--down);
+  border-color: color-mix(in oklch, var(--down) 40%, transparent);
+}
+@media (hover: none) {
+  .app-root .nrx-acts {
+    position: static;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    justify-content: flex-end;
+    padding: 0 var(--row-x) 12px;
+  }
+  .app-root .nrx-list li:hover .pfx-val {
+    opacity: 1;
+  }
+}
+/* el logo crece apenas y el texto se corre un poco: la fila "responde" */
+.app-root .nrx-list a > .logo,
+.app-root .nrx-list a > img,
+.app-root .nrx-list .pfx-name {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .nrx-list li:hover a > :first-child {
+  transform: scale(1.08);
+}
+.app-root .nrx-list li:hover .pfx-name {
+  transform: translateX(3px);
+}
+.app-root .nrx-acts button:nth-child(2) {
+  transition-delay: 0.04s;
+}
+
+/* se va: se desliza, se apaga y la fila se cierra */
+.app-root .nrx-list li.nrx-out {
+  overflow: hidden;
+  pointer-events: none;
+  animation: nrx-out 0.32s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes nrx-out {
+  0% {
+    opacity: 1;
+    max-height: 90px;
+    transform: none;
+  }
+  45% {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  100% {
+    opacity: 0;
+    max-height: 0;
+    transform: translateX(18px);
+    border-top-color: transparent;
+  }
+}
+/* vuelve de editar */
+.app-root .nrx-list li.nrx-back > a {
+  animation: nrx-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* guardada: la fila destella una vez */
+.app-root .nrx-list li.nrx-saved {
+  animation: nrx-saved 1.1s ease-out;
+}
+@keyframes nrx-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+@keyframes nrx-saved {
+  0%,
+  30% {
+    background: color-mix(in srgb, var(--up) 14%, transparent);
+  }
+}
+
+/* confirmar el borrado en la misma fila */
+.app-root .nrx-list li.nrx-ask {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--accent-text);
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 12px var(--row-x);
+  background: color-mix(in srgb, var(--down) 6%, transparent);
+  animation: nrx-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .nrx-ask-txt {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
+.app-root .nrx-ask-txt b {
+  font-size: 0.92rem;
+}
+.app-root .nrx-ask-txt small {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+/* edición en la misma fila */
+.app-root .nrx-edit {
+  padding: 12px var(--row-x);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+.app-root .nrx-btns {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.app-root .nrx-gap {
+  display: grid;
+  gap: 6px;
+}
+.app-root .nrx-gap small {
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+}
+.app-root .nrx-bar {
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--ink) 8%, transparent);
+  overflow: hidden;
+}
+.app-root .nrx-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--accent) 75%, transparent);
+  transition:
+    width 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.2s,
+    box-shadow 0.2s;
+}
+.app-root .nrx-list li:hover .nrx-bar span {
+  background: var(--accent);
+  box-shadow: 0 0 10px color-mix(in oklch, var(--accent) 50%, transparent);
 }
 
 /* ============================================================
@@ -1035,23 +1796,6 @@
   text-align: center;
 }
 
-/* alertas a lo ancho */
-.app-root .alerts-card.wide {
-  padding: 18px 22px;
-}
-.app-root .alerts-card.wide .side-head {
-  display: none;
-}
-.app-root .alerts-card.wide .alert-list {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0 28px;
-  margin-bottom: 4px;
-}
-.app-root .alerts-card.wide .alert-row:last-child {
-  border-bottom: 1px solid var(--line-soft);
-}
-
 /* lo más recomendado */
 .app-root .talk-grid {
   display: grid;
@@ -1152,15 +1896,17 @@
   flex-shrink: 0;
 }
 
+/* explorar: filas de borde a borde (el hover pinta la fila entera), el
+   precio con la variación del día abajo y la estrella discreta */
 .app-root .asset-list {
   overflow: hidden;
 }
 .app-root .asset-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 70px 96px minmax(150px, auto) auto;
+  grid-template-columns: minmax(0, 1fr) 70px 96px 130px 36px;
   align-items: center;
   gap: 18px;
-  padding: 12px 16px;
+  padding: 12px 24px;
   border-bottom: 1px solid var(--line-soft);
   transition: background 0.2s;
 }
@@ -1168,7 +1914,7 @@
   border-bottom: 0;
 }
 .app-root .asset-row:hover {
-  background: color-mix(in oklch, var(--ink) 2.5%, transparent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
 }
 .app-root .asset-id {
   display: flex;
@@ -1176,33 +1922,41 @@
   gap: 12px;
   min-width: 0;
 }
+.app-root .asset-id > :first-child {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .asset-row:hover .asset-id > :first-child {
+  transform: scale(1.08);
+}
 .app-root .asset-id > div {
   min-width: 0;
 }
 .app-root .asset-id b {
   display: block;
-  font-size: 0.96rem;
+  font-size: 0.95rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.app-root .asset-id:hover b {
-  color: var(--accent-text);
-}
 .app-root .asset-id span {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
+  gap: 5px;
+  font-size: 0.78rem;
   color: var(--ink-soft);
   white-space: nowrap;
 }
+/* el rubro como texto, no como chip */
 .app-root .asset-id .tag {
-  height: 20px;
-  padding: 0 7px;
-  font-size: 0.68rem;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font-size: inherit;
+  font-weight: 500;
+  font-style: normal;
   color: var(--ink-soft);
-  background: color-mix(in oklch, var(--ink) 5%, transparent);
 }
 .app-root .asset-month {
   display: flex;
@@ -1224,37 +1978,77 @@
   height: 30px;
 }
 .app-root .asset-px {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
+  display: grid;
+  justify-items: end;
+  gap: 3px;
   font-variant-numeric: tabular-nums;
 }
 .app-root .asset-px b {
   font-family: var(--font-display);
-  font-size: 1.02rem;
+  font-size: 1rem;
   letter-spacing: -0.015em;
   white-space: nowrap;
 }
-.app-root .asset-px .delta {
-  align-self: center;
-  min-width: 74px;
-  justify-content: center;
+.app-root .asset-px small {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.app-root .asset-px small i {
+  font-size: 0.6rem;
 }
 .app-root .asset-act {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: flex-end;
+  gap: 4px;
 }
+/* estrella: casi invisible hasta pasar por la fila; llena si lo seguís */
 .app-root .asset-act .star {
-  width: 34px;
-  height: 34px;
-}
-.app-root .has-alert {
-  width: 26px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
-  font-size: 0.85rem;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  cursor: pointer;
+  opacity: 0.35;
+  transition:
+    opacity 0.2s,
+    color 0.2s,
+    background 0.2s,
+    transform 0.2s;
+}
+.app-root .asset-row:hover .asset-act .star {
+  opacity: 1;
+}
+.app-root .asset-act .star:hover {
+  color: var(--accent-text);
+  background: color-mix(in oklch, var(--accent) 10%, transparent);
+}
+.app-root .asset-act .star.on {
+  opacity: 1;
+  color: var(--accent-text);
+}
+.app-root .asset-act .star:active {
+  transform: scale(0.88);
+}
+@media (hover: none) {
+  .app-root .asset-act .star {
+    opacity: 1;
+  }
+}
+.app-root .has-alert {
+  width: 22px;
+  display: grid;
+  place-items: center;
+  font-size: 0.8rem;
   color: var(--accent-text);
 }
 .app-root .asset-none {
@@ -1307,13 +2101,6 @@
 /* ============================================================
    MERCADO · detalle de un activo
    ============================================================ */
-.app-root .crumbs {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: -28px;
-}
 .app-root .lnk-btn.back {
   color: var(--ink-soft);
 }
@@ -1321,84 +2108,9 @@
   color: var(--accent-text);
   text-decoration: none;
 }
-.app-root .crumb-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-.app-root .crumb-search {
-  position: relative;
-  width: 260px;
-}
-.app-root .asset-quote .native {
-  font-size: 0.78rem;
-  color: var(--ink-soft);
-  font-variant-numeric: tabular-nums;
-}
-.app-root .asset-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px 32px;
-  flex-wrap: wrap;
-}
-.app-root .asset-title {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  min-width: 0;
-}
-.app-root .asset-title h1 {
-  font-size: clamp(1.8rem, 3.6vw, 2.6rem);
-  line-height: 1.05;
-}
-.app-root .asset-tags {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-.app-root .asset-tags .sym {
-  font-weight: 700;
-  font-size: 0.9rem;
-  margin-right: 4px;
-}
-.app-root .asset-quote {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-  font-variant-numeric: tabular-nums;
-}
-.app-root .asset-quote > b {
-  font-family: var(--font-display);
-  font-size: clamp(1.9rem, 3.6vw, 2.6rem);
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-.app-root .asset-quote > div {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.app-root .asset-quote .chg {
-  font-size: 0.88rem;
-  color: var(--ink-soft);
-}
 .app-root .ph-line.big {
   width: 180px;
   height: 30px;
-}
-.app-root .asset-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: -30px;
-}
-.app-root .asset-actions .btn-pink {
-  margin-left: auto;
 }
 .app-root .asset-grid {
   display: grid;
@@ -1483,179 +2195,6 @@
 .app-root .talk-empty .ghost-posts {
   width: 100%;
 }
-
-/* tu posición, similares */
-.app-root .pm-kv {
-  display: flex;
-  flex-direction: column;
-}
-.app-root .pm-kv > div {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 7px 0;
-  border-top: 1px solid var(--line-soft);
-  font-size: 0.88rem;
-}
-.app-root .pm-kv > div:first-child {
-  border-top: 0;
-  padding-top: 0;
-}
-.app-root .pm-kv dt {
-  color: var(--ink-soft);
-}
-.app-root .pm-kv dd {
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.app-root .sim-list {
-  list-style: none;
-}
-.app-root .sim-list a {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  border-top: 1px solid var(--line-soft);
-}
-.app-root .sim-list li:first-child a {
-  border-top: 0;
-  padding-top: 0;
-}
-.app-root .sim-list a > div {
-  min-width: 0;
-}
-.app-root .sim-list b {
-  display: block;
-  font-size: 0.9rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.app-root .sim-list span {
-  display: block;
-  font-size: 0.76rem;
-  color: var(--ink-soft);
-}
-.app-root .sim-list a:hover b {
-  color: var(--accent-text);
-}
-.app-root .sim-list .delta {
-  align-self: center;
-}
-
-/* ============================================================
-   ALERTAS
-   ============================================================ */
-.app-root .alerts-card {
-  padding: 18px;
-}
-.app-root .alert-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-bottom: 14px;
-}
-.app-root .alert-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--line-soft);
-  animation: auth-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-.app-root .alert-row:last-child {
-  border-bottom: 0;
-}
-.app-root .alert-row.off .alert-what b {
-  color: var(--ink-soft);
-}
-.app-root .alert-ic {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  display: grid;
-  place-items: center;
-  font-size: 0.85rem;
-}
-.app-root .alert-ic.above,
-.app-root .alert-ic.up_pct {
-  color: var(--up);
-  background: color-mix(in oklch, var(--up) 14%, transparent);
-}
-.app-root .alert-ic.below,
-.app-root .alert-ic.down_pct {
-  color: var(--down);
-  background: color-mix(in oklch, var(--down) 14%, transparent);
-}
-.app-root .alert-row.off .alert-ic {
-  filter: grayscale(1);
-  opacity: 0.55;
-}
-.app-root .alert-what {
-  min-width: 0;
-}
-.app-root .alert-what b {
-  display: block;
-  font-size: 0.87rem;
-  line-height: 1.3;
-}
-.app-root .alert-what span {
-  display: block;
-  font-size: 0.76rem;
-  color: var(--ink-soft);
-}
-.app-root .alert-act {
-  display: flex;
-  gap: 4px;
-}
-.app-root .alert-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.app-root .alert-form .seg.full button {
-  padding: 0 4px;
-  font-size: 0.76rem;
-}
-.app-root .alert-in {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 4px 4px 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
-}
-.app-root .alert-in:focus-within {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent) 16%, transparent);
-}
-.app-root .alert-in .unit {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--ink-soft);
-}
-.app-root .alert-in input {
-  flex: 1;
-  min-width: 0;
-  height: 36px;
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  font-family: var(--font-body);
-  font-size: 0.98rem;
-  font-variant-numeric: tabular-nums;
-  outline: none;
-}
 .app-root .chips.quick .chip {
   height: 28px;
   padding: 0 10px;
@@ -1669,12 +2208,8 @@
 /* ============================================================
    NOTIFICACIONES (campanita del header)
    ============================================================ */
-/* el panel se alinea con el borde derecho del header, no con la campanita */
 .app-root .top .right {
   position: relative;
-}
-.app-root .bell-wrap {
-  position: static;
 }
 .app-root .icon-btn.bell {
   position: relative;
@@ -1703,129 +2238,6 @@
   box-shadow: 0 0 0 2px var(--bg);
   animation: done-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.app-root .notif-panel {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 10px);
-  width: min(380px, calc(100vw - 32px));
-  max-height: min(520px, calc(100vh - 110px));
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  background: var(--surface);
-  box-shadow: 0 30px 60px -28px oklch(0 0 0 / 0.45);
-  overflow: hidden;
-  z-index: 150;
-  animation: modal-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.app-root .notif-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 14px 16px 10px;
-}
-.app-root .notif-head b {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-}
-.app-root .notif-head .lnk-btn {
-  font-size: 0.8rem;
-}
-.app-root .notif-list {
-  list-style: none;
-  overflow-y: auto;
-  padding: 0 6px 6px;
-}
-.app-root .notif {
-  width: 100%;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: start;
-  gap: 10px;
-  padding: 10px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.app-root .notif:hover {
-  background: color-mix(in oklch, var(--ink) 4%, transparent);
-}
-.app-root .notif.new {
-  background: color-mix(in oklch, var(--accent) 7%, transparent);
-}
-.app-root .notif.new:hover {
-  background: color-mix(in oklch, var(--accent) 11%, transparent);
-}
-.app-root .n-ic {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  font-size: 0.85rem;
-  color: var(--accent-text);
-  background: color-mix(in oklch, var(--accent) 12%, transparent);
-}
-.app-root .n-ic.verified {
-  color: var(--up);
-  background: color-mix(in oklch, var(--up) 14%, transparent);
-}
-.app-root .n-txt {
-  min-width: 0;
-}
-.app-root .n-txt b {
-  display: block;
-  font-size: 0.86rem;
-  font-weight: 600;
-  line-height: 1.35;
-}
-.app-root .notif.new .n-txt b {
-  font-weight: 700;
-}
-.app-root .n-txt span {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin-top: 2px;
-  font-size: 0.8rem;
-  color: var(--ink-soft);
-}
-.app-root .notif small {
-  font-size: 0.72rem;
-  color: var(--ink-soft);
-  white-space: nowrap;
-  padding-top: 2px;
-}
-.app-root .notif-empty {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 8px 16px 14px;
-  opacity: 0.8;
-}
-.app-root .gh-notif {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.app-root .notif-foot {
-  padding: 0 16px 14px;
-}
-.app-root .notif-foot:empty {
-  display: none;
-}
-.app-root .notif-foot .notify-ask {
-  margin-top: 4px;
-}
-
 /* ============================================================
    COMUNIDAD · piezas
    ============================================================ */
@@ -2091,12 +2503,6 @@
   flex-direction: column;
   gap: 12px;
   animation: auth-rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-.app-root .composer-modal .composer {
-  margin-top: 16px;
-  padding: 0;
-  border: 0;
-  animation: none;
 }
 .app-root .composer-row {
   display: flex;
@@ -2446,21 +2852,8 @@
 }
 
 /* ---------- modal de perfil ---------- */
-.app-root .profile-modal {
+.app-root .vx-modal.pm {
   width: min(580px, 100%);
-}
-.app-root .pm-tabs {
-  margin-top: 16px;
-}
-.app-root .pm-tabs button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 34px;
-}
-.app-root .pm-form {
-  margin-top: 18px;
 }
 .app-root .vis-opts {
   display: grid;
@@ -2569,90 +2962,6 @@
 /* ============================================================
    PERFIL PÚBLICO
    ============================================================ */
-.app-root .profile-head {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  gap: 22px;
-  padding: 26px;
-}
-.app-root .profile-head::after {
-  content: "";
-  position: absolute;
-  width: 360px;
-  height: 360px;
-  right: -120px;
-  top: -200px;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in oklch, var(--accent) 45%, transparent), transparent 62%);
-  filter: blur(40px);
-  opacity: 0.3;
-  pointer-events: none;
-}
-.app-root .ph-main {
-  flex: 1;
-  min-width: 0;
-}
-.app-root .ph-main h1 {
-  display: flex;
-  align-items: center;
-  font-size: clamp(1.6rem, 3vw, 2.2rem);
-  line-height: 1.05;
-}
-.app-root .ph-sub {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 6px;
-  font-size: 0.9rem;
-  color: var(--ink-soft);
-}
-.app-root .ph-bio {
-  margin-top: 10px;
-  max-width: 60ch;
-  font-size: 0.96rem;
-}
-.app-root .ph-counts {
-  display: flex;
-  gap: 18px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-  font-size: 0.88rem;
-}
-.app-root .ph-counts b {
-  font-variant-numeric: tabular-nums;
-}
-.app-root .ph-act {
-  align-self: flex-start;
-  position: relative;
-  z-index: 1;
-}
-.app-root .ph-loading {
-  width: 100%;
-  height: 84px;
-  border-radius: 14px;
-}
-.app-root .profile-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  gap: 22px;
-  align-items: start;
-  margin-top: -20px;
-}
-.app-root .profile-main {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-width: 0;
-}
-.app-root .profile-posts {
-  min-width: 0;
-}
-.app-root .profile-posts .sec-head {
-  margin-bottom: 14px;
-}
 .app-root .pf-share {
   padding: 18px;
 }
@@ -2738,11 +3047,6 @@
   margin-top: 10px;
   font-size: 0.76rem;
 }
-.app-root .pf-locked {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
 .app-root .gh-alloc {
   display: flex;
   gap: 3px;
@@ -2755,25 +3059,6 @@
 .app-root .gh-alloc span:nth-child(1) { flex: 5; }
 .app-root .gh-alloc span:nth-child(2) { flex: 3; }
 .app-root .gh-alloc span:nth-child(3) { flex: 2; }
-.app-root .pf-locked-msg {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 14px 0 6px;
-  text-align: center;
-}
-.app-root .pf-locked-msg > i {
-  font-size: 1.3rem;
-  color: var(--ink-soft);
-}
-.app-root .pf-locked-msg span {
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-}
-.app-root .pf-locked-msg .btn {
-  margin-top: 6px;
-}
 .app-root .moves {
   list-style: none;
 }
@@ -2806,23 +3091,6 @@
   color: var(--ink-soft);
   font-size: 0.78rem;
 }
-.app-root .record {
-  display: flex;
-  gap: 28px;
-  padding: 14px 18px;
-  margin-bottom: 12px;
-}
-.app-root .record small {
-  display: block;
-  font-size: 0.74rem;
-  color: var(--ink-soft);
-}
-.app-root .record b {
-  font-family: var(--font-display);
-  font-size: 1.3rem;
-  font-variant-numeric: tabular-nums;
-}
-
 /* ============================================================
    RESPONSIVE
    ============================================================ */
@@ -2858,11 +3126,27 @@
 }
 
 @media (max-width: 900px) {
-  .app-root .movers {
+  .app-root .mvx {
     grid-template-columns: 1fr;
   }
-  .app-root .near-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .app-root .pfr {
+    grid-template-columns: 1fr;
+  }
+  .app-root .pfr-side {
+    border-left: 0;
+    border-top: 1px solid var(--line-soft);
+  }
+  /* posiciones: se van cantidad y precio */
+  .app-root .pv-row {
+    grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
+  }
+  .app-root .pv-row > :nth-child(2),
+  .app-root .pv-row > :nth-child(3) {
+    display: none;
+  }
+  .app-root .mvx-col + .mvx-col {
+    border-left: 0;
+    border-top: 1px solid var(--line-soft);
   }
   .app-root .me-strip {
     grid-template-columns: 1fr;
@@ -2871,16 +3155,19 @@
   .app-root .people-grid.compact {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .app-root .talk-grid,
-  .app-root .alerts-card.wide .alert-list {
+  .app-root .talk-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .app-root .explore-bar {
     flex-direction: column;
     align-items: stretch;
   }
-  .app-root .pf-card {
+  .app-root .pfx {
     grid-template-columns: 1fr;
+  }
+  .app-root .pfx-side {
+    border-left: 0;
+    border-top: 1px solid var(--line-soft);
   }
   .app-root .fy-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2903,12 +3190,11 @@
     flex: 0 0 160px;
     scroll-snap-align: start;
   }
-  .app-root .asset-grid,
-  .app-root .profile-grid {
+  .app-root .asset-grid {
     grid-template-columns: 1fr;
   }
   .app-root .asset-row {
-    grid-template-columns: minmax(0, 1fr) 90px auto auto;
+    grid-template-columns: minmax(0, 1fr) 90px 120px auto;
   }
   .app-root .asset-month {
     display: none;
@@ -2916,6 +3202,20 @@
 }
 
 @media (max-width: 600px) {
+  /* las pastillas en una sola fila que se desliza */
+  .app-root .hpills {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 12px -16px 0;
+    padding: 4px 16px 10px;
+    scrollbar-width: none;
+  }
+  .app-root .hpills::-webkit-scrollbar {
+    display: none;
+  }
+  .app-root .hp {
+    flex-shrink: 0;
+  }
   .app-root .pulse {
     margin: 0 -16px;
     padding: 2px 16px 4px;
@@ -2923,23 +3223,51 @@
   .app-root .pulse-tile {
     flex-basis: 42%;
   }
-    .app-root .pf-card {
-    padding: 20px 16px;
+  .app-root .pfx-main {
+    padding: 20px 18px;
   }
-  .app-root .hh-actions {
-    width: 100%;
+  .app-root .pfx-side,
+  .app-root .mvx-col,
+  .app-root .nrx {
+    --row-x: 16px;
   }
-  .app-root .hh-actions .btn {
-    flex: 1;
-    justify-content: center;
-    white-space: nowrap;
-    padding-inline: 10px;
+  .app-root .pfx-list a {
+    grid-template-columns: auto minmax(0, 1fr) auto 60px;
+    gap: 10px;
   }
-  .app-root .hh-actions .btn i {
-    display: none;
+
+  .app-root .wlt {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
-  .app-root .mv-px {
-    display: none;
+  .app-root .pfr-main,
+  .app-root .pfr-side {
+    padding: 18px 16px;
+  }
+  .app-root .pv-row {
+    padding: 12px 16px;
+    gap: 10px;
+  }
+  .app-root .pv-w {
+    width: 48px;
+  }
+  .app-root .trx .nrx-list a.trx-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  /* en el celu: compra/venta, el activo y el total */
+  /* .logo lleva display con !important (ver app.css) */
+  .app-root .trx .trx-row > .logo,
+  .app-root .trx .trx-row .trx-qty {
+    display: none !important;
+  }
+  /* la barra de cuánto falta pasa abajo del nombre */
+  .app-root .nrx-list a {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 6px 12px;
+  }
+  .app-root .nrx-gap {
+    grid-column: 2 / -1;
+    grid-row: 2;
   }
   .app-root .block {
     padding-top: 32px;
@@ -2963,13 +3291,11 @@
   .app-root .fy-card .fy-x {
     opacity: 1;
   }
-  .app-root .near-grid,
   .app-root .post-grid,
   .app-root .feed-grid,
   .app-root .people-grid,
   .app-root .people-grid.compact,
-  .app-root .talk-grid,
-  .app-root .alerts-card.wide .alert-list {
+  .app-root .talk-grid {
     grid-template-columns: 1fr;
   }
   .app-root .fy-start.wide .fy-ghost {
@@ -2988,17 +3314,6 @@
   }
   .app-root .fy-x {
     opacity: 1;
-  }
-  .app-root .crumbs {
-    flex-wrap: wrap;
-  }
-  .app-root .crumb-right {
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .app-root .crumb-search {
-    width: 100%;
   }
   .app-root .sort-seg {
     width: 100%;
@@ -3020,51 +3335,16 @@
   .app-root .asset-row {
     grid-template-columns: minmax(0, 1fr) auto auto;
     gap: 10px;
-    padding: 12px;
+    padding: 12px 16px;
   }
   .app-root .asset-spark {
     display: none;
   }
-  .app-root .asset-px {
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-  }
-  .app-root .asset-px .delta {
-    min-width: 0;
-  }
   .app-root .asset-id .tag {
     display: none;
   }
-  .app-root .crumbs {
-    margin-bottom: -14px;
-  }
-  .app-root .asset-head {
-    align-items: flex-start;
-  }
-  .app-root .asset-quote {
-    align-items: flex-start;
-  }
-  .app-root .asset-actions {
-    margin-top: -14px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-  .app-root .asset-actions .btn {
-    justify-content: center;
-  }
-  .app-root .asset-actions .btn-pink {
-    margin-left: 0;
-  }
   .app-root .asset-grid {
     margin-top: -12px;
-  }
-  .app-root .asset-title {
-    gap: 12px;
-  }
-  .app-root .asset-title .logo {
-    width: 44px !important;
-    height: 44px !important;
   }
   .app-root .people-search {
     width: 100%;
@@ -3074,28 +3354,6 @@
   }
   .app-root .vis-opts {
     grid-template-columns: 1fr;
-  }
-  .app-root .profile-head {
-    flex-wrap: wrap;
-    padding: 20px;
-    gap: 14px;
-  }
-  .app-root .profile-head .p-avatar {
-    width: 64px !important;
-    height: 64px !important;
-  }
-  .app-root .ph-main {
-    flex-basis: calc(100% - 80px);
-  }
-  .app-root .ph-act {
-    width: 100%;
-  }
-  .app-root .ph-act .btn {
-    width: 100%;
-    justify-content: center;
-  }
-  .app-root .profile-grid {
-    margin-top: -10px;
   }
   .app-root .composer-btns {
     width: 100%;
@@ -3110,13 +3368,6 @@
   .app-root .composer-foot .seg button {
     flex: 1;
     justify-content: center;
-  }
-  .app-root .bell-wrap .notif-panel {
-    position: fixed;
-    left: 16px;
-    right: 16px;
-    top: 76px;
-    width: auto;
   }
 }
 

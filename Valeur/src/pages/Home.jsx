@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import Onboarding from "../components/Onboarding";
 import Logo from "../components/Logo";
-import Sparkline from "../components/Sparkline";
 import TradeModal from "../components/TradeModal";
-import { PostTile } from "../components/Social";
+import PortfolioSummary, { PortfolioSummaryEmpty } from "../components/PortfolioSummary";
+import Pill from "../components/Pill";
+import AlertRows from "../components/AlertRows";
+import { SkPortfolio, SkList, SkTiles } from "../components/Skeleton";
 import { SectionNav, SectionHead } from "../components/Sections";
-import { Delta, CurrencyPick, AssetRow, ForYouCards, ForYouStart } from "../components/MarketBits";
 import { useAuth } from "../context/AuthContext";
 import {
   useBatch,
@@ -15,7 +16,6 @@ import {
   useMep,
   useDisplayCurrency,
   useMarketStatus,
-  fmtPrice,
   priceIn,
   money,
   signed,
@@ -23,37 +23,10 @@ import {
   tickerUrl,
 } from "../lib/market";
 import { POPULAR } from "../lib/onboarding";
-import { SECTORS, SECTOR, lookup } from "../lib/catalog";
-import { useTrades, useWatchlist, computePositions, useHistory, addWatch, removeWatch } from "../lib/portfolio";
-import { useAlerts, alertText } from "../lib/alerts";
-import { useMyProfile, updateProfile, useFollowGraph, useFeed } from "../lib/social";
-import { useForYou } from "../lib/foryou";
+import { lookup } from "../lib/catalog";
+import { useTrades, useWatchlist, computePositions, addWatch, removeWatch } from "../lib/portfolio";
+import { useAlerts } from "../lib/alerts";
 import { toast, attempt } from "../lib/feedback";
-
-/* Paleta de la composición (misma que el portfolio) */
-const HUES = [230, 300, 150, 30, 190, 60, 340, 100];
-
-const abs = (n) => Math.abs(n).toLocaleString("es-AR", { maximumFractionDigits: 2 }) + "%";
-
-/* Un número con color y signo para el resumen escrito */
-function Move({ value, verb = ["sube", "baja"] }) {
-  const up = value >= 0;
-  return (
-    <>
-      {up ? verb[0] : verb[1]} <b className={up ? "txt-up" : "txt-down"}>{abs(value)}</b>
-    </>
-  );
-}
-
-/* Cuánto le falta a una alerta para saltar → { progress 0..1, text } */
-function alertGap(a, q) {
-  if (!q) return null;
-  const v = Number(a.value);
-  if (a.kind === "above") return { progress: Math.min(q.price / v, 1), text: `falta subir ${abs((v / q.price - 1) * 100)}` };
-  if (a.kind === "below") return { progress: Math.min(v / q.price, 1), text: `falta bajar ${abs((1 - v / q.price) * 100)}` };
-  const day = a.kind === "up_pct" ? Math.max(q.change_pct, 0) : Math.max(-q.change_pct, 0);
-  return { progress: Math.min(day / v, 1), text: `hoy ${pct(q.change_pct)} de ${a.kind === "up_pct" ? "+" : "−"}${abs(v)}` };
-}
 
 export default function Home() {
   const navigate = useNavigate();
@@ -62,10 +35,24 @@ export default function Home() {
   const watch = useWatchlist(uid);
   const trades = useTrades(uid);
   const alerts = useAlerts(uid);
-  const profile = useMyProfile(uid);
-  const graph = useFollowGraph(uid);
-  const feed = useFeed({ uid, mode: "following", following: graph.loaded ? graph.following : null, limit: 30 });
   const [busy, setBusy] = useState("");
+  const [leaving, setLeaving] = useState("");
+  // ficha que está preguntando "¿dejar de seguir?" (la confirmación va en la ficha)
+  const [asking, setAsking] = useState("");
+  // cuántas fichas entran por fila en el tablero de seguidos (para completar
+  // la primera fila con fichas punteadas)
+  const wltRef = useRef(null);
+  const [wltCols, setWltCols] = useState(4);
+  const hasWatch = watch.rows.length > 0;
+  useEffect(() => {
+    const el = wltRef.current;
+    if (!el) return;
+    const measure = () => setWltCols(getComputedStyle(el).gridTemplateColumns.split(" ").length);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [hasWatch]);
   const [trade, setTrade] = useState(false);
   const [cur] = useDisplayCurrency();
   const fx = useMep();
@@ -76,10 +63,8 @@ export default function Home() {
     if (!authLoading && !user) navigate("/login");
   }, [authLoading, user, navigate]);
 
-  const fy = useForYou({ uid, profile: profile.data, watchRows: watch.rows, tradeRows: trades.rows, posts: feed.data, limit: 8 });
   const watchSymbols = useMemo(() => watch.rows.map((w) => w.symbol), [watch.rows]);
   const posSymbols = useMemo(() => [...new Set(trades.rows.map((t) => t.symbol))], [trades.rows]);
-  const posts = useMemo(() => feed.data.filter((p) => p.user_id !== uid).slice(0, 6), [feed.data, uid]);
   const activeAlerts = useMemo(() => alerts.data.filter((a) => a.active), [alerts.data]);
 
   const mkt = useBatch([
@@ -87,13 +72,10 @@ export default function Home() {
     ...watchSymbols,
     ...posSymbols,
     ...activeAlerts.map((a) => a.symbol),
-    ...fy.recs.map((r) => r.symbol),
-    ...posts.map((p) => p.symbol),
   ]);
-  const { quotes, sparks } = mkt;
+  const { quotes } = mkt;
   const ago = useAgo(mkt.updatedAt);
   const { positions, totals } = useMemo(() => computePositions(trades.rows, quotes, cur, fx.mep), [trades.rows, quotes, cur, fx.mep]);
-  const history = useHistory(trades.rows, "1m", cur, fx.mep);
 
   // lo tuyo (seguidos + posiciones) ordenado por cómo le fue hoy
   const movers = useMemo(() => {
@@ -108,9 +90,10 @@ export default function Home() {
 
   if (!user) return null;
 
-  const followed = new Set(watchSymbols);
   const held = Object.fromEntries(positions.map((p) => [p.symbol, p.qty]));
   const follow = async ({ symbol, name }) => {
+    // si la ficha se había ido hace un rato, que no vuelva "yéndose"
+    if (leaving === symbol) setLeaving("");
     setBusy(symbol);
     await attempt(addWatch(uid, symbol, name || lookup(symbol)?.name || null), { ok: `Seguís ${symbol}`, fail: `No se pudo seguir ${symbol}` });
     setBusy("");
@@ -124,15 +107,24 @@ export default function Home() {
     watch.reload();
     if (ok) {
       toast(`Dejaste de seguir ${symbol}`, {
-        action: { label: "Deshacer", run: () => addWatch(uid, symbol, row?.name || null).then(() => watch.reload()) },
+        action: {
+          label: "Deshacer",
+          run: () => {
+            setLeaving("");
+            addWatch(uid, symbol, row?.name || null).then(() => watch.reload());
+          },
+        },
       });
     }
+    return ok;
   };
-  const addInterest = async (k) => {
-    if (!profile.data) return;
-    setBusy(k);
-    await attempt(updateProfile(uid, { interests: [...new Set([...fy.interests, k])] }), { fail: "No se pudo guardar el rubro" });
-    setBusy("");
+  // la ficha se va (animación) y recién después se deja de seguir
+  const dropTile = async (symbol) => {
+    setAsking("");
+    setLeaving(symbol);
+    await new Promise((r) => setTimeout(r, 300));
+    // si salió bien, la ficha ya no vuelve (se va con el reload); si falló, reaparece
+    if (!(await unfollow(symbol))) setLeaving("");
   };
 
   const now = new Date();
@@ -142,17 +134,12 @@ export default function Home() {
   const today = fecha.charAt(0).toUpperCase() + fecha.slice(1);
   const ready = watch.loaded && trades.loaded;
 
-  // resumen escrito del día con lo que haya disponible
+  // lo que más se mueve de lo tuyo, para un lado o para el otro
   const merv = quotes["^MERV"];
-  const top = movers[0];
-  const brief = [];
-  if (positions.length && Number.isFinite(totals.dayPct)) brief.push(<span key="pf">Tu portfolio <Move value={totals.dayPct} /> hoy</span>);
-  if (merv) brief.push(<span key="mv">el Merval <Move value={merv.change_pct} verb={["sube", "cae"]} /></span>);
-  if (fx.mep) brief.push(<span key="mep">el dólar MEP está en <b>{money(fx.mep.rate, 0, "ARS")}</b></span>);
-  const sentence = brief.flatMap((b, i) => (i === 0 ? [b] : [i === brief.length - 1 ? " y " : ", ", b]));
+  const top = movers.reduce((m, x) => (!m || Math.abs(x.q.change_pct) > Math.abs(m.q.change_pct) ? x : m), null);
+  const mepRecent = fx.mep?.recent || [];
+  const mepDay = mepRecent.length > 1 ? (mepRecent.at(-1) / mepRecent.at(-2) - 1) * 100 : null;
 
-  const pts = history.points.map((p) => p.value).filter(Number.isFinite);
-  const monthChange = pts.length > 1 ? (pts.at(-1) / pts[0] - 1) * 100 : null;
 
   return (
     <AppShell>
@@ -169,31 +156,22 @@ export default function Home() {
           <h1>
             {greeting}, <em>{user.username}</em>.
           </h1>
-          {sentence.length > 0 ? (
-            <p className="hh-brief">
-              {sentence}.
-              {top && (
-                <>
-                  {" "}
-                  De lo tuyo, lo que más se mueve es{" "}
-                  <Link to={tickerUrl(top.symbol)}>
-                    <b>{top.symbol}</b>
-                  </Link>{" "}
-                  (<b className={top.q.change_pct >= 0 ? "txt-up" : "txt-down"}>{pct(top.q.change_pct)}</b>).
-                </>
-              )}
-            </p>
-          ) : (
-            <p className="hh-brief muted">Qué se mueve hoy en lo que seguís y en el mercado.</p>
-          )}
         </div>
-        <div className="hh-actions">
-          <button type="button" className="btn btn-pink btn-sm" onClick={() => setTrade(true)}>
-            <i className="bi bi-plus-lg" /> Registrar operación
-          </button>
-          <Link to="/tickersearch" className="btn btn-line btn-sm">
-            <i className="bi bi-graph-up-arrow" /> Ir al mercado
-          </Link>
+
+        <div className="hpills" aria-label="Resumen del día">
+          {positions.length ? (
+            // hasta que llegan los precios no hay variación que mostrar
+            posSymbols.some((sym) => quotes[sym]) && <Pill to="/dashboard" label="Tu portfolio" value={signed(totals.dayChange, undefined, cur)} delta={totals.dayPct} />
+          ) : (
+            ready && (
+              <button type="button" className="hp hp-add" onClick={() => setTrade(true)}>
+                <i className="bi bi-plus-lg" /> Registrá tu primera operación
+              </button>
+            )
+          )}
+          {top && <Pill to={tickerUrl(top.symbol)} label={top.symbol} delta={top.q.change_pct} />}
+          {merv && <Pill to={tickerUrl("^MERV")} label="Merval" delta={merv.change_pct} />}
+          {fx.mep && <Pill label="MEP" value={money(fx.mep.rate, 0, "ARS")} delta={mepDay} />}
         </div>
       </section>
 
@@ -218,95 +196,23 @@ export default function Home() {
           ["movimientos", "Movimientos", "bi-activity"],
           ...(activeAlerts.length ? [["alertas", "Alertas", "bi-bell"]] : []),
           ["seguidos", "Seguidos", "bi-star"],
-          ["para-vos", "Para vos", "bi-stars"],
-          ["comunidad", "Comunidad", "bi-people"],
         ]}
       />
 
       {/* Portfolio */}
       <section id="resumen" className="block">
-        <SectionHead kicker="Hoy" title="Tu portfolio" desc="Cuánto vale, cómo viene el día y cómo te fue en el último mes.">
-          <CurrencyPick />
+        <SectionHead kicker="Hoy" title="Tu portfolio" desc="Cuánto vale y cómo viene el día.">
+          <button type="button" className="btn btn-pink btn-sm" onClick={() => setTrade(true)}>
+            <i className="bi bi-plus-lg" /> Registrar operación
+          </button>
         </SectionHead>
 
-        {positions.length ? (
-          <div className="card pf-card">
-            <div className="pf-main">
-              <span className="lbl">Valor total</span>
-              <Link to="/dashboard" className="pf-val">
-                {money(totals.value, undefined, cur)}
-              </Link>
-              <div className="pf-deltas">
-                <div>
-                  <small>Hoy</small>
-                  <b className={totals.dayChange >= 0 ? "txt-up" : "txt-down"}>
-                    {signed(totals.dayChange, undefined, cur)} ({pct(totals.dayPct)})
-                  </b>
-                </div>
-                <div>
-                  <small>Ganancia total</small>
-                  <b className={totals.pnl >= 0 ? "txt-up" : "txt-down"}>
-                    {signed(totals.pnl, undefined, cur)} ({pct(totals.pnlPct)})
-                  </b>
-                </div>
-                {monthChange != null && (
-                  <div>
-                    <small>Último mes</small>
-                    <b className={monthChange >= 0 ? "txt-up" : "txt-down"}>{pct(monthChange)}</b>
-                  </div>
-                )}
-              </div>
-              <div className="pf-evo">
-                {pts.length > 1 ? (
-                  <Sparkline values={pts} up={monthChange >= 0} width={480} height={84} stretch />
-                ) : (
-                  <span className="gh-ln w90" />
-                )}
-              </div>
-              <Link to="/dashboard" className="btn btn-line btn-sm pf-go">
-                Ver portfolio completo <i className="bi bi-arrow-right" />
-              </Link>
-            </div>
-            <div className="pf-comp">
-              <span className="lbl">Composición</span>
-              <div className="alloc-bar">
-                {positions.map((p, i) => (
-                  <span key={p.symbol} style={{ flex: Math.max(p.weight, 0.5), background: `oklch(0.62 0.16 ${HUES[i % HUES.length]})` }} />
-                ))}
-              </div>
-              <ul className="pf-legend">
-                {positions.slice(0, 6).map((p, i) => (
-                  <li key={p.symbol}>
-                    <i style={{ background: `oklch(0.62 0.16 ${HUES[i % HUES.length]})` }} />
-                    <Logo symbol={p.symbol} size={24} />
-                    <Link to={tickerUrl(p.symbol)}>
-                      <b>{p.symbol}</b>
-                    </Link>
-                    <span className="w">{p.weight.toFixed(1)}%</span>
-                    <span className={"r " + (p.pnlPct >= 0 ? "txt-up" : "txt-down")}>{pct(p.pnlPct)}</span>
-                  </li>
-                ))}
-                {positions.length > 6 && <li className="muted more">y {positions.length - 6} más</li>}
-              </ul>
-            </div>
-          </div>
+        {!ready ? (
+          <SkPortfolio />
+        ) : positions.length ? (
+          <PortfolioSummary positions={positions} totals={totals} cur={cur} />
         ) : (
-          <button type="button" className="card pf-card empty" onClick={() => setTrade(true)}>
-            <div className="pf-main">
-              <span className="lbl">Valor total</span>
-              <span className="gh-ln w40 big" />
-              <span className="pf-cta">
-                <span className="gh-box">+</span> Registrá tu primera operación
-              </span>
-            </div>
-            <div className="pf-comp">
-              <div className="gh-alloc" aria-hidden="true">
-                <span />
-                <span />
-                <span />
-              </div>
-            </div>
-          </button>
+          <PortfolioSummaryEmpty onTrade={() => setTrade(true)} />
         )}
       </section>
 
@@ -314,48 +220,48 @@ export default function Home() {
       <section id="movimientos" className="block">
         <SectionHead kicker="En el día" title="Movimientos" desc="Lo que más subió y lo que más bajó hoy de lo que seguís y tenés." />
         {movers.length ? (
-          <div className="movers">
+          <div className="card mvx">
             {[
-              ["Subieron", "bi-arrow-up-right", "up", ups],
-              ["Bajaron", "bi-arrow-down-right", "down", downs],
-            ].map(([title, icon, kind, list]) => (
-              <div key={kind} className={"card movers-col " + kind}>
-                <div className="mc-head">
-                  <span className="mc-ic">
-                    <i className={"bi " + icon} />
-                  </span>
+              ["Suben", "up", ups, "Nada de lo tuyo sube hoy."],
+              ["Bajan", "down", downs, "Nada de lo tuyo baja hoy."],
+            ].map(([title, kind, list, none]) => (
+              <div key={kind} className={"mvx-col " + kind}>
+                <div className="mvx-head">
+                  <i className={kind === "up" ? "bi bi-caret-up-fill" : "bi bi-caret-down-fill"} />
                   <b>{title}</b>
                   <small>{list.length}</small>
                 </div>
                 {list.length ? (
-                  <ul>
+                  <ul className="pfx-list">
                     {list.map((m) => (
                       <li key={m.symbol}>
-                        <Link to={tickerUrl(m.symbol)} className="mv-row">
-                          <Logo symbol={m.symbol} size={30} />
-                          <div>
-                            <b>{m.name}</b>
-                            <span>
+                        <Link to={tickerUrl(m.symbol)}>
+                          <Logo symbol={m.symbol} size={28} />
+                          <span className="pfx-name">
+                            <b>
                               {m.symbol}
-                              {m.held && <em className="tag soft">en cartera</em>}
-                            </span>
-                          </div>
-                          <span className="mv-px">{priceIn(m.symbol, m.q.price, cur, rate)}</span>
-                          <Delta value={m.q.change_pct} />
+                              {m.held && <i className="bi bi-wallet2 mvx-held" title="En tu cartera" aria-label="En tu cartera" />}
+                            </b>
+                            <small>{m.name}</small>
+                          </span>
+                          <span className="pfx-val">{priceIn(m.symbol, m.q.price, cur, rate)}</span>
+                          <span className={"pfx-chg " + (kind === "up" ? "txt-up" : "txt-down")}>{pct(m.q.change_pct)}</span>
                         </Link>
                       </li>
                     ))}
                   </ul>
                 ) : (
-                  <p className="muted small mc-none">{kind === "up" ? "Nada de lo tuyo sube hoy." : "Nada de lo tuyo baja hoy."}</p>
+                  <p className="mvx-none">{none}</p>
                 )}
               </div>
             ))}
           </div>
+        ) : !ready || (mkt.loading && (watchSymbols.length || posSymbols.length)) ? (
+          <SkList n={4} />
         ) : (
-          <div className="movers ghosted" aria-hidden="true">
+          <div className="card mvx ghosted" aria-hidden="true">
             {[0, 1].map((i) => (
-              <div key={i} className="card movers-col gh-col">
+              <div key={i} className="mvx-col">
                 {[0, 1, 2].map((j) => (
                   <div key={j} className="gh-row">
                     <span className="gh-box">+</span>
@@ -376,30 +282,7 @@ export default function Home() {
               Administrar
             </Link>
           </SectionHead>
-          <div className="near-grid">
-            {activeAlerts.slice(0, 6).map((a) => {
-              const q = quotes[a.symbol];
-              const gap = alertGap(a, q);
-              return (
-                <Link key={a.id} to={tickerUrl(a.symbol)} className="card near">
-                  <div className="near-top">
-                    <Logo symbol={a.symbol} size={30} />
-                    <div>
-                      <b>{a.symbol}</b>
-                      <span>{alertText(a)}</span>
-                    </div>
-                  </div>
-                  <div className="near-bar">
-                    <span style={{ width: `${(gap?.progress ?? 0) * 100}%` }} />
-                  </div>
-                  <div className="near-foot">
-                    <span>{q ? fmtPrice(a.symbol, q.price) : "—"}</span>
-                    <small>{gap?.text || "sin datos"}</small>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+          <AlertRows alerts={activeAlerts.slice(0, 6)} quotes={quotes} existing={alerts.data} />
         </section>
       )}
 
@@ -415,22 +298,49 @@ export default function Home() {
           </Link>
         </SectionHead>
         {!watch.loaded ? (
-          <div className="card asset-list loading-box home-loading" />
+          <SkTiles n={5} />
         ) : watch.rows.length ? (
-          <div className="card asset-list">
-            {watch.rows.map((w) => (
-              <AssetRow
-                key={w.symbol}
-                symbol={w.symbol}
-                name={w.name || lookup(w.symbol)?.name}
-                tag={SECTOR[lookup(w.symbol)?.tags[0]]?.label}
-                quote={quotes[w.symbol]}
-                closes={sparks[w.symbol]}
-                cur={cur}
-                rate={rate}
-                busy={busy === w.symbol}
-                onRemove={() => unfollow(w.symbol)}
-              />
+          <div ref={wltRef} className="wlt">
+            {watch.rows.map((w) => {
+              const q = quotes[w.symbol];
+              const up = q ? q.change_pct >= 0 : null;
+              return (
+                <div key={w.symbol} className={"card wlt-tile" + (up === null ? "" : up ? " up" : " down") + (leaving === w.symbol ? " out" : "")}>
+                  <Link to={tickerUrl(w.symbol)} className="wlt-in">
+                    <span className="wlt-id">
+                      <Logo symbol={w.symbol} size={24} />
+                      <b>{w.symbol}</b>
+                    </span>
+                    <span className="wlt-px">{q ? priceIn(w.symbol, q.price, cur, rate) : "—"}</span>
+                    <span className="wlt-chg">
+                      {q && <i className={up ? "bi bi-caret-up-fill" : "bi bi-caret-down-fill"} />}
+                      {q ? pct(q.change_pct) : "sin datos"}
+                    </span>
+                  </Link>
+                  <button type="button" className="wlt-x" disabled={busy === w.symbol} onClick={() => setAsking(w.symbol)} aria-label={`Dejar de seguir ${w.symbol}`} title="Dejar de seguir">
+                    <i className="bi bi-x" />
+                  </button>
+                  {asking === w.symbol && (
+                    <div className="wlt-ask" role="group" aria-label={`¿Dejar de seguir ${w.symbol}?`} onKeyDown={(e) => e.key === "Escape" && setAsking("")}>
+                      <b>¿Dejar de seguir {w.symbol}?</b>
+                      <div>
+                        <button type="button" className="btn btn-line btn-sm" autoFocus onClick={() => setAsking("")}>
+                          No
+                        </button>
+                        <button type="button" className="btn btn-danger btn-sm" onClick={() => dropTile(w.symbol)}>
+                          Sí
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {/* hasta llenar la primera fila, fichas punteadas para sumar más */}
+            {Array.from({ length: Math.max(0, wltCols - watch.rows.length) }, (_, i) => (
+              <Link key={`gh${i}`} to="/tickersearch#explorar" className="wlt-ghost" aria-label="Seguir otro activo">
+                <span className="gh-box">+</span>
+              </Link>
             ))}
           </div>
         ) : (
@@ -443,59 +353,6 @@ export default function Home() {
                 </button>
               ))}
             </div>
-          </div>
-        )}
-      </section>
-
-      {/* Para vos */}
-      <section id="para-vos" className="block">
-        <SectionHead kicker="Ideas" title="Para vos" desc="Según tus rubros, lo que seguís y lo que recomienda tu comunidad.">
-          <Link to="/tickersearch#para-vos" className="btn btn-line btn-sm">
-            Ver más ideas
-          </Link>
-        </SectionHead>
-        {fy.recs.length ? (
-          <ForYouCards
-            recs={fy.recs}
-            quotes={quotes}
-            sparks={sparks}
-            cur={cur}
-            rate={rate}
-            followed={followed}
-            busy={busy}
-            onStar={(r) => (followed.has(r.symbol) ? unfollow(r.symbol) : follow(r))}
-            onHide={fy.hide}
-          />
-        ) : (
-          <ForYouStart sectors={SECTORS} busy={busy} disabled={!profile.data} onPick={addInterest} wide />
-        )}
-      </section>
-
-      {/* Comunidad */}
-      <section id="comunidad" className="block">
-        <SectionHead kicker="Comunidad" title="Lo que recomiendan" desc="Lo último de las personas que seguís.">
-          <Link to="/comunidad" className="btn btn-line btn-sm">
-            <i className="bi bi-people" /> Ir a la comunidad
-          </Link>
-        </SectionHead>
-        {posts.length ? (
-          <div className="post-grid">
-            {posts.map((p) => (
-              <PostTile key={p.id} post={p} quote={quotes[p.symbol]} />
-            ))}
-          </div>
-        ) : (
-          <div className="post-grid ghosted" aria-hidden="true">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="card post-tile gh-tile">
-                <div className="pt-head">
-                  <span className="gh-av" />
-                  <span className="gh-ln w40" />
-                </div>
-                <span className="gh-ln w60" />
-                <span className="gh-ln w90" />
-              </div>
-            ))}
           </div>
         )}
       </section>

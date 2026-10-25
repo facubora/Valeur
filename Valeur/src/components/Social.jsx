@@ -4,7 +4,7 @@ import Logo from "./Logo";
 import { initials } from "../lib/session";
 import { lookup } from "../lib/catalog";
 import { STANCE, follow, unfollow, setLike, deletePost, changed, timeAgo } from "../lib/social";
-import { confirmDialog, attempt } from "../lib/feedback";
+import { attempt } from "../lib/feedback";
 
 /* Piezas chicas de la comunidad: avatar, verificado, persona, seguir y post */
 
@@ -51,22 +51,16 @@ export function Person({ p, size = 36, sub = null }) {
 /* Seguir / Siguiendo / Amigos. `graph` viene de useFollowGraph */
 export function FollowButton({ uid, target, graph, size = "sm", name = null }) {
   const [busy, setBusy] = useState(false);
+  const [asking, setAsking] = useState(false);
   if (!uid || uid === target) return null;
   const following = graph.following.has(target);
   const followsMe = graph.followers.has(target);
   const label = following ? (followsMe ? "Amigos" : "Siguiendo") : followsMe ? "Seguir también" : "Seguir";
   const who = name ? `@${name}` : "esta persona";
   const toggle = async () => {
-    // dejar de seguir a un amigo corta la amistad: se confirma
-    if (following && followsMe) {
-      const ok = await confirmDialog({
-        title: `¿Dejar de seguir a ${who}?`,
-        body: "Dejan de ser amigos: no vas a ver su portfolio si lo comparte solo con amigos, ni sus recomendaciones privadas.",
-        confirmText: "Dejar de seguir",
-        danger: true,
-      });
-      if (!ok) return;
-    }
+    // dejar de seguir a un amigo corta la amistad: se confirma en el mismo botón
+    if (following && followsMe && !asking) return setAsking(true);
+    setAsking(false);
     setBusy(true);
     await attempt(following ? unfollow(uid, target) : follow(uid, target), {
       ok: following ? `Dejaste de seguir a ${who}` : `Ahora seguís a ${who}`,
@@ -77,13 +71,15 @@ export function FollowButton({ uid, target, graph, size = "sm", name = null }) {
   return (
     <button
       type="button"
-      className={"btn btn-" + size + (following ? " btn-line on" : " btn-pink") + " follow-btn"}
+      className={"btn" + (size ? " btn-" + size : "") + (following ? " btn-line on" : " btn-pink") + " follow-btn" + (asking ? " sure" : "")}
       onClick={toggle}
+      onBlur={() => setAsking(false)}
+      onKeyDown={(e) => e.key === "Escape" && setAsking(false)}
       disabled={busy || !graph.loaded}
-      title={following ? "Dejar de seguir" : undefined}
+      title={asking ? "Dejan de ser amigos: no vas a ver lo que comparte solo con amigos" : following ? "Dejar de seguir" : undefined}
     >
-      <i className={following ? (followsMe ? "bi bi-people-fill" : "bi bi-check2") : "bi bi-person-plus"} />
-      <span>{label}</span>
+      <i className={asking ? "bi bi-person-dash" : following ? (followsMe ? "bi bi-people-fill" : "bi bi-check2") : "bi bi-person-plus"} />
+      <span>{asking ? "¿Dejar de ser amigos? Sí" : label}</span>
     </button>
   );
 }
@@ -131,15 +127,20 @@ export function StanceTag({ stance }) {
 
 const tickerUrl = (s) => `/tickersearch?symbol=${encodeURIComponent(s)}`;
 
-/* Recomendación: autor, postura, activo con cómo le fue desde que se publicó */
+/* Recomendación como "jugada": arriba una franja del color de la postura con
+   el activo; en el medio el porqué, como una cita; abajo quién lo dijo y cómo
+   le fue desde entonces. Borrar la propia se confirma en la misma tarjeta. */
 export function PostCard({ post, uid, quote, onChange, highlight = false }) {
   const [busy, setBusy] = useState(false);
+  const [asking, setAsking] = useState(false);
   const likes = post.post_likes?.length || 0;
   const liked = post.post_likes?.some((l) => l.user_id === uid);
   const meta = lookup(post.symbol);
+  const st = STANCE[post.stance] || STANCE.hold;
   const since = quote && post.price_at ? (quote.price / Number(post.price_at) - 1) * 100 : null;
   // ¿va en la dirección que dijo? (comprar → sube, vender → baja)
   const right = since == null || post.stance === "hold" ? null : post.stance === "buy" ? since >= 0 : since <= 0;
+  const a = post.author;
 
   const like = async () => {
     setBusy(true);
@@ -149,59 +150,82 @@ export function PostCard({ post, uid, quote, onChange, highlight = false }) {
     onChange?.();
   };
   const remove = async () => {
-    const ok = await confirmDialog({
-      title: "¿Borrar esta recomendación?",
-      body: `Tu recomendación de ${post.symbol} y sus "me sirve" desaparecen para todos. No se puede deshacer.`,
-      confirmText: "Borrar",
-      danger: true,
-    });
-    if (!ok) return;
-    if (await attempt(deletePost(post.id), { ok: "Recomendación borrada", fail: "No se pudo borrar la recomendación" })) onChange?.();
+    setAsking(false);
+    setBusy(true);
+    const ok = await attempt(deletePost(post.id), { ok: "Recomendación borrada", fail: "No se pudo borrar la recomendación" });
+    setBusy(false);
+    if (ok) onChange?.();
   };
 
   return (
-    <article className={"card post" + (highlight ? " hl" : "")}>
-      <header className="post-head">
-        <Person p={post.author} sub={`@${post.author?.username} · ${timeAgo(post.created_at)}`} />
-        {post.audience === "friends" && (
-          <span className="aud" title="Solo para amigos">
-            <i className="bi bi-people" />
-          </span>
-        )}
-        <StanceTag stance={post.stance} />
-      </header>
-
-      <Link to={tickerUrl(post.symbol)} className="post-asset">
-        <Logo symbol={post.symbol} size={30} />
-        <div>
+    <article className={"card post jug " + post.stance + (highlight ? " hl" : "")}>
+      <Link to={tickerUrl(post.symbol)} className="jug-band">
+        <Logo symbol={post.symbol} size={38} />
+        <span className="jug-asset">
           <b>{post.symbol}</b>
-          <span>{meta?.name || " "}</span>
-        </div>
-        {since != null && (
-          <div className="post-since">
-            <small>Desde que lo dijo</small>
-            <span className={since >= 0 ? "txt-up" : "txt-down"}>
-              {since >= 0 ? "+" : ""}
-              {since.toFixed(2)}%
-              {right != null && <i className={right ? "bi bi-check2-circle" : "bi bi-x-circle"} />}
-            </span>
-          </div>
-        )}
+          <small>{meta?.name || " "}</small>
+        </span>
+        <span className="jug-call">
+          <i className={"bi " + st.icon} /> {st.label}
+        </span>
       </Link>
 
-      <p className="post-body">{post.body}</p>
+      <blockquote className="jug-body">{post.body}</blockquote>
 
-      <footer className="post-foot">
-        <button type="button" className={"react" + (liked ? " on" : "")} onClick={like} disabled={busy || !uid}>
-          <i className={liked ? "bi bi-hand-thumbs-up-fill" : "bi bi-hand-thumbs-up"} />
-          Me sirve{likes > 0 && <b>{likes}</b>}
-        </button>
-        {post.user_id === uid && (
-          <button type="button" className="react quiet" onClick={remove}>
-            <i className="bi bi-trash3" /> Borrar
-          </button>
+      <footer className="jug-foot">
+        <div className="jug-who">
+          {a && (
+            <Link to={`/u/${a.username}`} aria-label={`Perfil de @${a.username}`}>
+              <Avatar name={a.username} size={28} />
+            </Link>
+          )}
+          <div>
+            {a && (
+              <Link to={`/u/${a.username}`} className="jug-name">
+                {a.display_name || a.username}
+                {a.verified && <Verified label={a.verified_label} />}
+              </Link>
+            )}
+            <span className="jug-meta">
+              {timeAgo(post.created_at)}
+              {post.audience === "friends" && " · solo amigos"}
+              <button type="button" className={"jug-like" + (liked ? " on" : "")} onClick={like} disabled={busy || !uid} aria-pressed={liked} title="Me sirve">
+                <i className={liked ? "bi bi-hand-thumbs-up-fill" : "bi bi-hand-thumbs-up"} />
+                {likes > 0 ? likes : "Me sirve"}
+              </button>
+              {post.user_id === uid && (
+                <button type="button" className="jug-del" onClick={() => setAsking(true)} disabled={busy} title="Borrar" aria-label="Borrar recomendación">
+                  <i className="bi bi-trash3" />
+                </button>
+              )}
+            </span>
+          </div>
+        </div>
+        {since != null && (
+          <div className="jug-perf">
+            <b className={since >= 0 ? "txt-up" : "txt-down"}>
+              {since >= 0 ? "+" : "−"}
+              {Math.abs(since).toFixed(1).replace(".", ",")}%
+            </b>
+            <small>{right == null ? "desde que lo dijo" : right ? "va bien" : "va en contra"}</small>
+          </div>
         )}
       </footer>
+
+      {asking && (
+        <div className="jug-ask" onKeyDown={(e) => e.key === "Escape" && setAsking(false)}>
+          <b>¿Borrar esta recomendación?</b>
+          <span>Tu recomendación de {post.symbol} y sus "me sirve" desaparecen para todos.</span>
+          <div>
+            <button type="button" className="btn btn-line btn-sm" autoFocus onClick={() => setAsking(false)}>
+              Cancelar
+            </button>
+            <button type="button" className="btn btn-danger btn-sm" onClick={remove}>
+              <i className="bi bi-trash3" /> Borrar
+            </button>
+          </div>
+        </div>
+      )}
     </article>
   );
 }
@@ -209,20 +233,22 @@ export function PostCard({ post, uid, quote, onChange, highlight = false }) {
 /* Feed vacío "fantasma": la forma de los posts que van a aparecer */
 export function GhostPosts({ n = 2 }) {
   return (
-    <div className="ghost-posts" aria-hidden="true">
+    <div className="ghost-posts feed-grid" aria-hidden="true">
       {Array.from({ length: n }, (_, i) => (
-        <div key={i} className="card post gh-post">
-          <div className="post-head">
-            <span className="gh-av" />
+        <div key={i} className="card post gh-post gh-jug">
+          <div className="jug-band">
+            <span className="gh-av sq" />
             <span className="gh-ln w40" />
             <span className="gh-pill" />
           </div>
-          <div className="gh-asset">
-            <span className="gh-box">+</span>
+          <div className="gh-jug-body">
+            <span className="gh-ln w90" />
+            <span className="gh-ln w60" />
+          </div>
+          <div className="jug-foot">
+            <span className="gh-av" />
             <span className="gh-ln w25" />
           </div>
-          <span className="gh-ln w90" />
-          <span className="gh-ln w60" />
         </div>
       ))}
     </div>
@@ -231,15 +257,26 @@ export function GhostPosts({ n = 2 }) {
 
 /* Aviso para el desarrollador si falta correr la migración de comunidad */
 export function SetupNotice({ error }) {
-  if (!/column|relation|does not exist|schema cache/i.test(error || "")) return null;
+  if (!error) return null;
+  // falta correr la migración: se explica cómo; cualquier otra falla, se muestra
+  const setup = /column|relation|does not exist|schema cache/i.test(error) && !/more than one relationship/i.test(error);
   return (
     <div className="net-notice" role="alert">
       <i className="bi bi-database-exclamation" />
       <div>
-        <b>Falta preparar la base para la comunidad.</b>
-        <span>
-          Corré <code>supabase/migrations/0003_community.sql</code> en Supabase → SQL Editor y recargá.
-        </span>
+        {setup ? (
+          <>
+            <b>Falta preparar la base para la comunidad.</b>
+            <span>
+              Corré <code>supabase/migrations/0003_community.sql</code> en Supabase → SQL Editor y recargá.
+            </span>
+          </>
+        ) : (
+          <>
+            <b>No pudimos traer las recomendaciones.</b>
+            <span>{/failed to fetch|network/i.test(error) ? "Sin conexión con el servidor. Probá de nuevo." : error}</span>
+          </>
+        )}
       </div>
     </div>
   );

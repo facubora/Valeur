@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AppShell from "../components/AppShell";
-import PostComposer from "../components/PostComposer";
+import { SkPosts, SkPeople } from "../components/Skeleton";
+import Pill from "../components/Pill";
+import RecommendModal from "../components/PostComposer";
 import ProfileModal from "../components/ProfileModal";
 import { Avatar, Verified, Person, PersonCard, FollowButton, PostCard, GhostPosts, SetupNotice } from "../components/Social";
 import { SectionNav, SectionHead } from "../components/Sections";
@@ -20,7 +22,15 @@ import {
   usePeople,
   usePeopleSearch,
   useSuggestedPeople,
+  unfollow,
 } from "../lib/social";
+
+/* Qué ve el resto con cada opción de privacidad */
+const VIS_HINT = {
+  private: "Solo vos. Tus recomendaciones siguen siendo públicas.",
+  friends: "Los que seguís y te siguen ven % y rendimiento.",
+  public: "Cualquiera ve % y rendimiento. Nunca los montos.",
+};
 
 const FEED_TABS = [
   ["following", "Siguiendo"],
@@ -30,7 +40,13 @@ const FEED_TABS = [
 
 function VisibilitySeg({ value, onChange, disabled }) {
   return (
-    <div className="seg full vis-seg" role="radiogroup" aria-label="Quién ve tu portfolio">
+    <div
+      className="vx-tabs sm vis-tabs"
+      role="radiogroup"
+      aria-label="Quién ve tu portfolio"
+      style={{ "--n": VISIBILITY.length, "--i": Math.max(0, VISIBILITY.findIndex(([k]) => k === value)) }}
+    >
+      <span className="vx-tabs-thumb" aria-hidden="true" />
       {VISIBILITY.map(([k, label, icon]) => (
         <button
           key={k}
@@ -48,6 +64,90 @@ function VisibilitySeg({ value, onChange, disabled }) {
   );
 }
 
+/* Pestañas chicas con ficha deslizante: [[clave, texto, clase?]] */
+function Tabs({ items, value, onChange, label, className = "" }) {
+  return (
+    <div
+      className={"vx-tabs sm " + className}
+      role="tablist"
+      aria-label={label}
+      style={{ "--n": items.length, "--i": Math.max(0, items.findIndex(([k]) => k === value)) }}
+    >
+      <span className="vx-tabs-thumb" aria-hidden="true" />
+      {items.map(([k, text, cls = ""]) => (
+        <button key={k} type="button" role="tab" aria-selected={value === k} className={(value === k ? "on " : "") + cls} onClick={() => onChange(k)}>
+          {text}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* Alguien que seguís, en una fila. Dejar de seguir a un amigo corta la
+   amistad: se confirma ahí mismo, en la fila */
+function PersonRow({ p, uid, graph }) {
+  const [asking, setAsking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const friend = graph.followers.has(p.id);
+  const stop = async () => {
+    setAsking(false);
+    setBusy(true);
+    await attempt(unfollow(uid, p.id), {
+      ok: `Dejaste de seguir a @${p.username}`,
+      fail: "No se pudo dejar de seguir",
+    });
+    setBusy(false);
+  };
+
+  if (asking) {
+    return (
+      <li className="pr-ask" onKeyDown={(e) => e.key === "Escape" && setAsking(false)}>
+        <Avatar name={p.username} size={36} />
+        <span className="pr-ask-txt">
+          <b>¿Dejar de seguir a @{p.username}?</b>
+          <small>Dejan de ser amigos: no vas a ver su portfolio si es solo para amigos.</small>
+        </span>
+        <div>
+          <button type="button" className="btn btn-line btn-sm" autoFocus onClick={() => setAsking(false)}>
+            Cancelar
+          </button>
+          <button type="button" className="btn btn-danger btn-sm" onClick={stop}>
+            Dejar de seguir
+          </button>
+        </div>
+      </li>
+    );
+  }
+  return (
+    <li className="pr-row">
+      <Link to={`/u/${p.username}`} className="pr-id">
+        <Avatar name={p.username} size={36} />
+        <span>
+          <b>
+            {p.display_name || p.username}
+            {p.verified && <Verified label={p.verified_label} />}
+          </b>
+          <small>
+            @{p.username}
+            {p.bio ? ` · ${p.bio}` : ""}
+          </small>
+        </span>
+      </Link>
+      <button
+        type="button"
+        className={"pr-state" + (friend ? " friend" : "")}
+        onClick={() => (friend ? setAsking(true) : stop())}
+        disabled={busy}
+        title="Dejar de seguir"
+      >
+        <i className={friend ? "bi bi-people-fill" : "bi bi-check2"} />
+        <span className="pr-now">{friend ? "Amigos" : "Siguiendo"}</span>
+        <span className="pr-off">Dejar de seguir</span>
+      </button>
+    </li>
+  );
+}
+
 function PeopleSearch({ uid, graph }) {
   const [q, setQ] = useState("");
   const [focus, setFocus] = useState(false);
@@ -55,7 +155,7 @@ function PeopleSearch({ uid, graph }) {
   const open = focus && q.trim().length >= 2;
   return (
     <div className="people-search" onFocus={() => setFocus(true)} onBlur={(e) => !e.currentTarget.contains(e.relatedTarget) && setFocus(false)}>
-      <div className="search-form compact">
+      <div className="search-form filter-in">
         <i className="bi bi-search ico" aria-hidden="true" />
         <input
           value={q}
@@ -95,8 +195,10 @@ export default function Community() {
   const [stanceFilter, setStanceFilter] = useState("all");
   const [symFilter, setSymFilter] = useState("");
   const [edit, setEdit] = useState(null); // null | "privacy" | "interests" | "verify" | "all"
-  const [composerKey, setComposerKey] = useState(0);
+  // escribir una recomendación (también se abre con ?publicar=1)
+  const [writing, setWriting] = useState(() => params.has("publicar"));
   const [savingVis, setSavingVis] = useState(false);
+  const [pendingVis, setPendingVis] = useState(null);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -104,6 +206,8 @@ export default function Community() {
 
   const profile = useMyProfile(uid);
   const me = profile.data;
+  const fecha = new Date().toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
+  const today = fecha.charAt(0).toUpperCase() + fecha.slice(1);
   const graph = useFollowGraph(uid);
   const counts = useFollowCounts(uid);
   const feed = useFeed({ uid, mode: tab, following: graph.loaded ? graph.following : null });
@@ -128,13 +232,19 @@ export default function Community() {
 
   if (!user) return null;
 
-  const setVisibility = async (v) => {
-    if (!(await confirmVisibility(v, me?.visibility))) return;
+  const applyVisibility = async (v) => {
+    setPendingVis(null);
     setSavingVis(true);
     const label = VISIBILITY.find(([k]) => k === v)?.[1].toLowerCase();
     await attempt(updateProfile(uid, { visibility: v }), { ok: `Tu portfolio ahora es ${label === "amigos" ? "solo para amigos" : label}`, fail: "No se pudo cambiar la privacidad" });
     setSavingVis(false);
   };
+  // desde el paso de "Para arrancar" se confirma con el diálogo de siempre
+  const setVisibility = async (v) => {
+    if (await confirmVisibility(v, me?.visibility)) applyVisibility(v);
+  };
+  // en el carnet: abrir el portfolio se confirma ahí mismo, debajo de las opciones
+  const pickVisibility = (v) => (v === "private" ? applyVisibility(v) : setPendingVis(v));
 
   const steps = [
     {
@@ -155,7 +265,7 @@ export default function Community() {
       title: "Recomendá un activo",
       desc: "Comprar, mantener o vender, y por qué.",
       act: (
-        <button type="button" className="btn btn-line btn-sm" onClick={() => setComposerKey((k) => k + 1)}>
+        <button type="button" className="btn btn-line btn-sm" onClick={() => setWriting(true)}>
           <i className="bi bi-pencil-square" /> Escribir
         </button>
       ),
@@ -172,10 +282,20 @@ export default function Community() {
     <AppShell>
       <section className="page-head">
         <div>
+          <span className="kicker">{today}</span>
           <h1>
             La <em>comunidad</em>.
           </h1>
-          <p>Lo que recomiendan y tienen las personas que seguís.</p>
+          {graph.loaded && (
+            <div className="hpills" aria-label="Tu comunidad en cifras">
+              <Pill to="#personas" label="Seguís" value={graph.following.size} />
+              <Pill to="#perfil" label="Te siguen" value={counts.followers ?? graph.followers.size} />
+              <Pill to="#perfil" label={graph.friends.size === 1 ? "Amigo" : "Amigos"} value={graph.friends.size} />
+              {me && (
+                <Pill to="#perfil" icon={VISIBILITY.find(([k]) => k === me.visibility)?.[2]} label="Portfolio" value={VISIBILITY.find(([k]) => k === me.visibility)?.[1]} />
+              )}
+            </div>
+          )}
         </div>
         <PeopleSearch uid={uid} graph={graph} />
       </section>
@@ -218,16 +338,14 @@ export default function Community() {
 
       <section id="recomendaciones" className="block">
         <SectionHead kicker="Feed" title="Recomendaciones" desc="Qué recomiendan comprar, mantener o vender, y cómo les fue desde que lo dijeron.">
-          <div className="seg" role="tablist" aria-label="Qué mostrar">
-            {FEED_TABS.map(([k, label]) => (
-              <button key={k} type="button" role="tab" aria-selected={tab === k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>
-                {label}
-              </button>
-            ))}
-          </div>
+          <Tabs items={FEED_TABS} value={tab} onChange={setTab} label="Qué mostrar" />
         </SectionHead>
 
-        <PostComposer key={composerKey} uid={uid} username={user.username} autoOpen={composerKey > 0} onDone={() => setTab("following")} />
+        <button type="button" className="rc-open" onClick={() => setWriting(true)}>
+          <i className="bi bi-pencil" />
+          <span>¿Qué activo recomendás hoy?</span>
+          <b>Recomendar</b>
+        </button>
 
         {highlighted && (
           <div className="post-hl">
@@ -240,13 +358,13 @@ export default function Community() {
 
         {posts.length > 0 && (
           <div className="list-filters">
-            <div className="seg" role="radiogroup" aria-label="Filtrar por postura">
-              {[["all", "Todas"], ...STANCES.map(([k, label]) => [k, label])].map(([k, label]) => (
-                <button key={k} type="button" role="radio" aria-checked={stanceFilter === k} className={stanceFilter === k ? "on" : ""} onClick={() => setStanceFilter(k)}>
-                  {label}
-                </button>
-              ))}
-            </div>
+            <Tabs
+              items={[["all", "Todas"], ...STANCES.map(([k, label]) => [k, label, k])]}
+              value={stanceFilter}
+              onChange={setStanceFilter}
+              label="Filtrar por postura"
+              className="stance-tabs"
+            />
             <div className="search-form compact filter-in">
               <i className="bi bi-funnel ico" aria-hidden="true" />
               <input value={symFilter} onChange={(e) => setSymFilter(e.target.value)} placeholder="Filtrar por activo o persona" aria-label="Filtrar recomendaciones" />
@@ -265,7 +383,7 @@ export default function Community() {
         )}
 
         {!feed.loaded ? (
-          <GhostPosts n={2} />
+          <SkPosts n={2} />
         ) : shown.length ? (
           <div className="feed-grid">
             {shown.map((p) => (
@@ -299,82 +417,152 @@ export default function Community() {
       </section>
 
       <section id="personas" className="block">
-        <SectionHead kicker="Personas" title="A quién seguir" desc="Verificados y perfiles públicos. Si se siguen mutuamente, son amigos y ven su portfolio." />
-        {suggested.rows.length ? (
+        <SectionHead
+          kicker="Personas"
+          title="A quién seguir"
+          desc={
+            suggested.loaded && !suggested.rows.length
+              ? "Ya seguís a todos los perfiles públicos. Buscá a alguien por su usuario arriba."
+              : "Verificados y perfiles públicos. Si se siguen mutuamente, son amigos y ven su portfolio."
+          }
+        />
+        {!suggested.loaded ? (
+          <SkPeople n={3} />
+        ) : suggested.rows.length ? (
           <div className="people-grid">
             {suggested.rows.map((p) => (
               <PersonCard key={p.id} p={p} uid={uid} graph={graph} />
             ))}
           </div>
         ) : (
-          <div className="side-empty wide">
-            <p>{suggested.loaded ? "Ya seguís a todos los perfiles públicos. Buscá a alguien por su usuario." : "Cargando…"}</p>
+          <div className="people-grid" aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="card person-card gh-person">
+                <div className="pc-id">
+                  <span className="gh-av" />
+                  <span className="gh-ln w60" />
+                </div>
+                <span className="gh-ln w90" />
+                <span className="gh-ln w40" />
+              </div>
+            ))}
           </div>
         )}
 
         {following.data.length > 0 && (
-          <>
+          <div className="pr-block">
             <h3 className="sub-title">
               Seguís a {following.data.length} {following.data.length === 1 ? "persona" : "personas"}
               {graph.friends.size > 0 && <span> · {graph.friends.size === 1 ? "1 amigo" : `${graph.friends.size} amigos`}</span>}
             </h3>
-            <div className="people-grid compact">
+            <ul className="card pr-list">
               {following.data.map((p) => (
-                <PersonCard key={p.id} p={p} uid={uid} graph={graph} compact />
+                <PersonRow key={p.id} p={p} uid={uid} graph={graph} />
               ))}
-            </div>
-          </>
+            </ul>
+          </div>
         )}
       </section>
 
       <section id="perfil" className="block">
-        <SectionHead kicker="Vos" title="Tu perfil" desc="Cómo te ven los demás y quién puede ver tu portfolio.">
-          <Link to={`/u/${user.username}`} className="btn btn-line btn-sm">
-            Ver mi perfil público
-          </Link>
-          <button type="button" className="btn btn-line btn-sm" onClick={() => setEdit("all")} disabled={!me}>
-            <i className="bi bi-pencil" /> Editar
-          </button>
-        </SectionHead>
-        <div className="card me-strip">
-          <div className="me-top">
-            <Avatar name={user.username} size={56} />
-            <div>
-              <b>
-                {me?.display_name || user.username}
-                {me?.verified && <Verified label={me.verified_label} />}
-              </b>
-              <span>@{user.username}</span>
-              {me?.bio && <p className="me-bio">{me.bio}</p>}
+        <SectionHead kicker="Vos" title="Tu perfil" desc="Cómo te ven los demás y quién puede ver tu portfolio." />
+        <div className="card carnet">
+          <div className="cn-id">
+            <div className="cn-who">
+              <Avatar name={user.username} size={58} />
+              <div>
+                <b>
+                  {me?.display_name || user.username}
+                  {me?.verified && <Verified label={me.verified_label} />}
+                </b>
+                <span>@{user.username}</span>
+              </div>
+            </div>
+            {me?.bio ? <p className="cn-bio">{me.bio}</p> : <p className="cn-bio muted">Todavía no escribiste una bio.</p>}
+            <dl className="cn-stats">
+              {[
+                [counts.followers, counts.followers === 1 ? "seguidor" : "seguidores"],
+                [counts.following, "siguiendo"],
+                [graph.loaded ? graph.friends.size : null, graph.friends.size === 1 ? "amigo" : "amigos"],
+              ].map(([n, label]) => (
+                <div key={label}>
+                  <dd>{n ?? "—"}</dd>
+                  <dt>{label}</dt>
+                </div>
+              ))}
+            </dl>
+            <div className="cn-btns">
+              <button type="button" className="btn btn-line btn-sm" onClick={() => setEdit("all")} disabled={!me}>
+                <i className="bi bi-pencil" /> Editar
+              </button>
+              <Link to={`/u/${user.username}`} className="btn btn-line btn-sm">
+                Ver perfil público
+              </Link>
             </div>
           </div>
-          <div className="me-counts">
-            <div>
-              <b>{counts.followers ?? "—"}</b>
-              <span>{counts.followers === 1 ? "seguidor" : "seguidores"}</span>
-            </div>
-            <div>
-              <b>{counts.following ?? "—"}</b>
-              <span>siguiendo</span>
-            </div>
-            <div>
-              <b>{graph.loaded ? graph.friends.size : "—"}</b>
-              <span>{graph.friends.size === 1 ? "amigo" : "amigos"}</span>
-            </div>
-          </div>
-          {me && (
-            <div className="me-vis">
-              <small>Tu portfolio lo ve</small>
-              <VisibilitySeg value={me.visibility} onChange={setVisibility} disabled={savingVis} />
-              {!me.verified && (
-                <button type="button" className="lnk-btn verify-cta" onClick={() => setEdit("verify")}>
-                  <i className="bi bi-patch-check" /> ¿Sos analista o creador? Pedí el verificado
+
+          <div className="cn-side">
+            <span className="cn-lbl">¿Quién ve tu portfolio?</span>
+            <div className="cn-vis" role="radiogroup" aria-label="Quién ve tu portfolio">
+              {VISIBILITY.map(([k, label, icon]) => (
+                <button
+                  key={k}
+                  type="button"
+                  role="radio"
+                  aria-checked={me?.visibility === k}
+                  className={(me?.visibility === k ? "on" : "") + (pendingVis === k ? " pending" : "")}
+                  disabled={!me || savingVis}
+                  onClick={() => (me?.visibility === k ? setPendingVis(null) : pickVisibility(k))}
+                >
+                  <i className={"bi " + icon} />
+                  <b>{label}</b>
+                  <small>{VIS_HINT[k]}</small>
                 </button>
-              )}
+              ))}
             </div>
-          )}
+            {pendingVis && (
+              <div className="cn-confirm" onKeyDown={(e) => e.key === "Escape" && setPendingVis(null)}>
+                <span>
+                  <b>{pendingVis === "public" ? "¿Hacer público tu portfolio?" : "¿Compartirlo con tus amigos?"}</b>
+                  {pendingVis === "public"
+                    ? " Cualquiera en Valeur va a ver qué tenés y cómo te va, en %. Nunca los montos."
+                    : " Los que se siguen con vos van a ver qué tenés y cómo te va, en %. Nunca los montos."}
+                </span>
+                <div>
+                  <button type="button" className="btn btn-line btn-sm" autoFocus onClick={() => setPendingVis(null)}>
+                    Cancelar
+                  </button>
+                  <button type="button" className="btn btn-pink btn-sm" onClick={() => applyVisibility(pendingVis)}>
+                    {pendingVis === "public" ? "Hacerlo público" : "Compartir"}
+                  </button>
+                </div>
+              </div>
+            )}
+            {me && !me.verified && (
+              <div className="cn-verify">
+                <i className="bi bi-patch-check" />
+                <span>
+                  <b>¿Sos analista o creador?</b> Pedí el verificado y aparecé en "A quién seguir".
+                </span>
+                <button type="button" className="btn btn-line btn-sm" onClick={() => setEdit("verify")}>
+                  Pedirlo
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </section>
+
+      {writing && (
+        <RecommendModal
+          uid={uid}
+          onClose={() => {
+            setWriting(false);
+            if (params.has("publicar")) setParams({}, { replace: true });
+          }}
+          onDone={() => setTab("following")}
+        />
+      )}
 
       <ProfileModal open={Boolean(edit)} uid={uid} profile={me} focus={edit === "all" ? null : edit} onClose={() => setEdit(null)} />
     </AppShell>

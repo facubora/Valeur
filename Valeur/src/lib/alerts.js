@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { supabase } from "./supabase";
 import { useSupa, changed } from "./social";
-import { useQuotes, fmtPrice } from "./market";
+import { useQuotes, fmtPrice, pct } from "./market";
 
 /* ── Alertas de precio ──────────────────────────────────────────────────────
    above / below: el precio cruza un valor → avisa una vez y se apaga.
@@ -46,6 +46,40 @@ const done = (res, channel) => {
 
 export async function addAlert(uid, { symbol, kind, value }) {
   return done(await supabase.from("alerts").insert({ user_id: uid, symbol: symbol.toUpperCase(), kind, value }), "alerts");
+}
+
+/* Cambiar el tipo o el valor de una alerta: vuelve a quedar activa */
+export async function updateAlert(id, { kind, value }) {
+  return done(await supabase.from("alerts").update({ kind, value, active: true, triggered_at: null }).eq("id", id), "alerts");
+}
+
+/* Qué tiene de malo una alerta antes de guardarla ("" si nada). `existing`
+   son las del usuario; `selfId` es la que se está editando (no cuenta como
+   repetida). */
+export function alertError({ symbol, kind, value, quote, existing = [], selfId = null }) {
+  const unit = ALERT_KIND[kind].unit;
+  const v = value;
+  if (!(v > 0)) return unit === "pct" ? "Poné un porcentaje mayor a cero" : "Poné un precio mayor a cero";
+  if (unit === "pct" && v > 100) return "El porcentaje diario tiene que ser menor a 100%";
+  if (unit !== "pct" && v > 1e12) return "El precio es demasiado grande";
+  if (existing.some((a) => a.id !== selfId && a.active && a.symbol === symbol && a.kind === kind && Math.abs(Number(a.value) - v) < 1e-9)) {
+    return "Ya tenés esa misma alerta activa";
+  }
+  if (quote && kind === "above" && v <= quote.price) return `Ya cotiza a ${fmtPrice(symbol, quote.price)}: poné un precio más alto`;
+  if (quote && kind === "below" && v >= quote.price) return `Ya cotiza a ${fmtPrice(symbol, quote.price)}: poné un precio más bajo`;
+  return "";
+}
+
+const abs = (n) => Math.abs(n).toLocaleString("es-AR", { maximumFractionDigits: 2 }) + "%";
+
+/* Cuánto le falta a una alerta para saltar → { progress 0..1, text } */
+export function alertGap(a, q) {
+  if (!q) return null;
+  const v = Number(a.value);
+  if (a.kind === "above") return { progress: Math.min(q.price / v, 1), text: `falta subir ${abs((v / q.price - 1) * 100)}` };
+  if (a.kind === "below") return { progress: Math.min(v / q.price, 1), text: `falta bajar ${abs((1 - v / q.price) * 100)}` };
+  const day = a.kind === "up_pct" ? Math.max(q.change_pct, 0) : Math.max(-q.change_pct, 0);
+  return { progress: Math.min(day / v, 1), text: `hoy ${pct(q.change_pct)} de ${a.kind === "up_pct" ? "+" : "−"}${abs(v)}` };
 }
 
 export async function deleteAlert(id) {
@@ -186,5 +220,10 @@ export function useNotifications(uid) {
     },
     [uid],
   );
-  return { rows: res.data, loaded: res.loaded, unread, markRead };
+  const remove = useCallback(async (ids) => {
+    const { error } = await supabase.from("notifications").delete().in("id", ids);
+    if (!error) changed("notifications");
+    return error?.message || "";
+  }, []);
+  return { rows: res.data, loaded: res.loaded, unread, markRead, remove };
 }

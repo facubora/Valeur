@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "./Logo";
 import Sparkline from "./Sparkline";
-import { useDisplayCurrency, useMep, money, priceIn, formatDate, tickerUrl } from "../lib/market";
+import { useDisplayCurrency, useMep, money, pct, priceIn, formatDate, tickerUrl } from "../lib/market";
 import { KIND_LABEL } from "../lib/catalog";
 
 /* Piezas de mercado compartidas entre Inicio y Mercado */
@@ -18,27 +19,28 @@ export function Delta({ value }) {
 }
 
 /* Dólar MEP | Pesos — la preferencia es la misma en toda la app */
-export function CurrencyPick({ label = "Precios en" }) {
+export function CurrencyPick({ label = "" }) {
   const [cur, setCur] = useDisplayCurrency();
   const fx = useMep();
+  // tranquilo a propósito: una palanca chica, no un botón principal. El MEP
+  // con el que se convierte va en el tooltip (también está en la cinta)
+  const hint = fx.mep
+    ? `Se convierte al dólar MEP: ${money(fx.mep.rate, 0, "ARS")} (cierre ${formatDate(fx.mep.date)})`
+    : "Los precios en otra moneda se convierten al dólar MEP";
   return (
-    <div className="cur-pick" title="Los precios en otra moneda se convierten al dólar MEP">
+    <div className="cur-pick" title={hint}>
       {label && <span className="cur-lbl">{label}</span>}
-      <div className="seg" role="radiogroup" aria-label="Moneda">
+      <div className="cur-seg" data-cur={cur} role="radiogroup" aria-label="Moneda">
+        <span className="cur-thumb" aria-hidden="true" />
         {[
-          ["USD", "Dólar MEP"],
-          ["ARS", "Pesos"],
-        ].map(([c, text]) => (
-          <button key={c} type="button" role="radio" aria-checked={c === cur} className={c === cur ? "on" : ""} onClick={() => setCur(c)}>
+          ["USD", "US$", "Dólares (MEP)"],
+          ["ARS", "AR$", "Pesos"],
+        ].map(([c, text, name]) => (
+          <button key={c} type="button" role="radio" aria-checked={c === cur} aria-label={name} className={c === cur ? "on" : ""} onClick={() => setCur(c)}>
             {text}
           </button>
         ))}
       </div>
-      {fx.mep && (
-        <small title={`Dólar MEP implícito en los CEDEARs, cierre ${formatDate(fx.mep.date)}`}>
-          MEP {money(fx.mep.rate, 0, "ARS")}
-        </small>
-      )}
     </div>
   );
 }
@@ -53,7 +55,7 @@ export function AssetRow({ symbol, name, tag, quote, closes = [], cur, rate, fol
           <b>{name || symbol}</b>
           <span>
             {symbol}
-            {tag && <em className="tag">{tag}</em>}
+            {tag && <em className="tag">· {tag}</em>}
           </span>
         </div>
       </Link>
@@ -79,7 +81,10 @@ export function AssetRow({ symbol, name, tag, quote, closes = [], cur, rate, fol
         {quote ? (
           <>
             <b>{priceIn(symbol, quote.price, cur, rate)}</b>
-            <Delta value={quote.change_pct} />
+            <small className={quote.change_pct >= 0 ? "txt-up" : "txt-down"}>
+              <i className={quote.change_pct >= 0 ? "bi bi-caret-up-fill" : "bi bi-caret-down-fill"} />
+              {Math.abs(quote.change_pct).toFixed(2).replace(".", ",")}% hoy
+            </small>
           </>
         ) : quote === null ? (
           <small className="muted">sin datos</small>
@@ -187,9 +192,12 @@ export function ForYouStart({ sectors, busy, disabled, onPick, wide = false }) {
 }
 
 /* "Para vos" en tarjetas, para secciones a lo ancho */
-export function ForYouCards({ recs, quotes, sparks = {}, cur, rate, followed, busy, onStar, onHide }) {
+/* Con `compact` (Inicio): sin mini gráfico y la variación como texto */
+export function ForYouCards({ recs, quotes, sparks = {}, cur, rate, followed, busy, onStar, onHide, compact = false }) {
+  // dejar de seguir se confirma ahí mismo, en la tarjeta
+  const [asking, setAsking] = useState(null);
   return (
-    <div className="fy-cards">
+    <div className={"fy-cards" + (compact ? " compact" : "")}>
       {recs.map((r) => {
         const q = quotes[r.symbol];
         const closes = sparks[r.symbol] || [];
@@ -219,7 +227,11 @@ export function ForYouCards({ recs, quotes, sparks = {}, cur, rate, followed, bu
                 {q ? (
                   <>
                     <b>{priceIn(r.symbol, q.price, cur, rate)}</b>
-                    <Delta value={q.change_pct} />
+                    {compact ? (
+                      <span className={"fy-chg " + (q.change_pct >= 0 ? "txt-up" : "txt-down")}>{pct(q.change_pct)}</span>
+                    ) : (
+                      <Delta value={q.change_pct} />
+                    )}
                   </>
                 ) : (
                   <>
@@ -228,17 +240,36 @@ export function ForYouCards({ recs, quotes, sparks = {}, cur, rate, followed, bu
                   </>
                 )}
               </div>
-              {closes.length > 1 && <Sparkline values={closes} up={q ? q.change_pct >= 0 : true} width={96} height={34} />}
+              {!compact && closes.length > 1 && <Sparkline values={closes} up={q ? q.change_pct >= 0 : true} width={96} height={34} />}
             </div>
-            <button
-              type="button"
-              className={"btn btn-line btn-sm fy-follow" + (isF ? " on" : "")}
-              disabled={busy === r.symbol}
-              onClick={() => onStar(r)}
-            >
-              <i className={isF ? "bi bi-star-fill" : "bi bi-star"} />
-              {isF ? "Siguiendo" : "Seguir"}
-            </button>
+            {asking === r.symbol && isF ? (
+              <div className="fy-ask" onKeyDown={(e) => e.key === "Escape" && setAsking(null)}>
+                <span>¿Dejar de seguir?</span>
+                <button type="button" className="btn btn-line btn-sm" autoFocus onClick={() => setAsking(null)}>
+                  No
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={() => {
+                    setAsking(null);
+                    onStar(r);
+                  }}
+                >
+                  Sí
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className={"btn btn-line btn-sm fy-follow" + (isF ? " on" : "")}
+                disabled={busy === r.symbol}
+                onClick={() => (isF ? setAsking(r.symbol) : onStar(r))}
+              >
+                <i className={isF ? "bi bi-star-fill" : "bi bi-star"} />
+                {isF ? "Siguiendo" : "Seguir"}
+              </button>
+            )}
           </article>
         );
       })}

@@ -13,9 +13,22 @@ export const changed = (channel) => bus.dispatchEvent(new Event(channel));
 
 /* Consulta a Supabase → { data, count, loaded, error, reload }. `fn` recibe el
    cliente y devuelve el builder; se vuelve a correr si cambian `deps` o
-   alguien avisa en `channel`. Con `enabled` en false no consulta. */
+   alguien avisa en `channel`. Con `enabled` en false no consulta.
+   Caché "muestra lo último y actualiza atrás": al volver a una pantalla se
+   pinta al instante lo que ya se había traído y la consulta corre por detrás.
+   La clave es el canal + el código de la consulta + sus deps. */
+const supaCache = new Map(); // clave → { data, count }
+// lo de una cuenta no se le muestra a la siguiente
+supabase?.auth.onAuthStateChange((event) => {
+  if (event === "SIGNED_OUT") supaCache.clear();
+});
+
 export function useSupa(fn, deps, { channel, enabled = true, initial = null } = {}) {
-  const [state, setState] = useState({ data: initial, loaded: false, error: "" });
+  const key = `${channel || ""}|${fn.toString()}|${JSON.stringify(deps)}`;
+  const [state, setState] = useState(() => {
+    const hit = supaCache.get(key);
+    return { key, data: hit ? hit.data : initial, count: hit?.count ?? null, loaded: Boolean(hit), error: "" };
+  });
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -29,7 +42,8 @@ export function useSupa(fn, deps, { channel, enabled = true, initial = null } = 
     if (!supabase || !enabled) return;
     let alive = true;
     Promise.resolve(fn(supabase)).then(({ data, count, error }) => {
-      if (alive) setState({ data: data ?? initial, count: count ?? null, loaded: true, error: error?.message || "" });
+      if (!error) supaCache.set(key, { data: data ?? initial, count: count ?? null });
+      if (alive) setState({ key, data: data ?? initial, count: count ?? null, loaded: true, error: error?.message || "" });
     });
     return () => {
       alive = false;
@@ -38,7 +52,10 @@ export function useSupa(fn, deps, { channel, enabled = true, initial = null } = 
   }, [...deps, enabled, tick]);
 
   const reload = useCallback(() => setTick((t) => t + 1), []);
-  return { ...state, reload };
+  // si cambiaron las deps y ya había algo guardado para las nuevas, eso
+  const hit = state.key !== key ? supaCache.get(key) : null;
+  const view = hit ? { data: hit.data, count: hit.count, loaded: true, error: "" } : state;
+  return { data: view.data, count: view.count, loaded: view.loaded, error: view.error, reload };
 }
 
 const errMsg = ({ error }) => error?.message || "";
@@ -220,7 +237,9 @@ export function useFeed({
       const inner = mode === "verified" ? "!inner" : "";
       let q = db
         .from("posts")
-        .select(`*, author:profiles${inner}(${AUTHOR_COLS}), post_likes(user_id)`)
+        // el autor por la FK de posts: "profiles" a secas es ambiguo porque
+        // post_likes también une posts con profiles (Supabase devuelve PGRST201)
+        .select(`*, author:profiles!posts_user_id_fkey${inner}(${AUTHOR_COLS}), post_likes(user_id)`)
         .order("created_at", { ascending: false })
         .limit(limit);
       if (postId) q = q.eq("id", postId);
