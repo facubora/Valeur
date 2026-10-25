@@ -40,6 +40,7 @@ const DRAWER = {
     ["para-vos", "Para vos", "bi-stars"],
     ["explorar", "Explorar", "bi-grid"],
     ["alertas", "Alertas", "bi-bell"],
+    ["/simulador", "Simulador", "bi-hourglass-split"],
   ],
   "/comunidad": [
     ["recomendaciones", "Recomendaciones", "bi-chat-square-quote"],
@@ -312,7 +313,8 @@ export default function AppShell({ children }) {
                         <ul>
                           {DRAWER[to].map(([id, sub, ic]) => (
                             <li key={id}>
-                              <Link to={`${to}#${id}`}>
+                              {/* las que empiezan con / son otra página */}
+                              <Link to={id.startsWith("/") ? id : `${to}#${id}`}>
                                 <i className={"bi " + ic} /> {sub}
                               </Link>
                             </li>

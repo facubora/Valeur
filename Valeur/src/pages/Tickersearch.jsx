@@ -756,6 +756,10 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
                   <i className="bi bi-chat-square-quote" />
                   Recomendar
                 </button>
+                <Link to={`/simulador?activo=${encodeURIComponent(symbol)}`} className="btn btn-line aq" title="¿Y si hubieras invertido?">
+                  <i className="bi bi-hourglass-split" />
+                  Simular
+                </Link>
                 <button type="button" className="btn btn-pink ad-trade" onClick={() => setTrade(true)}>
                   <i className="bi bi-arrow-left-right" /> Operar
                 </button>
