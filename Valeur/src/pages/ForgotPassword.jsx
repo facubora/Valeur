@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import AuthLayout, { IconField, FormError, SubmitButton } from "../components/AuthLayout";
+import RecoverySteps from "../components/RecoverySteps";
 import { useAuth } from "../context/AuthContext";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -29,7 +30,8 @@ export default function ForgotPassword() {
 
   if (sent) {
     return (
-      <AuthLayout headline="Te ayudamos a volver.">
+      <AuthLayout aside={<RecoverySteps step={2} />}>
+        <span className="kicker">Paso 2 de 3</span>
         <span className="done-ic" aria-hidden="true">
           <i className="bi bi-envelope-check" />
         </span>
@@ -51,8 +53,8 @@ export default function ForgotPassword() {
   }
 
   return (
-    <AuthLayout headline="Te ayudamos a volver.">
-      <span className="kicker">Recuperar acceso</span>
+    <AuthLayout aside={<RecoverySteps step={1} />}>
+      <span className="kicker">Paso 1 de 3</span>
       <h1>
         ¿Te <em>olvidaste</em> la contraseña?
       </h1>

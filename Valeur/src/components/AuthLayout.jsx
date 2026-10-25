@@ -5,13 +5,13 @@ import Showcase from "./Showcase";
 import { passwordScore } from "../lib/password";
 import "../styles/app.css";
 
-/* Login/registro: a la izquierda el adelanto de la app y a la derecha el
-   formulario */
-export default function AuthLayout({ headline, sub, children }) {
+/* Login/registro: a la izquierda el adelanto de la app (u otro panel, como
+   los pasos de recuperar la contraseña) y a la derecha el formulario */
+export default function AuthLayout({ headline, sub, aside = null, children }) {
   const { dark, toggle } = useTheme();
   return (
     <div className="app-root auth">
-      <Showcase className="auth-show" headline={headline} sub={sub} />
+      {aside ?? <Showcase className="auth-show" headline={headline} sub={sub} />}
       <section className="auth-side">
         <div className="auth-top">
           <Link to="/" className="brand" aria-label="Valeur, ir al inicio">

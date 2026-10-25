@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AuthLayout, { PasswordField, FormError, SubmitButton, PasswordRules } from "../components/AuthLayout";
 import { passwordOk } from "../lib/password";
+import RecoverySteps from "../components/RecoverySteps";
 import { useAuth } from "../context/AuthContext";
 
 /* Si el enlace vino con error (vencido o ya usado), Supabase lo pone en la URL */
@@ -38,7 +39,7 @@ export default function NewPassword() {
 
   if (checking && !badLink) {
     return (
-      <AuthLayout headline="Te ayudamos a volver.">
+      <AuthLayout aside={<RecoverySteps step={3} />}>
         <span className="done-ic" aria-hidden="true">
           <span className="spinner" />
         </span>
@@ -49,7 +50,7 @@ export default function NewPassword() {
 
   if (done) {
     return (
-      <AuthLayout headline="Te ayudamos a volver.">
+      <AuthLayout aside={<RecoverySteps step={4} />}>
         <span className="done-ic" aria-hidden="true">
           <i className="bi bi-shield-check" />
         </span>
@@ -68,7 +69,7 @@ export default function NewPassword() {
 
   if (badLink || !user) {
     return (
-      <AuthLayout headline="Te ayudamos a volver.">
+      <AuthLayout aside={<RecoverySteps step={2} error />}>
         <span className="done-ic warn" aria-hidden="true">
           <i className="bi bi-link-45deg" />
         </span>
@@ -89,8 +90,8 @@ export default function NewPassword() {
   }
 
   return (
-    <AuthLayout headline="Te ayudamos a volver.">
-      <span className="kicker">Recuperar acceso</span>
+    <AuthLayout aside={<RecoverySteps step={3} />}>
+      <span className="kicker">Paso 3 de 3</span>
       <h1>
         Elegí una contraseña <em>nueva</em>.
       </h1>
