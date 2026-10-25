@@ -108,7 +108,10 @@ def message(a, q):
 # ─── Supabase (PostgREST con la service role key) ────────────────────────────
 
 def _rest(method, table, params=None, json=None, prefer=None):
-    headers = {"apikey": SERVICE_KEY, "Authorization": "Bearer " + SERVICE_KEY}
+    # las keys nuevas (sb_secret_…) van solo en apikey; las viejas (JWT) también en Authorization
+    headers = {"apikey": SERVICE_KEY}
+    if SERVICE_KEY.startswith("eyJ"):
+        headers["Authorization"] = "Bearer " + SERVICE_KEY
     if prefer:
         headers["Prefer"] = prefer
     r = requests.request(method, f"{SUPABASE_URL}/rest/v1/{table}", params=params, json=json, headers=headers, timeout=20)
