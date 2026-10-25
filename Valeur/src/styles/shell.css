@@ -4704,3 +4704,51 @@
   display: grid;
   gap: 16px;
 }
+
+/* editar perfil → seguridad */
+.app-root .pm-sec-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+}
+.app-root .pm-sec-who > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.app-root .pm-sec-who b {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.app-root .pm-sec-who span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+.app-root .pm-mailed {
+  margin: -6px 0 0;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  animation: nrx-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .pm-mailed i {
+  color: var(--up);
+}
+.app-root .pm-sec .tm-foot .btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+/* con cuatro pestañas, en el celu van sin ícono para que entren parejas */
+@media (max-width: 520px) {
+  .app-root .pm .vx-tabs {
+    grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  }
+  .app-root .pm .vx-tabs button i {
+    display: none;
+  }
+}

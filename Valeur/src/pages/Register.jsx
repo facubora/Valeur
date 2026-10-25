@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import AuthLayout, { PasswordField, IconField, FormError, SubmitButton } from "../components/AuthLayout";
+import AuthLayout, { PasswordField, IconField, FormError, SubmitButton, PasswordRules } from "../components/AuthLayout";
+import { passwordScore } from "../lib/password";
 import { useAuth } from "../context/AuthContext";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -41,6 +42,10 @@ export default function Register() {
     }
     if (form.password.length < 8) {
       setError("La contraseña debe tener al menos 8 caracteres");
+      return;
+    }
+    if (passwordScore(form.password) === 0) {
+      setError("Esa contraseña es muy común, elegí otra");
       return;
     }
     if (form.password !== form.confirm) {
@@ -134,6 +139,7 @@ export default function Register() {
             autoComplete="new-password"
           />
         </div>
+        <PasswordRules password={form.password} confirm={form.confirm} />
 
         <FormError error={!configured ? "Falta configurar Supabase: copiá .env.example a .env" : error} />
 

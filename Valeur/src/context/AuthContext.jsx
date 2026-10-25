@@ -15,6 +15,7 @@ function translate(error) {
   if (/already registered|already been registered/i.test(m)) return "Ese email ya está registrado";
   if (/password should be at least/i.test(m)) return "La contraseña es demasiado corta";
   if (/should be different from the old/i.test(m)) return "Tiene que ser distinta de la anterior";
+  if (/reauthenticat/i.test(m)) return "Por seguridad, salí y volvé a entrar antes de cambiarla";
   if (/auth session missing|session.*expired|invalid.*(token|grant)/i.test(m)) return "El enlace venció. Pedí uno nuevo";
   if (/unable to validate email|invalid email/i.test(m)) return "El email no es válido";
   if (/rate limit|too many requests/i.test(m)) return "Demasiados intentos, probá en un rato";
@@ -102,6 +103,15 @@ export function AuthProvider({ children }) {
     return { error: translate(error) };
   };
 
+  // Cambiarla estando adentro: primero se comprueba la actual
+  const changePassword = async (current, next) => {
+    if (!supabase) return { error: NOT_CONFIGURED };
+    const { error: wrong } = await supabase.auth.signInWithPassword({ email: session.user.email, password: current });
+    if (wrong) return { error: /invalid login credentials/i.test(wrong.message) ? "La contraseña actual no es correcta" : translate(wrong) };
+    const { error } = await supabase.auth.updateUser({ password: next });
+    return { error: translate(error) };
+  };
+
   const signOut = async () => {
     if (supabase) await supabase.auth.signOut();
   };
@@ -116,6 +126,7 @@ export function AuthProvider({ children }) {
         signUp,
         resetPassword,
         updatePassword,
+        changePassword,
         signOut,
       }}
     >

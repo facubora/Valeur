@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import Logo from "../components/Logo";
 import ProfileModal from "../components/ProfileModal";
@@ -74,6 +74,7 @@ export default function Profile() {
   const { user, loading: authLoading } = useAuth();
   const uid = user?.id;
   const [edit, setEdit] = useState(null);
+  const [params, setParams] = useSearchParams();
   const [writing, setWriting] = useState(false);
 
   useEffect(() => {
@@ -322,7 +323,19 @@ export default function Profile() {
       </section>
 
       {isMe && writing && <RecommendModal uid={uid} onClose={() => setWriting(false)} />}
-      {isMe && <ProfileModal open={Boolean(edit)} uid={uid} profile={p} focus={edit === "all" ? null : edit} onClose={() => setEdit(null)} />}
+      {/* ?editar=security (desde Tu cuenta) abre Editar perfil en esa pestaña */}
+      {isMe && (
+        <ProfileModal
+          open={Boolean(edit) || params.has("editar")}
+          uid={uid}
+          profile={p}
+          focus={edit ? (edit === "all" ? null : edit) : params.get("editar")}
+          onClose={() => {
+            setEdit(null);
+            if (params.has("editar")) setParams({}, { replace: true });
+          }}
+        />
+      )}
     </AppShell>
   );
 }

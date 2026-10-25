@@ -359,6 +359,9 @@ export default function AppShell({ children }) {
                       <Link to="/tickersearch#alertas">
                         <i className="bi bi-bell" /> Mis alertas
                       </Link>
+                      <Link to={`/u/${user.username}?editar=security`}>
+                        <i className="bi bi-key" /> Contraseña y seguridad
+                      </Link>
                       <button type="button" role="switch" aria-checked={!tapeOff} className="mp-switch" onClick={() => setTape(tapeOff)}>
                         <i className="bi bi-activity" /> Cinta de cotizaciones
                         <span className="sw" aria-hidden="true" />

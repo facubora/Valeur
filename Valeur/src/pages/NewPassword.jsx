@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import AuthLayout, { PasswordField, FormError, SubmitButton } from "../components/AuthLayout";
+import AuthLayout, { PasswordField, FormError, SubmitButton, PasswordRules } from "../components/AuthLayout";
+import { passwordOk } from "../lib/password";
 import { useAuth } from "../context/AuthContext";
 
 /* Si el enlace vino con error (vencido o ya usado), Supabase lo pone en la URL */
@@ -26,8 +27,7 @@ export default function NewPassword() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.password.length < 8) return setError("La contraseña debe tener al menos 8 caracteres");
-    if (form.password !== form.confirm) return setError("Las contraseñas no coinciden");
+    if (!passwordOk(form.password, form.confirm)) return;
     setLoading(true);
     setError("");
     const { error: err } = await updatePassword(form.password);
@@ -95,7 +95,7 @@ export default function NewPassword() {
         Elegí una contraseña <em>nueva</em>.
       </h1>
       <p>
-        Para <b>{user.email}</b>. Que tenga 8 caracteres o más.
+        Para <b>{user.email}</b>. Abajo vas viendo si cumple todo.
       </p>
 
       <form onSubmit={handleSubmit} className="auth-form" noValidate>
@@ -121,10 +121,11 @@ export default function NewPassword() {
             autoComplete="new-password"
           />
         </div>
+        <PasswordRules password={form.password} confirm={form.confirm} />
 
         <FormError error={error} />
 
-        <SubmitButton loading={loading} loadingText="Guardando…" disabled={loading}>
+        <SubmitButton loading={loading} loadingText="Guardando…" disabled={loading || !passwordOk(form.password, form.confirm)}>
           Guardar contraseña <i className="bi bi-arrow-right" />
         </SubmitButton>
       </form>

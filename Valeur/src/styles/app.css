@@ -1003,7 +1003,7 @@
   line-height: 1.5;
 }
 /* los campos: hundidos como el buscador de la barra, con ícono */
-.app-root.auth .field .in-ic {
+.app-root .field .in-ic {
   position: absolute;
   left: 14px;
   top: 50%;
@@ -1013,10 +1013,10 @@
   font-style: normal;
   pointer-events: none;
 }
-.app-root.auth .field .in-ic.pre {
+.app-root .field .in-ic.pre {
   font-weight: 600;
 }
-.app-root.auth .field .in input {
+.app-root .field .in input {
   padding-left: 40px;
 }
 .app-root.auth .field input {
@@ -1179,12 +1179,15 @@
     box-shadow 0.25s,
     opacity 0.25s;
 }
+.app-root .auth-form .btn[aria-busy="true"] {
+  cursor: wait;
+}
 .app-root .auth-form .btn:active:not(:disabled) {
   transform: scale(0.98);
 }
 .app-root .auth-form .btn:disabled {
   opacity: 0.65;
-  cursor: wait;
+  cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
@@ -2904,4 +2907,102 @@
   .app-root .stats div {
     padding: 12px 14px;
   }
+}
+
+/* ---------- CONTRASEÑA: requisitos en vivo ---------- */
+.app-root .pw-rules {
+  --pw: color-mix(in oklch, var(--ink) 18%, transparent);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--surface) 40%, transparent);
+  font-size: 0.8rem;
+}
+.app-root .pw-rules[data-score="0"],
+.app-root .pw-rules[data-score="1"] {
+  --pw: var(--down);
+}
+.app-root .pw-rules[data-score="2"] {
+  --pw: oklch(0.74 0.15 70);
+}
+.app-root .pw-rules[data-score="3"],
+.app-root .pw-rules[data-score="4"] {
+  --pw: var(--up);
+}
+.app-root .pw-meter {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+.app-root .pw-meter i {
+  height: 4px;
+  border-radius: 4px;
+  background: color-mix(in oklch, var(--ink) 9%, transparent);
+  transition: background 0.3s;
+}
+.app-root .pw-meter i.on {
+  background: var(--pw);
+}
+.app-root .pw-level {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.app-root .pw-level b {
+  font-weight: 600;
+  color: var(--pw);
+  transition: color 0.3s;
+}
+.app-root .pw-rules[data-score=""] .pw-level b {
+  color: var(--ink);
+}
+.app-root .pw-level span {
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+.app-root .pw-rules ul {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.app-root .pw-rules li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s;
+}
+.app-root .pw-rules li i {
+  font-size: 0.78rem;
+  color: color-mix(in oklch, var(--ink) 25%, transparent);
+  transition: color 0.2s, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.app-root .pw-rules li.ok {
+  color: var(--ink);
+}
+.app-root .pw-rules li.ok i {
+  color: var(--up);
+  transform: scale(1.12);
+}
+@media (max-width: 520px) {
+  .app-root .pw-rules {
+    grid-template-columns: 1fr;
+  }
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

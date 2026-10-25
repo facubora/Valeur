@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { FormError } from "./AuthLayout";
+import { FormError, PasswordField, PasswordRules } from "./AuthLayout";
+import { passwordOk } from "../lib/password";
+import { useAuth } from "../context/AuthContext";
 import Modal from "./Modal";
 import { useModalClose } from "../lib/modal";
 import { Verified } from "./Social";
@@ -16,7 +18,8 @@ import { toast } from "../lib/feedback";
 
 const netMsg = (err) => (/failed to fetch|network/i.test(err) ? "Sin conexión con el servidor. Probá de nuevo." : err);
 
-/* Editar perfil: nombre, bio, privacidad del portfolio, rubros y verificación.
+/* Editar perfil: nombre, bio, privacidad del portfolio, rubros, verificación
+   y la contraseña.
    Nace del botón que lo abrió. Se monta al abrir, así arranca con los datos actuales. */
 export default function ProfileModal({ open, onClose, ...props }) {
   return open ? (
@@ -30,8 +33,9 @@ const TABS = [
   ["profile", "Perfil", "bi-person"],
   ["privacy", "Privacidad", "bi-shield-lock"],
   ["verify", "Verificado", "bi-patch-check"],
+  ["security", "Seguridad", "bi-key"],
 ];
-const TAB_OF = { interests: "profile", privacy: "privacy", verify: "verify" };
+const TAB_OF = { interests: "profile", privacy: "privacy", verify: "verify", security: "security" };
 
 function ProfileForm({ uid, profile, focus = null }) {
   const close = useModalClose();
@@ -91,6 +95,8 @@ function ProfileForm({ uid, profile, focus = null }) {
 
         {tab === "verify" ? (
           <VerifySection uid={uid} profile={profile} />
+        ) : tab === "security" ? (
+          <SecuritySection />
         ) : (
           <form className="pm-form" onSubmit={save} onChange={() => error && setError("")} noValidate>
             {tab === "profile" ? (
@@ -240,5 +246,88 @@ function VerifySection({ uid, profile }) {
         </form>
       )}
     </section>
+  );
+}
+
+/* Seguridad: cambiar la contraseña estando adentro (pide la actual) o, si no
+   te la acordás, mandarte el enlace para elegir una nueva */
+function SecuritySection() {
+  const close = useModalClose();
+  const { user, changePassword, resetPassword } = useAuth();
+  const [form, setForm] = useState({ current: "", password: "", confirm: "" });
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [mailed, setMailed] = useState(false);
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+    setError("");
+  };
+  const ready = form.current.length > 0 && passwordOk(form.password, form.confirm);
+
+  const save = async (e) => {
+    e.preventDefault();
+    if (!ready) return;
+    if (form.password === form.current) return setError("La nueva tiene que ser distinta de la actual");
+    setSaving(true);
+    const { error: err } = await changePassword(form.current, form.password);
+    setSaving(false);
+    if (err) return setError(netMsg(err));
+    toast("Contraseña cambiada");
+    close();
+  };
+
+  const mail = async () => {
+    const { error: err } = await resetPassword(user.email);
+    if (err) return setError(netMsg(err));
+    setMailed(true);
+  };
+
+  return (
+    <form className="pm-form pm-sec" onSubmit={save} noValidate>
+      <div className="pm-sec-who">
+        <span className="verify-ic">
+          <i className="bi bi-envelope" />
+        </span>
+        <div>
+          <b>Entrás con</b>
+          <span>{user?.email}</span>
+        </div>
+      </div>
+
+      <PasswordField
+        label="Contraseña actual"
+        name="current"
+        id="pm-current"
+        placeholder="••••••••"
+        value={form.current}
+        onChange={handleChange}
+        autoComplete="current-password"
+        aside={
+          !mailed && (
+            <button type="button" className="link-btn" onClick={mail}>
+              ¿No te la acordás?
+            </button>
+          )
+        }
+      />
+      {mailed && (
+        <p className="pm-mailed">
+          <i className="bi bi-envelope-check" /> Te mandamos un enlace a <b>{user?.email}</b> para elegir una nueva.
+        </p>
+      )}
+      <div className="row-2">
+        <PasswordField label="Nueva" name="password" id="pm-new" placeholder="8 o más" value={form.password} onChange={handleChange} autoComplete="new-password" />
+        <PasswordField label="Repetila" name="confirm" id="pm-confirm" placeholder="••••••••" value={form.confirm} onChange={handleChange} autoComplete="new-password" />
+      </div>
+      <PasswordRules password={form.password} confirm={form.confirm} />
+
+      <div className="tm-foot">
+        <FormError error={error} />
+        <button type="submit" className="btn btn-pink" disabled={saving || !ready}>
+          {saving ? "Cambiando…" : "Cambiar contraseña"}
+        </button>
+      </div>
+    </form>
   );
 }
