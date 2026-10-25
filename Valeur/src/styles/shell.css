@@ -4752,3 +4752,313 @@
     display: none;
   }
 }
+
+/* reportar una recomendación */
+.app-root .jug-flag:hover,
+.app-root .jug-flag.on {
+  color: var(--down);
+}
+.app-root .jug-flag.on {
+  opacity: 1;
+}
+.app-root .jug-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  max-width: 34ch;
+}
+.app-root .jug-reasons .chip:hover {
+  color: var(--down);
+  border-color: color-mix(in srgb, var(--down) 40%, transparent);
+}
+
+/* ---------- PANEL ADMIN ---------- */
+.app-root .adm-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.app-root .adm-vf {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+}
+.app-root .adm-vf-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.app-root .adm-vf-who > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.app-root .adm-name {
+  font-weight: 600;
+  color: var(--ink);
+}
+.app-root .adm-vf-who small {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.app-root .adm-cat {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.app-root .adm-vf-why {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 0;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  background: color-mix(in oklch, var(--ink) 4%, transparent);
+}
+.app-root .adm-vf-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.84rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--accent-text);
+}
+.app-root .adm-vf-link.none {
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+.app-root .adm-acts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: auto;
+}
+.app-root .adm-sure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  animation: nrx-in 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .adm-sure span {
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+/* reportadas: la tarjeta y abajo los motivos con qué hacer */
+.app-root .adm-rep {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.app-root .adm-rep-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border-color: color-mix(in srgb, var(--down) 25%, var(--line-soft));
+}
+.app-root .adm-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+.app-root .adm-reasons b {
+  margin-right: 4px;
+  color: var(--down);
+}
+.app-root .adm-reason {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--down) 9%, transparent);
+}
+.app-root .adm-reason em {
+  font-style: normal;
+  font-weight: 700;
+}
+/* números */
+.app-root .adm-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.app-root .adm-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+}
+.app-root .adm-kpi-l {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+.app-root .adm-kpi b {
+  font-family: var(--font-display);
+  font-size: 1.9rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .adm-kpi small {
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+}
+.app-root .adm-cols {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: 14px;
+  margin-top: 14px;
+}
+.app-root .adm-weeks,
+.app-root .adm-top {
+  padding: 4px 18px 18px;
+}
+.app-root .adm-bars {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
+  height: 170px;
+  margin-top: 12px;
+}
+/* el número va arriba de su barrita */
+.app-root .adm-bar {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+}
+.app-root .adm-bar em {
+  font-style: normal;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.app-root .adm-bar i {
+  width: 100%;
+  height: calc((100% - 40px) * var(--p));
+  min-height: 3px;
+  border-radius: 6px 6px 3px 3px;
+  background: var(--accent);
+  transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .adm-bar:last-child i {
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.app-root .adm-bar small {
+  font-size: 0.68rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.app-root .adm-top ol {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.app-root .adm-top li {
+  display: grid;
+  grid-template-columns: 26px 72px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.86rem;
+}
+.app-root .adm-top li a {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  color: var(--ink);
+}
+.app-root .adm-top-bar {
+  height: 6px;
+  border-radius: 6px;
+  background: color-mix(in oklch, var(--ink) 6%, transparent);
+  overflow: hidden;
+}
+.app-root .adm-top-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+.app-root .adm-top li b {
+  font-variant-numeric: tabular-nums;
+}
+/* vacío */
+.app-root .adm-ghost {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.app-root .adm-ghost .gh-row {
+  flex: 0 1 360px;
+}
+.app-root .adm-ghost p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+.app-root .adm-ghost p i {
+  color: var(--up);
+}
+@media (max-width: 1000px) {
+  .app-root .adm-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .app-root .adm-cols,
+  .app-root .adm-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .app-root .adm-ghost {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .app-root .adm-vf-who {
+    flex-wrap: wrap;
+  }
+  .app-root .adm-cat {
+    margin-left: 52px;
+  }
+}
+.app-root .adm-ghost .card.gh-row {
+  padding: 14px 16px;
+  border: 1.5px dashed color-mix(in oklch, var(--ink) 14%, transparent);
+  background: transparent;
+  box-shadow: none;
+}
+.app-root .adm-ghost .gh-pill {
+  margin-left: auto;
+}

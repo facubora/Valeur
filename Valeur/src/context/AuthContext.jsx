@@ -41,12 +41,13 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (!supabase || !uid) return;
     let alive = true;
+    // con * anda aunque falte alguna columna nueva (is_admin viene de la 0005)
     supabase
       .from("profiles")
-      .select("id, username")
+      .select("*")
       .eq("id", uid)
       .maybeSingle()
-      .then(({ data }) => alive && data && setProfile(data));
+      .then(({ data, error }) => alive && setProfile(data || (error ? { id: uid, failed: true } : null)));
     return () => {
       alive = false;
     };
@@ -61,6 +62,8 @@ export function AuthProvider({ children }) {
           session.user.user_metadata?.username ||
           session.user.email.split("@")[0],
         currency: session.user.user_metadata?.currency || null,
+        // null mientras no se sabe (todavía carga el perfil)
+        isAdmin: profile && profile.id === uid ? Boolean(profile.is_admin) : null,
       }
     : null;
 

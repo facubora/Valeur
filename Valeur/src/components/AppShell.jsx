@@ -362,6 +362,11 @@ export default function AppShell({ children }) {
                       <Link to={`/u/${user.username}?editar=security`}>
                         <i className="bi bi-key" /> Contraseña y seguridad
                       </Link>
+                      {user.isAdmin && (
+                        <Link to="/admin">
+                          <i className="bi bi-speedometer2" /> Panel admin
+                        </Link>
+                      )}
                       <button type="button" role="switch" aria-checked={!tapeOff} className="mp-switch" onClick={() => setTape(tapeOff)}>
                         <i className="bi bi-activity" /> Cinta de cotizaciones
                         <span className="sw" aria-hidden="true" />

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Logo from "./Logo";
 import { initials } from "../lib/session";
 import { lookup } from "../lib/catalog";
-import { STANCE, follow, unfollow, setLike, deletePost, changed, timeAgo } from "../lib/social";
+import { STANCE, REPORT_REASONS, follow, unfollow, setLike, deletePost, reportPost, changed, timeAgo } from "../lib/social";
 import { attempt } from "../lib/feedback";
 
 /* Piezas chicas de la comunidad: avatar, verificado, persona, seguir y post */
@@ -133,6 +133,8 @@ const tickerUrl = (s) => `/tickersearch?symbol=${encodeURIComponent(s)}`;
 export function PostCard({ post, uid, quote, onChange, highlight = false }) {
   const [busy, setBusy] = useState(false);
   const [asking, setAsking] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const [reported, setReported] = useState(false);
   const likes = post.post_likes?.length || 0;
   const liked = post.post_likes?.some((l) => l.user_id === uid);
   const meta = lookup(post.symbol);
@@ -155,6 +157,14 @@ export function PostCard({ post, uid, quote, onChange, highlight = false }) {
     const ok = await attempt(deletePost(post.id), { ok: "Recomendación borrada", fail: "No se pudo borrar la recomendación" });
     setBusy(false);
     if (ok) onChange?.();
+  };
+
+  const report = async (reason) => {
+    setReporting(false);
+    setBusy(true);
+    const ok = await attempt(reportPost(post.id, reason), { ok: "Gracias, la vamos a revisar", fail: "No se pudo enviar el reporte" });
+    setBusy(false);
+    if (ok) setReported(true);
   };
 
   return (
@@ -198,6 +208,18 @@ export function PostCard({ post, uid, quote, onChange, highlight = false }) {
                   <i className="bi bi-trash3" />
                 </button>
               )}
+              {uid && post.user_id !== uid && (
+                <button
+                  type="button"
+                  className={"jug-del jug-flag" + (reported ? " on" : "")}
+                  onClick={() => setReporting(true)}
+                  disabled={busy || reported}
+                  title={reported ? "Ya la reportaste" : "Reportar"}
+                  aria-label={reported ? "Ya la reportaste" : "Reportar recomendación"}
+                >
+                  <i className={reported ? "bi bi-flag-fill" : "bi bi-flag"} />
+                </button>
+              )}
             </span>
           </div>
         </div>
@@ -224,6 +246,24 @@ export function PostCard({ post, uid, quote, onChange, highlight = false }) {
               <i className="bi bi-trash3" /> Borrar
             </button>
           </div>
+        </div>
+      )}
+
+      {/* reportar: se elige el motivo tapando la tarjeta, sin modal */}
+      {reporting && (
+        <div className="jug-ask jug-report" onKeyDown={(e) => e.key === "Escape" && setReporting(false)}>
+          <b>¿Qué tiene de malo?</b>
+          <span>Lo revisa el equipo de Valeur. Quien la escribió no se entera de que fuiste vos.</span>
+          <div className="jug-reasons">
+            {REPORT_REASONS.map(([k, label, icon], i) => (
+              <button key={k} type="button" className="chip" autoFocus={i === 0} onClick={() => report(k)}>
+                <i className={"bi " + icon} /> {label}
+              </button>
+            ))}
+          </div>
+          <button type="button" className="lnk-btn" onClick={() => setReporting(false)}>
+            Cancelar
+          </button>
         </div>
       )}
     </article>
