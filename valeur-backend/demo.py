@@ -17,6 +17,7 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 import supa
+from alerts import asset_kind
 
 DOMAIN = "demo.valeur.test"
 
@@ -101,7 +102,9 @@ def prices():
 
 
 def _usd(symbol, price, rate):
-    ars = symbol.endswith(".BA") and not symbol.endswith("D.BA")
+    # la misma regla que el backend: YPFD.BA es YPF en pesos, AAPLD.BA es Apple en dólares
+    kind = asset_kind(symbol)
+    ars = kind == "cedear" or (kind == "crypto" and symbol.endswith("-ARS"))
     return price / rate if ars else price
 
 

@@ -6139,3 +6139,101 @@
     animation: none;
   }
 }
+
+/* cajón "Más": la sección de herramientas, abajo de las páginas */
+.app-root .dr-tools {
+  margin: 0 12px 12px;
+  padding: 12px 12px 6px;
+  border-top: 1px solid var(--line-soft);
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity 0.3s,
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .vx-pop.open .dr-tools {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.16s;
+}
+.app-root .dr-tools-lbl {
+  display: block;
+  padding: 0 6px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.app-root .dr-tools-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.app-root .dr-tool {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  color: var(--ink);
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.app-root .dr-tool > span:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.app-root .dr-tool b {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+.app-root .dr-tool small {
+  font-size: 0.76rem;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .dr-tool-ic {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 1.05rem;
+  color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.app-root .dr-tool-go {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+}
+.app-root .dr-tool:hover,
+.app-root .dr-tool.here {
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+}
+.app-root .dr-tool:hover {
+  transform: translateY(-1px);
+}
+.app-root .dr-tool:hover .dr-tool-go {
+  opacity: 1;
+  transform: none;
+}
+@media (max-width: 900px) {
+  .app-root .dr-tools-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
