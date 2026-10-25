@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "./supabase";
 import { lookup } from "./catalog";
 import { confirmDialog } from "./feedback";
@@ -336,6 +336,85 @@ export async function requestVerification(uid, req) {
   if (res.error?.code === "23505") return "Ya tenés un pedido en revisión";
   const err = errMsg(res);
   if (!err) changed("verification");
+  return err;
+}
+
+/* ── Reportes ─────────────────────────────────────────────────────────────── */
+export const REPORT_REASONS = [
+  ["spam", "Spam o publicidad", "bi-megaphone"],
+  ["misleading", "Engañosa", "bi-exclamation-triangle"],
+  ["offensive", "Ofensiva", "bi-emoji-angry"],
+  ["other", "Otra cosa", "bi-three-dots"],
+];
+export const REPORT_REASON = Object.fromEntries(REPORT_REASONS.map(([k, label, icon]) => [k, { label, icon }]));
+
+export async function reportPost(postId, reason) {
+  const res = await supabase.from("reports").insert({ post_id: postId, reason });
+  if (res.error?.code === "23505") return ""; // ya la había reportado: para el usuario es lo mismo
+  return errMsg(res);
+}
+
+/* ── Panel admin ──────────────────────────────────────────────────────────── */
+export function useAdminStats(enabled) {
+  return useSupa((db) => db.rpc("admin_stats"), [], { channel: "admin", enabled });
+}
+
+export function useAdminVerifications(enabled) {
+  return useSupa(
+    (db) =>
+      db
+        .from("verification_requests")
+        .select("id, category, link, reason, created_at, user:profiles!verification_requests_user_id_fkey(id, username, display_name)")
+        .eq("status", "pending")
+        .order("created_at", { ascending: true }),
+    [],
+    { channel: "admin", enabled, initial: [] },
+  );
+}
+
+/* Los reportes abiertos, juntos por recomendación (la más reportada arriba) */
+export function useAdminReports(enabled) {
+  const res = useSupa(
+    (db) =>
+      db
+        .from("reports")
+        .select(
+          "id, reason, created_at, post:posts!reports_post_id_fkey(id, user_id, symbol, stance, body, price_at, audience, created_at, author:profiles!posts_user_id_fkey(id, username, display_name, verified, verified_label))",
+        )
+        .eq("status", "open")
+        .order("created_at", { ascending: false }),
+    [],
+    { channel: "admin", enabled, initial: [] },
+  );
+  const groups = useMemo(() => {
+    const by = new Map();
+    for (const r of res.data || []) {
+      if (!r.post) continue;
+      const g = by.get(r.post.id) || { post: r.post, reasons: {}, count: 0, last: r.created_at };
+      g.reasons[r.reason] = (g.reasons[r.reason] || 0) + 1;
+      g.count += 1;
+      by.set(r.post.id, g);
+    }
+    return [...by.values()].sort((a, b) => b.count - a.count || (a.last < b.last ? 1 : -1));
+  }, [res.data]);
+  return { ...res, groups };
+}
+
+export async function reviewVerification(id, status) {
+  const err = errMsg(await supabase.from("verification_requests").update({ status }).eq("id", id));
+  if (!err) changed("admin");
+  return err;
+}
+
+export async function dismissReports(postId) {
+  const err = errMsg(await supabase.from("reports").update({ status: "dismissed" }).eq("post_id", postId).eq("status", "open"));
+  if (!err) changed("admin");
+  return err;
+}
+
+export async function removeReportedPost(postId) {
+  const err = await deletePost(postId);
+  if (!err) changed("admin");
   return err;
 }
 

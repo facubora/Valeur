@@ -1,5 +1,6 @@
 # valeur/backend.py — Micro-servicio de datos de mercado (yfinance)
-# Auth y base de datos viven en Supabase; acá solo hay candles, quote y search.
+# Auth y base de datos viven en Supabase; acá hay candles, quote, search y el
+# chequeo de alertas de todos (alerts.py) que corre en un hilo aparte.
 # Requiere: pip install flask flask-cors yfinance python-dotenv
 
 from flask import Flask, jsonify, request
@@ -169,10 +170,59 @@ _batch_cache = {}  # symbol → (at, data)
 _download_lock = threading.Lock()
 
 
-@app.route("/api/batch")
-def get_batch():
+def fetch_quotes(symbols):
+    """Cotización + cierres del último mes de varios símbolos válidos, en una
+    sola descarga (con caché corto). Lo que no tiene datos vuelve como None.
+    Lo usan /api/batch y el chequeo de alertas."""
     import time
 
+    now = time.time()
+    out = {s: _batch_cache[s][1] for s in symbols if s in _batch_cache and now - _batch_cache[s][0] < BATCH_TTL}
+    missing = [s for s in symbols if s not in out]
+    if not missing:
+        return out
+    try:
+        with _download_lock:
+            df = yf.download(missing, period="1mo", interval="1d", progress=False,
+                             auto_adjust=False, group_by="ticker", threads=True)
+    except Exception:
+        if not out:
+            raise
+        df = None
+    for s in missing:
+        data = None
+        try:
+            # con group_by="ticker" las columnas son (símbolo, campo), salvo
+            # en algunas versiones de yfinance cuando se pide uno solo
+            multi = df is not None and df.columns.nlevels > 1
+            sub = df[s] if multi else df
+            hist = sub.dropna(subset=["Close"]) if sub is not None else None
+            if hist is not None and not hist.empty:
+                last = hist.iloc[-1]
+                price = round(float(last["Close"]), 4)
+                prev = round(float(hist.iloc[-2]["Close"]), 4) if len(hist) >= 2 else round(float(last["Open"]), 4)
+                change = round(price - prev, 4)
+                vol = last.get("Volume")
+                data = {
+                    "symbol": s,
+                    "price": price,
+                    "change": change,
+                    "change_pct": round(change / prev * 100, 4) if prev else 0,
+                    "volume": int(vol) if vol == vol and vol is not None else 0,
+                    "prev_close": prev,
+                    "latest_date": last.name.strftime("%Y-%m-%d"),
+                    "closes": [round(float(v), 4) for v in hist["Close"].tolist()],
+                }
+        except (KeyError, IndexError, ValueError):
+            data = None
+        if data:  # lo que falló se vuelve a pedir la próxima vez
+            _batch_cache[s] = (now, data)
+        out[s] = data
+    return out
+
+
+@app.route("/api/batch")
+def get_batch():
     symbols = [s.strip().upper() for s in request.args.get("symbols", "").split(",") if s.strip()]
     symbols = list(dict.fromkeys(symbols))[:60]
     if not symbols:
@@ -180,50 +230,12 @@ def get_batch():
     # los inválidos ni se consultan: vuelven como "sin datos"
     invalid = [s for s in symbols if not valid_symbol(s)]
     symbols = [s for s in symbols if valid_symbol(s)]
-    if not symbols:
-        return jsonify({"quotes": {s: None for s in invalid}})
-
-    now = time.time()
-    out = {s: _batch_cache[s][1] for s in symbols if s in _batch_cache and now - _batch_cache[s][0] < BATCH_TTL}
-    missing = [s for s in symbols if s not in out]
-    if missing:
+    out = {}
+    if symbols:
         try:
-            with _download_lock:
-                df = yf.download(missing, period="1mo", interval="1d", progress=False,
-                                 auto_adjust=False, group_by="ticker", threads=True)
+            out = fetch_quotes(symbols)
         except Exception as e:
-            if not out:
-                return jsonify({"error": str(e)}), 502
-            df = None
-        for s in missing:
-            data = None
-            try:
-                # con group_by="ticker" las columnas son (símbolo, campo), salvo
-                # en algunas versiones de yfinance cuando se pide uno solo
-                multi = df is not None and df.columns.nlevels > 1
-                sub = df[s] if multi else df
-                hist = sub.dropna(subset=["Close"]) if sub is not None else None
-                if hist is not None and not hist.empty:
-                    last = hist.iloc[-1]
-                    price = round(float(last["Close"]), 4)
-                    prev = round(float(hist.iloc[-2]["Close"]), 4) if len(hist) >= 2 else round(float(last["Open"]), 4)
-                    change = round(price - prev, 4)
-                    vol = last.get("Volume")
-                    data = {
-                        "symbol": s,
-                        "price": price,
-                        "change": change,
-                        "change_pct": round(change / prev * 100, 4) if prev else 0,
-                        "volume": int(vol) if vol == vol and vol is not None else 0,
-                        "prev_close": prev,
-                        "latest_date": last.name.strftime("%Y-%m-%d"),
-                        "closes": [round(float(v), 4) for v in hist["Close"].tolist()],
-                    }
-            except (KeyError, IndexError, ValueError):
-                data = None
-            if data:  # lo que falló se vuelve a pedir la próxima vez
-                _batch_cache[s] = (now, data)
-            out[s] = data
+            return jsonify({"error": str(e)}), 502
     out.update({s: None for s in invalid})
     return jsonify({"quotes": out})
 
@@ -238,28 +250,34 @@ MEP_TTL = 15 * 60
 _mep_cache = {"at": 0, "data": None}
 
 
-@app.route("/api/mep")
-def get_mep():
+def mep_data():
+    """Dólar MEP de hoy y su historia (con caché de 15 min). None si no hay datos."""
     import time
     import pandas as pd
 
     if _mep_cache["data"] and time.time() - _mep_cache["at"] < MEP_TTL:
-        return jsonify(_mep_cache["data"])
+        return _mep_cache["data"]
+    tickers = [p + ".BA" for p in MEP_PAIRS] + [p + "D.BA" for p in MEP_PAIRS]
+    with _download_lock:
+        df = yf.download(tickers, period="max", interval="1d", progress=False, auto_adjust=False)["Close"]
+    ratios = pd.concat([df[p + ".BA"] / df[p + "D.BA"] for p in MEP_PAIRS], axis=1)
+    mep = ratios.median(axis=1, skipna=True).dropna()
+    if mep.empty:
+        return None
+    data = {
+        "rate": round(float(mep.iloc[-1]), 2),
+        "date": mep.index[-1].strftime("%Y-%m-%d"),
+        "series": [[d.strftime("%Y-%m-%d"), round(float(v), 2)] for d, v in mep.items()],
+    }
+    _mep_cache.update(at=time.time(), data=data)
+    return data
+
+
+@app.route("/api/mep")
+def get_mep():
     try:
-        tickers = [p + ".BA" for p in MEP_PAIRS] + [p + "D.BA" for p in MEP_PAIRS]
-        with _download_lock:
-            df = yf.download(tickers, period="max", interval="1d", progress=False, auto_adjust=False)["Close"]
-        ratios = pd.concat([df[p + ".BA"] / df[p + "D.BA"] for p in MEP_PAIRS], axis=1)
-        mep = ratios.median(axis=1, skipna=True).dropna()
-        if mep.empty:
-            return jsonify({"error": "No data"}), 502
-        data = {
-            "rate": round(float(mep.iloc[-1]), 2),
-            "date": mep.index[-1].strftime("%Y-%m-%d"),
-            "series": [[d.strftime("%Y-%m-%d"), round(float(v), 2)] for d, v in mep.items()],
-        }
-        _mep_cache.update(at=time.time(), data=data)
-        return jsonify(data)
+        data = mep_data()
+        return jsonify(data) if data else (jsonify({"error": "No data"}), 502)
     except Exception as e:
         return jsonify({"error": str(e)}), 502
 
@@ -285,6 +303,13 @@ def search_symbol():
         return jsonify({"error": str(e)}), 502
 
 
+# ─── Modo práctica (practice.py) ──────────────────────────────────────────────
+
+import practice  # noqa: E402
+
+practice.register(app, fetch_quotes=lambda syms: fetch_quotes([s for s in syms if valid_symbol(s)]), mep_rate=lambda: (mep_data() or {}).get("rate"), valid_symbol=valid_symbol)
+
+
 # ─── Health check ─────────────────────────────────────────────────────────────
 
 @app.route("/api/health")
@@ -293,5 +318,10 @@ def health():
 
 
 if __name__ == "__main__":
+    # con debug, Flask corre dos procesos (el que vigila los cambios y el que
+    # atiende): las alertas se revisan solo en el que atiende
+    if os.getenv("WERKZEUG_RUN_MAIN") == "true":
+        import alerts
+        alerts.start(lambda syms: fetch_quotes([s for s in syms if valid_symbol(s)]))
     app.run(debug=True, port=int(os.getenv("PORT", 5001)), host="0.0.0.0")
     

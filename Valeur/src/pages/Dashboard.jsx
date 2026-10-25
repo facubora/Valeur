@@ -11,7 +11,7 @@ import { SkPortfolio, SkList } from "../components/Skeleton";
 import { SectionNav, SectionHead } from "../components/Sections";
 import { useAuth } from "../context/AuthContext";
 import { useQuotes, useMep, useDisplayCurrency, assetCurrency, fmtPrice, money, signed, pct, formatDate, tickerUrl } from "../lib/market";
-import { useTrades, useWatchlist, computePositions, useHistory, addWatch, deleteTrade, findOversell } from "../lib/portfolio";
+import { useTrades, useWatchlist, computePositions, useHistory, addWatch, deleteTrade, findOversell, downloadTradesCsv } from "../lib/portfolio";
 import { attempt } from "../lib/feedback";
 
 const RANGES = [
@@ -414,6 +414,16 @@ export default function Dashboard() {
                   </button>
                 )}
               </div>
+              {/* baja lo que se está viendo (con el filtro puesto, solo eso) */}
+              <button
+                type="button"
+                className="btn btn-line btn-sm trx-export"
+                disabled={!filteredTrades.length}
+                onClick={() => downloadTradesCsv(filteredTrades)}
+                title={tradeSide !== "all" || tradeQuery ? "Baja solo las operaciones filtradas" : "Baja todas tus operaciones para abrir en Excel"}
+              >
+                <i className="bi bi-download" /> Exportar
+              </button>
             </SectionHead>
             <div className="card nrx trx">
               {!shownTrades.length ? (

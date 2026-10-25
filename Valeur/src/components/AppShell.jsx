@@ -40,6 +40,8 @@ const DRAWER = {
     ["para-vos", "Para vos", "bi-stars"],
     ["explorar", "Explorar", "bi-grid"],
     ["alertas", "Alertas", "bi-bell"],
+    ["/simulador", "Simulador", "bi-hourglass-split"],
+    ["/practica", "Modo práctica", "bi-controller"],
   ],
   "/comunidad": [
     ["recomendaciones", "Recomendaciones", "bi-chat-square-quote"],
@@ -312,7 +314,8 @@ export default function AppShell({ children }) {
                         <ul>
                           {DRAWER[to].map(([id, sub, ic]) => (
                             <li key={id}>
-                              <Link to={`${to}#${id}`}>
+                              {/* las que empiezan con / son otra página */}
+                              <Link to={id.startsWith("/") ? id : `${to}#${id}`}>
                                 <i className={"bi " + ic} /> {sub}
                               </Link>
                             </li>
@@ -362,6 +365,11 @@ export default function AppShell({ children }) {
                       <Link to={`/u/${user.username}?editar=security`}>
                         <i className="bi bi-key" /> Contraseña y seguridad
                       </Link>
+                      {user.isAdmin && (
+                        <Link to="/admin">
+                          <i className="bi bi-speedometer2" /> Panel admin
+                        </Link>
+                      )}
                       <button type="button" role="switch" aria-checked={!tapeOff} className="mp-switch" onClick={() => setTape(tapeOff)}>
                         <i className="bi bi-activity" /> Cinta de cotizaciones
                         <span className="sw" aria-hidden="true" />

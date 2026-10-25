@@ -234,3 +234,42 @@ export function useHistory(trades, range = "6m", cur = "USD", mep = null) {
 
   return { points, loading: Boolean(symbols) && res.key !== key };
 }
+
+/* ── Exportar ─────────────────────────────────────────────────────────────── */
+// Para Excel en español: separado por punto y coma, decimales con coma y BOM
+// (así abre con los acentos bien)
+const csvNum = (n, d) => Number(n).toLocaleString("es-AR", { useGrouping: false, maximumFractionDigits: d });
+const csvCell = (v) => {
+  const s = v == null ? "" : String(v);
+  return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+
+export function tradesCsv(rows) {
+  const head = ["Fecha", "Operación", "Ticker", "Nombre", "Cantidad", "Precio", "Moneda", "Total", "Nota"];
+  const lines = rows.map((t) => {
+    const [y, m, d] = String(t.executed_at).slice(0, 10).split("-");
+    return [
+      `${d}/${m}/${y}`,
+      t.side === "buy" ? "Compra" : "Venta",
+      t.symbol,
+      t.name || "",
+      csvNum(t.qty, 6),
+      csvNum(t.price, 4),
+      assetCurrency(t.symbol),
+      csvNum(Number(t.qty) * Number(t.price), 2),
+      t.note || "",
+    ];
+  });
+  return "﻿" + [head, ...lines].map((r) => r.map(csvCell).join(";")).join("\r\n");
+}
+
+export function downloadTradesCsv(rows) {
+  const blob = new Blob([tradesCsv(rows)], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `valeur-operaciones-${new Date().toLocaleDateString("sv")}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
