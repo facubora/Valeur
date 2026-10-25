@@ -15,6 +15,7 @@
 | **Alertas** | "Avisame si MELI llega a $26.000" o "si NVIDIA cae más de 4% en el día". Las revisa el backend cada 3 minutos, así avisan aunque no tengas la app abierta. |
 | **Comunidad** | Recomendaciones (comprar, mantener o vender) que muestran cómo les fue desde que se dijeron, "me sirve", seguir gente, amigos (seguimiento mutuo), cuentas verificadas y reportes. |
 | **Perfil y privacidad** | Elegís quién ve tu portfolio: nadie, tus amigos o todos. Nunca se muestran montos, solo porcentajes. |
+| **Calendario** | Cuándo presentan resultados (con lo que esperan los analistas) y cuándo cortan o pagan el dividendo las empresas que tenés o seguís, en los próximos 4 meses. Te avisa el día antes. Los CEDEARs usan los datos de la acción de origen. |
 | **Simulador** | "¿Y si hubiera invertido?": cuánto tendrías hoy con US$ 1.000 en NVIDIA hace 5 años (o $50.000 por mes en Galicia), comparado con el S&P 500, Bitcoin o guardar dólares. |
 | **Aprendé** | Los términos de la app (CEDEAR, dólar MEP, diversificar…) en tarjetas que se dan vuelta, con un ejemplo cada una y el progreso de lo que ya viste. En la app, un "?" al lado de cada término difícil. |
 | **Panel admin** | Aprobar pedidos de verificado, revisar recomendaciones reportadas y ver los números de la app. |
@@ -62,10 +63,10 @@
 |---|---|
 | Front | React 19, Vite, React Router, lightweight-charts (gráficos), GSAP (animaciones), Bootstrap Icons |
 | Datos y cuentas | Supabase: Postgres con Row Level Security, Auth (email y contraseña), triggers para las notificaciones |
-| Backend | Python + Flask + yfinance: precios, velas, dólar MEP y revisión de alertas |
+| Backend | Python + Flask + yfinance: precios, velas, dólar MEP, revisión de alertas y calendario de resultados y dividendos |
 
 - **El front habla directo con Supabase** para todo lo que es de la cuenta. Cada tabla tiene políticas RLS: nadie puede leer ni tocar lo de otro.
-- **El backend** da los precios (Yahoo Finance) y, con la *service role key*, revisa las alertas de todos aunque nadie tenga la app abierta.
+- **El backend** da los precios y las fechas de resultados y dividendos (Yahoo Finance) y, con la *service role key*, revisa las alertas de todos y avisa los eventos del día siguiente aunque nadie tenga la app abierta.
 - **Dólar MEP:** Yahoo no tiene los bonos, así que se calcula con los CEDEARs en pesos y en dólares de la misma empresa (la mediana de varios pares por día).
 
 ```
@@ -73,7 +74,7 @@ Valeur/                    Front (React + Vite)
 ├── public/                íconos, manifest y service worker (PWA)
 └── src/
     ├── pages/             una por pantalla: Home, Dashboard, Tickersearch, Community,
-    │                      Profile, Simulator, Learn, Admin, Login, Register…
+    │                      Profile, Simulator, Calendar, Learn, Admin, Login, Register…
     ├── components/        AppShell (barra y menús), gráficos, modales, tarjetas…
     ├── lib/               datos: portfolio, mercado, comunidad, alertas, simulador, glosario
     ├── context/           sesión (AuthContext) y tema (ThemeContext)
@@ -82,6 +83,7 @@ supabase/migrations/       las tablas, permisos y funciones, en orden (0001 a 00
 valeur-backend/
 ├── backend.py             API de precios (y arranca el chequeo de alertas)
 ├── alerts.py              revisa las alertas de todos y deja la notificación
+├── events.py              próximos resultados y dividendos, y el aviso del día antes
 ├── supa.py                acceso a Supabase con la service role key
 └── demo.py                carga (y borra) datos de ejemplo
 docs/capturas/             las capturas de este README
@@ -106,6 +108,7 @@ Necesitás **Node.js 18+**, **Python 3.9+** y un proyecto gratis en [supabase.co
    | `0004_fix_accents.sql` | Corrige los acentos de las notificaciones |
    | `0005_admin.sql` | Admins, reportes y los números del panel |
    | `0006_practice.sql` | Modo práctica (en pausa: el código vive en la rama `modo-practica`; correrla no cambia nada en la app) |
+   | `0007_events.sql` | Avisos de resultados y dividendos (tipo de notificación nuevo) |
 
 3. Hacete admin (una sola vez, con tu usuario después de registrarte):
    ```sql
@@ -170,6 +173,7 @@ python demo.py borrar                        # saca todo lo de ejemplo
 | `GET` | `/api/candles/<símbolo>?interval=&range=` | Velas (de 30 minutos a mensuales, hasta todo el histórico) |
 | `GET` | `/api/mep` | Dólar MEP de hoy y su historia |
 | `GET` | `/api/search?q=` | Búsqueda de activos |
+| `GET` | `/api/events?symbols=A,B,…` | Próximos resultados y dividendos (120 días) |
 | `GET` | `/api/health` | Si está andando |
 
 ---

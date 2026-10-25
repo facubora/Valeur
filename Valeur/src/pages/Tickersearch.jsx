@@ -33,6 +33,7 @@ import {
 } from "../lib/market";
 import { SECTOR, SECTORS, KIND_LABEL, TABS, listFor, lookup, similarTo } from "../lib/catalog";
 import Term from "../components/Term";
+import { useEvents, EVENT_KIND, whenTxt } from "../lib/events";
 
 // el tipo de activo, con su explicación de Aprendé
 const KIND_TERM = { stock: "accion", cedear: "cedear", crypto: "cripto", index: "indice" };
@@ -679,6 +680,10 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
     setBusy(false);
   };
 
+  // lo próximo de la empresa: resultados o dividendo
+  const { events: upcoming } = useEvents([symbol]);
+  const nextEvent = upcoming[0];
+
   if (quote === null) return <NotFound symbol={symbol} onOpen={onOpen} />;
 
   const myAlerts = alerts.data.filter((a) => a.symbol === symbol && a.active).length;
@@ -720,6 +725,9 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
             {pos && <Pill to="/dashboard" label="Tu posición" value={money(pos.value, undefined, cur)} delta={pos.pnlPct} />}
             {myAlerts > 0 && (
               <Pill onClick={() => setAlerting(true)} icon="bi-bell" label="Alertas" value={myAlerts === 1 ? "1 vigilando" : `${myAlerts} vigilando`} />
+            )}
+            {nextEvent && (
+              <Pill to="/calendario" icon={EVENT_KIND[nextEvent.kind].icon} label={EVENT_KIND[nextEvent.kind].short} value={whenTxt(nextEvent.date)} />
             )}
             {lead && (
               <Pill

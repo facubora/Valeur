@@ -5941,3 +5941,176 @@
 .app-root .lr-groups {
   display: contents;
 }
+
+/* ---------- CALENDARIO ---------- */
+.app-root .cal-list {
+  margin: 0;
+  padding: 6px 0;
+  list-style: none;
+}
+.app-root .cal-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 200px) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  scroll-margin-top: 150px;
+}
+.app-root .cal-row + .cal-row {
+  border-top: 1px solid var(--line-soft);
+}
+.app-root .cal-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 0;
+  border-radius: 12px;
+  line-height: 1;
+  background: color-mix(in oklch, var(--ink) 4%, transparent);
+}
+.app-root .cal-day small {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+}
+.app-root .cal-day b {
+  margin-top: 4px;
+  font: 600 1.35rem var(--font-display);
+  letter-spacing: -0.03em;
+}
+.app-root .cal-row.soon .cal-day {
+  color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.app-root .cal-id {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--ink);
+}
+.app-root .cal-id-txt,
+.app-root .cal-what,
+.app-root .cal-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.app-root .cal-id-txt small,
+.app-root .cal-what small,
+.app-root .cal-meta small {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.app-root .cal-id-txt small {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-root .cal-what b {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+}
+.app-root .cal-row.earnings .cal-what i {
+  color: var(--accent-text);
+}
+.app-root .cal-row.exdiv .cal-what i,
+.app-root .cal-row.divpay .cal-what i {
+  color: var(--up);
+}
+.app-root .cal-meta {
+  align-items: flex-end;
+  text-align: right;
+}
+.app-root .cal-when {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-style: normal;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--ink-soft);
+  background: color-mix(in oklch, var(--ink) 5%, transparent);
+}
+.app-root .cal-when.soon {
+  color: var(--accent-text);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.app-root .cal-help {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.app-root .cal-help > div {
+  display: flex;
+  gap: 12px;
+  padding: 16px 18px;
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+.app-root .cal-help > div > i {
+  font-size: 1.15rem;
+  color: var(--accent-text);
+}
+.app-root .cal-help b {
+  color: var(--ink);
+}
+.app-root .cal-ghost {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.app-root .cal-ghost .card.gh-row {
+  flex: 0 1 340px;
+  padding: 14px 16px;
+  border: 1.5px dashed color-mix(in oklch, var(--ink) 14%, transparent);
+  background: transparent;
+  box-shadow: none;
+}
+.app-root .cal-ghost .gh-pill {
+  margin-left: auto;
+}
+.app-root .cal-ghost p {
+  margin: 0;
+  max-width: 60ch;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+.app-root .cal-ghost p a {
+  font-weight: 600;
+  color: var(--accent-text);
+}
+@media (max-width: 800px) {
+  .app-root .cal-row {
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    gap: 6px 12px;
+    padding: 12px 14px;
+  }
+  .app-root .cal-what {
+    grid-column: 2 / -1;
+    grid-row: 2;
+  }
+  .app-root .cal-help,
+  .app-root .cal-ghost {
+    grid-template-columns: minmax(0, 1fr);
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+.app-root .cal-tabs {
+  align-self: center;
+  width: min(360px, 100%);
+}
+.app-root .cal-tabs button {
+  padding-inline: 12px;
+  white-space: nowrap;
+}

@@ -50,6 +50,7 @@ const DRAWER = {
 
 /* La sección "Herramientas" del cajón: para probar y aprender sin arriesgar */
 const TOOLS = [
+  ["/calendario", "Calendario", "bi-calendar-event", "Resultados y dividendos de lo tuyo"],
   ["/simulador", "Simulador", "bi-hourglass-split", "¿Y si hubiera invertido?"],
   ["/aprende", "Aprendé", "bi-mortarboard", "CEDEAR, MEP y más, explicado simple"],
 ];

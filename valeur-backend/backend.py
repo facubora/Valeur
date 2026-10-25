@@ -303,6 +303,13 @@ def search_symbol():
         return jsonify({"error": str(e)}), 502
 
 
+# ─── Próximos resultados y dividendos (events.py) ──────────────────────────────
+
+import events  # noqa: E402
+
+events.register(app, valid_symbol=valid_symbol)
+
+
 # ─── Health check ─────────────────────────────────────────────────────────────
 
 @app.route("/api/health")
