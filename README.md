@@ -43,7 +43,8 @@ Valeur/
 │   └── migrations/      # SQL para la base (tabla profiles, RLS, triggers)
 │
 └── valeur-backend/      # Micro-servicio de mercado (Flask + yfinance)
-    ├── backend.py       # API: candles, quote, search
+    ├── backend.py       # API: candles, quote, batch, mep, search
+    ├── alerts.py        # Revisa las alertas de todos y avisa
     ├── requirements.txt
     └── .env.example
 ```
@@ -91,6 +92,14 @@ Variables del `.env` del backend:
 | Variable       | Descripción                                              |
 |----------------|----------------------------------------------------------|
 | `CORS_ORIGINS` | Orígenes permitidos, separados por coma (default `http://localhost:5173`) |
+| `SUPABASE_URL` | URL del proyecto de Supabase (para revisar las alertas) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Key secreta de Supabase (Project Settings → API). Solo en el backend |
+| `ALERTS_EVERY` | Cada cuántos segundos se revisan las alertas (default 180, mínimo 60) |
+
+Con esas dos keys, el backend revisa las alertas de todos en un hilo aparte y
+deja la notificación aunque nadie tenga Valeur abierto. Para correrlo como
+proceso propio (por ejemplo en un servidor): `python alerts.py`, o
+`python alerts.py --once` para una sola vuelta.
 
 ### 3. Frontend
 

@@ -6,7 +6,9 @@ import { useQuotes, fmtPrice, pct } from "./market";
 /* ── Alertas de precio ──────────────────────────────────────────────────────
    above / below: el precio cruza un valor → avisa una vez y se apaga.
    up_pct / down_pct: el día sube/baja más de X% → avisa una vez por rueda.
-   Se evalúan en la app (cada 60 s mientras Valeur está abierto). */
+   Se evalúan en la app (cada 60 s mientras Valeur está abierto) y también en
+   el backend (valeur-backend/alerts.py), que avisa aunque nadie lo tenga
+   abierto. El que llega primero se queda con la alerta. */
 export const ALERT_KINDS = [
   ["above", "Sube a", "bi-arrow-up", "precio"],
   ["below", "Baja a", "bi-arrow-down", "precio"],
@@ -136,6 +138,10 @@ export function browserNotify(title, body, tag) {
   }
 }
 
+/* Avisos que disparó esta pestaña: así, cuando la misma notificación llega
+   por tiempo real, no se muestra dos veces en el navegador */
+const firedHere = new Set();
+
 /* Vigila las alertas activas del usuario. Va en la cáscara de la app, así
    corre en cualquier pantalla. El update condicional evita avisos dobles si
    hay dos pestañas abiertas. */
@@ -169,6 +175,7 @@ export function useAlertWatcher(uid) {
             symbol: a.symbol,
             link: `/tickersearch?symbol=${encodeURIComponent(a.symbol)}`,
           });
+          firedHere.add(title);
           browserNotify(title, body, a.id);
           changed("notifications");
         }
@@ -198,7 +205,8 @@ export function useNotifications(uid) {
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${uid}` },
         (payload) => {
           const n = payload.new;
-          if (n.kind !== "alert" && document.visibilityState !== "visible") browserNotify(n.title, n.body || "", n.id);
+          // las alertas que avisó el backend también salen en el navegador
+          if (n.kind === "alert" ? !firedHere.delete(n.title) : document.visibilityState !== "visible") browserNotify(n.title, n.body || "", n.id);
           reload();
         },
       )
