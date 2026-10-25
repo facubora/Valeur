@@ -370,7 +370,7 @@
   gap: 10px;
   height: 40px;
   max-width: 220px;
-  padding: 0 10px 0 14px;
+  padding: 0 5px 0 14px;
   border: 1px solid var(--line-soft);
   border-radius: 10px;
   background: var(--surface);
@@ -414,14 +414,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.app-root .vx-me > i {
-  font-size: 1.2rem;
-  color: var(--ink-soft);
-  transition: color 0.2s;
+.app-root .vx-me > .p-avatar {
+  flex-shrink: 0;
+  transition: box-shadow 0.2s;
 }
-.app-root .vx-me:hover > i,
-.app-root .vx-me.on > i {
-  color: var(--accent-text);
+.app-root .vx-me:hover > .p-avatar,
+.app-root .vx-me.on > .p-avatar {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.app-root .vx-me-txt b .verified {
+  font-size: 0.78rem;
 }
 /* "Más": una pestaña más de la navegación que estira la barra */
 .app-root .vx-more {
@@ -5409,8 +5411,11 @@
     transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
     border-color 0.2s;
 }
-.app-root .sim-idea span {
+.app-root .sim-idea-txt {
   flex: 1;
+}
+.app-root .sim-idea .logo {
+  flex-shrink: 0;
 }
 .app-root .sim-idea > i {
   color: var(--ink-soft);
@@ -5714,8 +5719,16 @@
   gap: 12px;
   padding: 11px 20px;
 }
+/* tu fila: resaltada adentro de la tarjeta, con sus bordes redondeados */
 .app-root .pr-rank li.me {
+  margin: 0 6px;
+  padding-inline: 14px;
+  border-radius: 12px;
   background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+.app-root .pr-rank li.me,
+.app-root .pr-rank li.me + li {
+  border-top-color: transparent;
 }
 .app-root .pr-rank li.pr-gap {
   display: block;

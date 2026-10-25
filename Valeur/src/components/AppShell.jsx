@@ -6,7 +6,7 @@ import { useWatchlist } from "../lib/portfolio";
 import { useMyProfile } from "../lib/social";
 import { useAlertWatcher, useNotifications } from "../lib/alerts";
 import { BellButton, NotificationsPanel } from "./NotificationBell";
-import { Verified } from "./Social";
+import { Avatar, Verified } from "./Social";
 import { CurrencyPick } from "./MarketBits";
 import { adoptAccountCurrency } from "../lib/market";
 import MarketTape from "./MarketTape";
@@ -269,7 +269,7 @@ export default function AppShell({ children }) {
                     </b>
                     <small>@{user.username}</small>
                   </span>
-                  <i className="bi bi-person-circle" aria-hidden="true" />
+                  <Avatar name={user.username} size={30} />
                 </button>
                 {/* en mobile la navegación no está: el cajón se abre desde acá */}
                 <button

@@ -417,7 +417,7 @@ export default function Simulator() {
               }}
             >
               <Logo symbol={s} size={32} />
-              <span>{label}</span>
+              <span className="sim-idea-txt">{label}</span>
               <i className="bi bi-arrow-right" />
             </button>
           ))}
