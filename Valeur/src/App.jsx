@@ -14,6 +14,7 @@ import Profile from "./pages/Profile";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Simulator from "./pages/Simulator";
+import Practice from "./pages/Practice";
 
 /* Dónde estaba cada pantalla del historial, para volver ahí con "atrás" */
 const positions = new Map();
@@ -97,6 +98,7 @@ function App() {
         <Route path="/comunidad" element={<Community />} />
         <Route path="/u/:username" element={<Profile />} />
         <Route path="/simulador" element={<Simulator />} />
+        <Route path="/practica" element={<Practice />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

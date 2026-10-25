@@ -41,6 +41,7 @@ const DRAWER = {
     ["explorar", "Explorar", "bi-grid"],
     ["alertas", "Alertas", "bi-bell"],
     ["/simulador", "Simulador", "bi-hourglass-split"],
+    ["/practica", "Modo práctica", "bi-controller"],
   ],
   "/comunidad": [
     ["recomendaciones", "Recomendaciones", "bi-chat-square-quote"],

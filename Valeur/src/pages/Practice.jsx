@@ -25,6 +25,7 @@ import {
 } from "../lib/practice";
 
 const usd = (n) => money(n, undefined, "USD");
+const START_TXT = money(PRACTICE_START, 0, "USD");
 const MEDAL = ["oro", "plata", "bronce"];
 
 /* Modo práctica: una cartera con US$ 10.000 de mentira para comprar y
@@ -113,7 +114,7 @@ export default function Practice() {
           />
 
           <section id="cartera" className="block">
-            <SectionHead kicker="Cartera" title="Lo que tenés" desc={`Arrancaste con ${usd(PRACTICE_START)} el ${formatDate(acc.started_at.slice(0, 10))}. Se valúa a precio de ahora.`} />
+            <SectionHead kicker="Cartera" title="Lo que tenés" desc={`Arrancaste con ${START_TXT} el ${formatDate(acc.started_at.slice(0, 10))}. Se valúa a precio de ahora.`} />
             <div className="pr-grid">
               <div className="pr-left">
                 <div className="card pr-sum">
@@ -250,7 +251,7 @@ function StartCard({ ranking }) {
         <span className="pr-coin" aria-hidden="true">
           <i className="bi bi-piggy-bank" />
         </span>
-        <h2>Arrancá con {usd(PRACTICE_START)} que no son de verdad.</h2>
+        <h2>Arrancá con {START_TXT} que no son de verdad.</h2>
         <p>Comprá y vendé CEDEARs, acciones y cripto al precio real del momento, sin arriesgar nada. Es la mejor forma de aprender antes de poner plata.</p>
         <ul>
           <li>
@@ -272,7 +273,7 @@ function StartCard({ ranking }) {
           <h3 className="sub-title">Van ganando</h3>
           <ol className="pr-rank compact">
             {top.map((p) => (
-              <RankRow key={p.user_id} p={p} />
+                <RankRow key={p.user_id} p={p} compact />
             ))}
           </ol>
         </div>
@@ -306,6 +307,8 @@ function OrderCard({ order, setOrder, cash, positions, mepRate }) {
     if (err) return toast(err, { kind: "error" });
     toast(side === "buy" ? `Compraste ${symbol}` : `Vendiste ${symbol}`);
     setAmount("");
+    // si vendiste todo, no queda nada que vender: el panel vuelve a comprar
+    if (all) setOrder({ side: "buy", symbol: "", name: "" });
   };
 
   return (
@@ -426,7 +429,7 @@ function Ranking({ ranking, uid, scope }) {
   );
 }
 
-function RankRow({ p, mine = false }) {
+function RankRow({ p, mine = false, compact = false }) {
   return (
     <li className={mine ? "me" : ""}>
       <span className={"pr-n " + (MEDAL[p.rank - 1] || "")}>{p.rank <= 3 ? <i className="bi bi-trophy-fill" /> : p.rank}</span>
@@ -440,11 +443,11 @@ function RankRow({ p, mine = false }) {
           </b>
           <small>
             {p.trades} {p.trades === 1 ? "operación" : "operaciones"}
-            {p.top ? ` · más en ${p.top}` : ""}
+            {p.top && !compact ? ` · más en ${p.top}` : ""}
           </small>
         </span>
       </Link>
-      {p.top && <Logo symbol={p.top} size={24} />}
+      {p.top && !compact && <Logo symbol={p.top} size={24} />}
       <span className="pr-rank-num">
         <b className={p.pct >= 0 ? "txt-up" : "txt-down"}>{pct(p.pct)}</b>
         <small>{usd(p.value)}</small>
