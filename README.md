@@ -16,7 +16,7 @@
 | **Comunidad** | Recomendaciones (comprar, mantener o vender) que muestran cómo les fue desde que se dijeron, "me sirve", seguir gente, amigos (seguimiento mutuo), cuentas verificadas y reportes. |
 | **Perfil y privacidad** | Elegís quién ve tu portfolio: nadie, tus amigos o todos. Nunca se muestran montos, solo porcentajes. |
 | **Simulador** | "¿Y si hubiera invertido?": cuánto tendrías hoy con US$ 1.000 en NVIDIA hace 5 años (o $50.000 por mes en Galicia), comparado con el S&P 500, Bitcoin o guardar dólares. |
-| **Modo práctica** | US$ 10.000 de mentira para comprar y vender al precio real, con un ranking de todos y de tus amigos. |
+| **Aprendé** | Los términos de la app (CEDEAR, dólar MEP, diversificar…) en tarjetas que se dan vuelta, con un ejemplo cada una y el progreso de lo que ya viste. En la app, un "?" al lado de cada término difícil. |
 | **Panel admin** | Aprobar pedidos de verificado, revisar recomendaciones reportadas y ver los números de la app. |
 | **Detalles** | Buscador ⌘K, notificaciones, modo oscuro, esqueletos de carga, instalable en el celu (PWA) y una 404 propia. |
 
@@ -31,7 +31,7 @@
   </tr>
   <tr>
     <td><img src="docs/capturas/07-simulador.jpg" alt="Simulador"></td>
-    <td><img src="docs/capturas/09-ranking.jpg" alt="Ranking del modo práctica"></td>
+    <td><img src="docs/capturas/08-aprende.jpg" alt="Aprendé"></td>
   </tr>
   <tr>
     <td><img src="docs/capturas/02-entrar.jpg" alt="Entrar"></td>
@@ -48,7 +48,7 @@
   navegador ──► │  Front (React + Vite)    │
                 │  Valeur/                 │
                 └──────┬────────────┬──────┘
-          datos, auth  │            │  precios, alertas, práctica
+          datos, auth  │            │  precios y alertas
                        ▼            ▼
         ┌──────────────────┐   ┌───────────────────────────┐
         │ Supabase         │◄──│ Backend (Flask + yfinance)│
@@ -62,10 +62,10 @@
 |---|---|
 | Front | React 19, Vite, React Router, lightweight-charts (gráficos), GSAP (animaciones), Bootstrap Icons |
 | Datos y cuentas | Supabase: Postgres con Row Level Security, Auth (email y contraseña), triggers para las notificaciones |
-| Backend | Python + Flask + yfinance: precios, velas, dólar MEP, revisión de alertas y modo práctica |
+| Backend | Python + Flask + yfinance: precios, velas, dólar MEP y revisión de alertas |
 
 - **El front habla directo con Supabase** para todo lo que es de la cuenta. Cada tabla tiene políticas RLS: nadie puede leer ni tocar lo de otro.
-- **El backend** da los precios (Yahoo Finance) y hace lo que necesita la *service role key*: revisar las alertas de todos y operar en el modo práctica con el precio real, para que nadie se invente un precio desde el navegador.
+- **El backend** da los precios (Yahoo Finance) y, con la *service role key*, revisa las alertas de todos aunque nadie tenga la app abierta.
 - **Dólar MEP:** Yahoo no tiene los bonos, así que se calcula con los CEDEARs en pesos y en dólares de la misma empresa (la mediana de varios pares por día).
 
 ```
@@ -73,16 +73,15 @@ Valeur/                    Front (React + Vite)
 ├── public/                íconos, manifest y service worker (PWA)
 └── src/
     ├── pages/             una por pantalla: Home, Dashboard, Tickersearch, Community,
-    │                      Profile, Simulator, Practice, Admin, Login, Register…
+    │                      Profile, Simulator, Learn, Admin, Login, Register…
     ├── components/        AppShell (barra y menús), gráficos, modales, tarjetas…
-    ├── lib/               datos: portfolio, mercado, comunidad, alertas, simulador, práctica
+    ├── lib/               datos: portfolio, mercado, comunidad, alertas, simulador, glosario
     ├── context/           sesión (AuthContext) y tema (ThemeContext)
     └── styles/            app.css, shell.css, social.css, landing.css
 supabase/migrations/       las tablas, permisos y funciones, en orden (0001 a 0006)
 valeur-backend/
 ├── backend.py             API de precios (y arranca el chequeo de alertas)
 ├── alerts.py              revisa las alertas de todos y deja la notificación
-├── practice.py            modo práctica: operar al precio real y el ranking
 ├── supa.py                acceso a Supabase con la service role key
 └── demo.py                carga (y borra) datos de ejemplo
 docs/capturas/             las capturas de este README
@@ -106,7 +105,7 @@ Necesitás **Node.js 18+**, **Python 3.9+** y un proyecto gratis en [supabase.co
    | `0003_community.sql` | Seguir y amigos, recomendaciones, portfolio compartido sin montos, verificados, alertas y notificaciones |
    | `0004_fix_accents.sql` | Corrige los acentos de las notificaciones |
    | `0005_admin.sql` | Admins, reportes y los números del panel |
-   | `0006_practice.sql` | Modo práctica |
+   | `0006_practice.sql` | Modo práctica (en pausa: el código vive en la rama `modo-practica`; correrla no cambia nada en la app) |
 
 3. Hacete admin (una sola vez, con tu usuario después de registrarte):
    ```sql
@@ -129,7 +128,7 @@ PORT=5002 python backend.py       # http://localhost:5002
 | Variable | Para qué |
 |---|---|
 | `SUPABASE_URL` | La Project URL |
-| `SUPABASE_SERVICE_ROLE_KEY` | La service_role key. Con esto andan las alertas con la app cerrada y el modo práctica |
+| `SUPABASE_SERVICE_ROLE_KEY` | La service_role key. Con esto andan las alertas con la app cerrada |
 | `ALERTS_EVERY` | Cada cuántos segundos se revisan las alertas (180 por defecto, mínimo 60) |
 | `CORS_ORIGINS` | Otros orígenes permitidos además de localhost, separados por coma |
 
@@ -152,7 +151,7 @@ npm run dev                       # http://localhost:5173
 
 ### 4. Datos de ejemplo (opcional)
 
-Para mostrar la app con comunidad y ranking, el backend puede cargar usuarios de ejemplo con recomendaciones, seguidores, "me sirve" y jugadores en el modo práctica:
+Para mostrar la app con comunidad, el backend puede cargar usuarios de ejemplo con recomendaciones, seguidores y "me sirve":
 
 ```bash
 cd valeur-backend
@@ -171,8 +170,6 @@ python demo.py borrar                        # saca todo lo de ejemplo
 | `GET` | `/api/candles/<símbolo>?interval=&range=` | Velas (de 30 minutos a mensuales, hasta todo el histórico) |
 | `GET` | `/api/mep` | Dólar MEP de hoy y su historia |
 | `GET` | `/api/search?q=` | Búsqueda de activos |
-| `POST` | `/api/practice/trade` | Comprar o vender en el modo práctica (con la sesión del usuario) |
-| `GET` | `/api/practice/ranking?scope=all\|friends` | Ranking del modo práctica |
 | `GET` | `/api/health` | Si está andando |
 
 ---
@@ -192,7 +189,7 @@ python demo.py borrar                        # saca todo lo de ejemplo
 
 - Los precios vienen de Yahoo Finance con demora. Lo que muestra Valeur es información, no asesoramiento financiero.
 - Los `.env` no se suben al repo; usá los `.env.example` de plantilla.
-- El simulador y el modo práctica no cuentan comisiones, impuestos ni dividendos.
+- El simulador no cuenta comisiones, impuestos ni dividendos.
 
 ---
 

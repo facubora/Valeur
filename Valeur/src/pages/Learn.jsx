@@ -113,7 +113,6 @@ export default function Learn() {
           <div className="hpills" aria-label="Tu progreso">
             <Pill icon="bi-check2-circle" label="Aprendiste" value={`${count} de ${terms.length}`} />
             <Pill to="/simulador" icon="bi-hourglass-split" label="Probalo en el" value="Simulador" />
-            <Pill to="/practica" icon="bi-controller" label="Practicá en el" value="Modo práctica" />
           </div>
         </div>
         <div className="search-form compact filter-in lr-search">
@@ -143,8 +142,8 @@ export default function Learn() {
           </div>
           <div className="lr-prog-acts">
             {done ? (
-              <Link to="/practica" className="btn btn-pink btn-sm">
-                <i className="bi bi-controller" /> Probalo con plata de mentira
+              <Link to="/simulador" className="btn btn-pink btn-sm">
+                <i className="bi bi-hourglass-split" /> Probalo en el simulador
               </Link>
             ) : (
               <button type="button" className="btn btn-line btn-sm" onClick={flipAll} disabled={!shown.length}>
@@ -160,7 +159,8 @@ export default function Learn() {
         </div>
       </section>
 
-      <div ref={root}>
+      {/* sin caja propia: las secciones siguen separadas como en el resto de las páginas */}
+      <div ref={root} className="lr-groups">
         {q && !shown.length && (
           <section className="block">
             <p className="muted">

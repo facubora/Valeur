@@ -51,7 +51,6 @@ const DRAWER = {
 /* La sección "Herramientas" del cajón: para probar y aprender sin arriesgar */
 const TOOLS = [
   ["/simulador", "Simulador", "bi-hourglass-split", "¿Y si hubiera invertido?"],
-  ["/practica", "Modo práctica", "bi-controller", "US$ 10.000 de mentira y un ranking"],
   ["/aprende", "Aprendé", "bi-mortarboard", "CEDEAR, MEP y más, explicado simple"],
 ];
 

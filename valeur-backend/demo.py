@@ -1,12 +1,12 @@
 # valeur/demo.py — Datos de ejemplo para mostrar Valeur con vida: usuarios con
-# recomendaciones, seguidores, "me sirve" y jugadores en el modo práctica.
+# recomendaciones, seguidores y "me sirve".
 #
 #   python demo.py cargar [--usuario TU_USUARIO] [--amigos]
 #   python demo.py borrar
 #   python demo.py prueba        (muestra qué haría, sin tocar nada)
 #
 # Con --usuario, los de ejemplo te siguen; con --amigos, además vos los seguís
-# a algunos (así aparecen como amigos y en el ranking de amigos).
+# a algunos (así aparecen como amigos).
 # Los usuarios de ejemplo tienen mail @demo.valeur.test y "demo" en su
 # metadata: borrar saca solo esos (y con ellos, todo lo suyo).
 
@@ -17,7 +17,6 @@ from datetime import datetime, timedelta, timezone
 import requests
 
 import supa
-from alerts import asset_kind
 
 DOMAIN = "demo.valeur.test"
 
@@ -51,17 +50,6 @@ FOLLOWS = [
     ("cami_crypto", "ana_inversiones"), ("juan_cruz", "leo_trader"),
 ]
 
-# modo práctica: quién compró qué y cuántos dólares, hace unas semanas
-PRACTICE = {
-    "ana_inversiones": [("NVDA", 4000), ("MELI.BA", 3000), ("SPY", 2000)],
-    "juan_cruz": [("KO.BA", 3000), ("SPY", 5000)],
-    "sofi_m": [("AAPL.BA", 2500), ("BTC-USD", 1500)],
-    "martu_cedears": [("VIST", 4000), ("YPFD.BA", 3000), ("NVDA", 2000)],
-    "leo_trader": [("TSLA", 6000), ("GGAL.BA", 3500)],
-    "cami_crypto": [("BTC-USD", 5000), ("ETH-USD", 3000), ("SOL-USD", 1500)],
-}
-
-
 def _admin(method, path, json=None):
     headers = supa._headers()
     headers["Authorization"] = "Bearer " + supa.SERVICE_KEY
@@ -89,31 +77,21 @@ def demo_users():
 
 
 def prices():
-    """Precio de hace ~un mes y de ahora de todo lo que se usa"""
-    from backend import fetch_quotes, mep_data
+    """Precio de hace ~un mes y de ahora de lo que se recomienda"""
+    from backend import fetch_quotes
 
-    symbols = sorted({s for _, s, *_ in POSTS} | {s for buys in PRACTICE.values() for s, _ in buys})
+    symbols = sorted({s for _, s, *_ in POSTS})
     quotes = fetch_quotes(symbols)
-    rate = (mep_data() or {}).get("rate")
     missing = [s for s in symbols if not quotes.get(s)]
     if missing:
         print("  sin precio (se saltean):", ", ".join(missing))
-    return quotes, rate
-
-
-def _usd(symbol, price, rate):
-    # la misma regla que el backend: YPFD.BA es YPF en pesos, AAPLD.BA es Apple en dólares
-    kind = asset_kind(symbol)
-    ars = kind == "cedear" or (kind == "crypto" and symbol.endswith("-ARS"))
-    return price / rate if ars else price
+    return quotes
 
 
 def cargar(usuario=None, amigos=False, dry=False):
     if not supa.configured():
         sys.exit("Faltan SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en el .env")
-    quotes, rate = prices()
-    if not rate:
-        sys.exit("No se pudo calcular el dólar MEP; probá en un rato")
+    quotes = prices()
     me = None
     if usuario:
         rows = supa.rest("GET", "profiles", params={"username": "ilike." + usuario, "select": "id,username"}) or []
@@ -121,11 +99,10 @@ def cargar(usuario=None, amigos=False, dry=False):
             sys.exit(f"No existe el usuario @{usuario}")
         me = rows[0]["id"]
 
-    print(f"Usuarios: {len(PEOPLE)} · recomendaciones: {len(POSTS)} · seguimientos: {len(FOLLOWS)} · jugadores: {len(PRACTICE)}")
+    print(f"Usuarios: {len(PEOPLE)} · recomendaciones: {len(POSTS)} · seguimientos: {len(FOLLOWS)}")
     if dry:
-        for who, buys in PRACTICE.items():
-            parts = [f"{s} US$ {a}" for s, a in buys if quotes.get(s)]
-            print(f"  {who}: {', '.join(parts)}")
+        for who, sym, stance, _, days in POSTS:
+            print(f"  @{who}: {stance} {sym} (hace {days} días)" + ("" if quotes.get(sym) else " — sin precio, se saltea"))
         return
 
     ids = demo_users()
@@ -177,24 +154,6 @@ def cargar(usuario=None, amigos=False, dry=False):
     supa.rest("POST", "follows", json=follows, prefer="return=minimal,resolution=ignore-duplicates")
     print(f"  {len(follows)} seguimientos" + (f" (te siguen los {len(ids)})" if me else ""))
 
-    # modo práctica: compraron hace ~4 semanas al precio de ese momento
-    for who, buys in PRACTICE.items():
-        uid = ids[who]
-        supa.rest("DELETE", "practice_trades", params={"user_id": "eq." + uid}, prefer="return=minimal")
-        cash, trades = 10000.0, []
-        for sym, amount in buys:
-            q = quotes.get(sym)
-            if not q:
-                continue
-            then = q["closes"][0] if q.get("closes") else q["price"]
-            p_usd = _usd(sym, then, rate)
-            qty = round(amount / p_usd, 8)
-            cash -= qty * p_usd
-            trades.append({"user_id": uid, "symbol": sym, "side": "buy", "qty": qty, "price": then, "price_usd": round(p_usd, 6), "created_at": _ago(27)})
-        supa.rest("POST", "practice_accounts", json={"user_id": uid, "cash": round(cash, 4), "started_at": _ago(28)}, prefer="return=minimal,resolution=merge-duplicates")
-        if trades:
-            supa.rest("POST", "practice_trades", json=trades, prefer="return=minimal")
-    print(f"  {len(PRACTICE)} jugadores en el modo práctica")
     print("Listo. Para sacarlo: python demo.py borrar")
 
 

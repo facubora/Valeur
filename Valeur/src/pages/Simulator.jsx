@@ -386,11 +386,8 @@ export default function Simulator() {
                 <button type="button" className="btn btn-line btn-sm" onClick={copyLink}>
                   <i className="bi bi-link-45deg" /> Copiar link
                 </button>
-                <Link to={tickerUrl(symbol)} className="btn btn-line btn-sm">
+                <Link to={tickerUrl(symbol)} className="btn btn-pink btn-sm">
                   <i className="bi bi-graph-up" /> Ver {symbol}
-                </Link>
-                <Link to={`/practica?operar=${encodeURIComponent(symbol)}`} className="btn btn-pink btn-sm">
-                  <i className="bi bi-controller" /> Probalo con plata de mentira
                 </Link>
               </div>
               <small className="sim-note">Con los precios de cierre de Yahoo Finance, sin comisiones, impuestos ni dividendos. Lo que pasó no asegura lo que va a pasar.</small>

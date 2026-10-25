@@ -764,10 +764,6 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
                   <i className="bi bi-hourglass-split" />
                   <span className="aq-txt">Simular</span>
                 </Link>
-                <Link to={`/practica?operar=${encodeURIComponent(symbol)}`} className="btn btn-line aq aq-tool" title="Practicar: comprarlo con plata de mentira" aria-label="Practicar">
-                  <i className="bi bi-controller" />
-                  <span className="aq-txt">Practicar</span>
-                </Link>
                 <button type="button" className="btn btn-pink ad-trade" onClick={() => setTrade(true)}>
                   <i className="bi bi-arrow-left-right" /> Operar
                 </button>
