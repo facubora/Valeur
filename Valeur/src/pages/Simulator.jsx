@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import gsap from "gsap";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import Logo from "../components/Logo";
@@ -11,6 +12,7 @@ import { useAuth } from "../context/AuthContext";
 import { lookup } from "../lib/catalog";
 import { getCandles, useMep, useDisplayCurrency, assetCurrency, fmtPrice, money, signed, formatDate, tickerUrl } from "../lib/market";
 import { simulate, yearsAgo } from "../lib/simulate";
+import { toast } from "../lib/feedback";
 
 const POPULAR = ["NVDA", "MELI.BA", "BTC-USD", "AAPL.BA", "GGAL.BA", "SPY"];
 const WHEN = [
@@ -18,6 +20,13 @@ const WHEN = [
   [3, "3 años"],
   [5, "5 años"],
   [10, "10 años"],
+];
+// con qué se compara: el índice, la cripto más conocida, o guardar dólares
+const COMPARE = [
+  ["SPY", "S&P 500", "el S&P 500"],
+  ["BTC-USD", "Bitcoin", "Bitcoin"],
+  ["USD", "Dólares", "dólares"],
+  ["", "Nada", ""],
 ];
 const pctTxt = (n) => (n >= 0 ? "+" : "−") + Math.abs(n).toLocaleString("es-AR", { maximumFractionDigits: n >= 1000 || n <= -1000 ? 0 : 1 }) + "%";
 
@@ -73,6 +82,72 @@ export default function Simulator() {
     () => (loading || data.error ? null : simulate({ candles: data.candles, from, amount, monthly, cur, assetCur, mep: fx.mep })),
     [loading, data, from, amount, monthly, cur, assetCur, fx.mep],
   );
+  // la comparación: lo mismo, las mismas fechas, en otro activo (?vs=SPY|BTC-USD|USD|"")
+  const vs = params.get("vs") ?? (symbol === "SPY" ? "BTC-USD" : "SPY");
+  const vsLabel = COMPARE.find(([k]) => k === vs)?.[1] || vs;
+  const vsName = COMPARE.find(([k]) => k === vs)?.[2] || vs; // con artículo, para la frase
+  const [cmpData, setCmpData] = useState({ symbol: null, candles: [] });
+  useEffect(() => {
+    if (!vs || vs === "USD") return;
+    let alive = true;
+    getCandles(vs, "daily", "max").then(
+      (candles) => alive && setCmpData({ symbol: vs, candles }),
+      () => alive && setCmpData({ symbol: vs, candles: [] }),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [vs]);
+  const cmp = useMemo(() => {
+    if (!res || !vs || vs === symbol) return null;
+    // guardar dólares: un "activo" que siempre vale 1 dólar, los mismos días
+    const candles = vs === "USD" ? data.candles.map((c) => ({ time: c.time, close: 1 })) : cmpData.symbol === vs ? cmpData.candles : null;
+    if (!candles?.length) return null;
+    return simulate({ candles, from: res.start, amount, monthly, cur, assetCur: "USD", mep: fx.mep });
+  }, [res, vs, symbol, data.candles, cmpData, amount, monthly, cur, fx.mep]);
+
+  // marcas del peor y el mejor momento, solo de una vez (en mensual cada compra
+  // ya se ve como un escalón de lo invertido). Sin texto si caen en un borde.
+  const marks = useMemo(() => {
+    if (!res || monthly) return null;
+    const at = (t) => res.points.findIndex((p) => p.time >= t) / res.points.length;
+    const label = (t, text) => (at(t) < 0.06 || at(t) > 0.94 ? "" : text);
+    const out = [];
+    if (res.worst && res.worst.ratio < 1) out.push({ time: res.worst.time, kind: "worst", text: label(res.worst.time, "Peor") });
+    if (res.peak && res.peak.ratio > res.value / res.invested + 0.05) out.push({ time: res.peak.time, kind: "best", text: label(res.peak.time, "Mejor") });
+    return out;
+  }, [res, monthly]);
+
+  // cada resultado nuevo entra: el total cuenta desde lo que pusiste, las
+  // tarjetas suben en cascada y la curva se destapa de izquierda a derecha
+  const resRef = useRef(null);
+  const resKey = res ? `${symbol}|${from}|${amount}|${monthly}|${cur}|${res.value}` : "";
+  useLayoutEffect(() => {
+    const el = resRef.current;
+    if (!el || !res || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const ctx = gsap.context(() => {
+      const node = el.querySelector(".sim-big > b")?.firstChild;
+      const n = { v: res.invested };
+      gsap
+        .timeline()
+        .to(n, { v: res.value, duration: 1.3, ease: "power3.out", onUpdate: () => node && (node.nodeValue = money(n.v, undefined, cur)) }, 0)
+        .fromTo(el.querySelector(".sim-pct"), { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: "back.out(2)" }, 0.5)
+        .fromTo(el.querySelectorAll(".sim-tiles > div, .sim-vs"), { y: 14, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: "expo.out", stagger: 0.06 }, 0.1)
+        .fromTo(el.querySelector(".pchart-canvas"), { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 1.2, ease: "power2.inOut" }, 0.15);
+    }, el);
+    return () => ctx.revert();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resKey]);
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast("Link copiado: pegalo donde quieras");
+    } catch {
+      toast("No se pudo copiar el link", { kind: "error" });
+    }
+  };
+
   // si la fecha es anterior a lo que hay, arranca desde el primer día con precio
   const clipped = res && firstDay && from < firstDay;
   const fmt = (n) => money(n, undefined, cur);
@@ -202,7 +277,7 @@ export default function Simulator() {
               <span>{data.error ? "Probá con otro activo." : !(amount > 0) ? "Escribilo a la izquierda y el resultado aparece acá." : "Probá con una fecha más cercana."}</span>
             </div>
           ) : (
-            <div className="card sim-res">
+            <div className="card sim-res" ref={resRef}>
               <p className="sim-say">
                 Si hubieras puesto <b>{fmt(amount)}</b>
                 {monthly ? " todos los meses" : ""} en <b>{name}</b> {monthly ? "desde el" : "el"} <b>{formatDate(res.start)}</b>, hoy tendrías
@@ -230,7 +305,36 @@ export default function Simulator() {
                 </div>
               </div>
 
-              <PortfolioChart points={res.points} currency={cur} />
+              <div className="sim-vs">
+                <div className="sim-vs-head">
+                  <span className="sim-lbl">Comparado con</span>
+                  <div className="vx-tabs sm" role="radiogroup" aria-label="Comparar con" style={{ "--n": COMPARE.length, "--i": Math.max(0, COMPARE.findIndex(([k]) => k === vs)) }}>
+                    <span className="vx-tabs-thumb" aria-hidden="true" />
+                    {COMPARE.map(([k, label]) => (
+                      <button key={k || "nada"} type="button" role="radio" aria-checked={vs === k} className={vs === k ? "on" : ""} disabled={k === symbol} onClick={() => set({ vs: k })}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {vs && vs !== symbol && (
+                  <p className="sim-vs-say">
+                    <i className="pt-key cmp" aria-hidden="true" />
+                    {cmp ? (
+                      <span>
+                        {vs === "USD" ? "Si los guardabas en dólares, tendrías" : `En ${vsName} hubieras tenido`} <b>{fmt(cmp.value)}</b> ({pctTxt(cmp.pct)}).{" "}
+                        <em className={res.value >= cmp.value ? "txt-up" : "txt-down"}>
+                          {res.value >= cmp.value ? `${symbol} le ganó por ${fmt(res.value - cmp.value)}.` : `Te convenía ${vs === "USD" ? "quedarte en dólares" : vsName}: ${fmt(cmp.value - res.value)} más.`}
+                        </em>
+                      </span>
+                    ) : (
+                      <span>Calculando…</span>
+                    )}
+                  </p>
+                )}
+              </div>
+
+              <PortfolioChart points={res.points} currency={cur} compare={cmp ? { label: vsLabel, points: cmp.points } : null} marks={marks} />
 
               <ul className="sim-facts">
                 <li>
@@ -278,11 +382,14 @@ export default function Simulator() {
               </ul>
 
               <div className="sim-acts">
+                <button type="button" className="btn btn-line btn-sm" onClick={copyLink}>
+                  <i className="bi bi-link-45deg" /> Copiar link
+                </button>
                 <Link to={tickerUrl(symbol)} className="btn btn-line btn-sm">
                   <i className="bi bi-graph-up" /> Ver {symbol}
                 </Link>
-                <Link to="/dashboard?operar=1" className="btn btn-pink btn-sm">
-                  <i className="bi bi-plus-lg" /> Registrar una compra
+                <Link to={`/practica?operar=${encodeURIComponent(symbol)}`} className="btn btn-pink btn-sm">
+                  <i className="bi bi-controller" /> Probalo con plata de mentira
                 </Link>
               </div>
               <small className="sim-note">Con los precios de cierre de Yahoo Finance, sin comisiones, impuestos ni dividendos. Lo que pasó no asegura lo que va a pasar.</small>

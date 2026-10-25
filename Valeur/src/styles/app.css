@@ -1785,6 +1785,12 @@
 .app-root .pt-key.inv {
   border-top: 1.5px dashed var(--ink-soft);
 }
+.app-root .pt-key.cmp {
+  border-top-color: #e0861b;
+}
+[data-theme="dark"] .app-root .pt-key.cmp {
+  border-top-color: #f2a541;
+}
 .app-root .pchart-note {
   margin: -4px 0 8px;
   font-size: 0.8rem;

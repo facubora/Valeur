@@ -5919,3 +5919,44 @@
     padding-inline: 12px;
   }
 }
+/* simulador: la comparación */
+.app-root .sim-vs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+}
+.app-root .sim-vs-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+.app-root .sim-vs .vx-tabs button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.app-root .sim-vs-say {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.app-root .sim-vs-say .pt-key {
+  flex-shrink: 0;
+  align-self: auto;
+  transform: translateY(-3px);
+}
+.app-root .sim-vs-say b {
+  color: var(--ink);
+}
+.app-root .sim-vs-say em {
+  font-style: normal;
+  font-weight: 600;
+}
