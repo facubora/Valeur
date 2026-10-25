@@ -145,7 +145,7 @@ export default function Practice() {
                         <li key={r.symbol}>
                           <Link to={tickerUrl(r.symbol)} className="pr-pos-id">
                             <Logo symbol={r.symbol} size={34} />
-                            <span>
+                            <span className="pr-pos-txt">
                               <b>{r.symbol}</b>
                               <small>
                                 {r.qty.toLocaleString("es-AR", { maximumFractionDigits: 4 })} · prom. {usd(r.cost / r.qty)}
@@ -435,7 +435,7 @@ function RankRow({ p, mine = false, compact = false }) {
       <span className={"pr-n " + (MEDAL[p.rank - 1] || "")}>{p.rank <= 3 ? <i className="bi bi-trophy-fill" /> : p.rank}</span>
       <Link to={`/u/${p.username}`} className="pr-who">
         <Avatar name={p.username} size={30} />
-        <span>
+        <span className="pr-who-txt">
           <b>
             {p.display_name || p.username}
             {p.verified && <Verified label={p.verified_label} />}

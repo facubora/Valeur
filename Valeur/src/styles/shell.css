@@ -5558,9 +5558,9 @@
   min-width: 0;
   color: var(--ink);
 }
-.app-root .pr-pos-id > span,
+.app-root .pr-pos-txt,
 .app-root .pr-hist-id,
-.app-root .pr-who > span {
+.app-root .pr-who-txt {
   display: flex;
   flex-direction: column;
   min-width: 0;
