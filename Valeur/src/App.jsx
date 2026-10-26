@@ -15,6 +15,7 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Simulator from "./pages/Simulator";
 import Learn from "./pages/Learn";
+import Calendar from "./pages/Calendar";
 
 /* Dónde estaba cada pantalla del historial, para volver ahí con "atrás" */
 const positions = new Map();
@@ -99,6 +100,7 @@ function App() {
         <Route path="/u/:username" element={<Profile />} />
         <Route path="/simulador" element={<Simulator />} />
         <Route path="/aprende" element={<Learn />} />
+        <Route path="/calendario" element={<Calendar />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

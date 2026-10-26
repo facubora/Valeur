@@ -12,6 +12,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const ICON = {
   alert: "bi-bell-fill",
+  event: "bi-calendar-event",
   follow: "bi-person-plus-fill",
   post: "bi-chat-square-quote-fill",
   like: "bi-hand-thumbs-up-fill",
@@ -25,11 +26,14 @@ const TABS = [
   ["money", "Tu plata"],
   ["social", "Comunidad"],
 ];
-const tabOf = (n) => (n.kind === "alert" ? "money" : "social");
+const tabOf = (n) => (n.kind === "alert" || n.kind === "event" ? "money" : "social");
 
 /* Qué te avisa cada pestaña: se muestra cuando no hay nada */
 const WHY = {
-  money: [["bi-bell", "Salta una de tus alertas de precio", "Llegó al precio o se movió fuerte en el día"]],
+  money: [
+    ["bi-bell", "Salta una de tus alertas de precio", "Llegó al precio o se movió fuerte en el día"],
+    ["bi-calendar-event", "Mañana presenta resultados o corta el dividendo", "Algo que tenés o seguís"],
+  ],
   social: [
     ["bi-person-plus", "Alguien empieza a seguirte", "Si vos también lo seguís, pasan a ser amigos"],
     ["bi-chat-square-quote", "Alguien que seguís recomienda un activo", "Comprar, vender o mantener, con su porqué"],

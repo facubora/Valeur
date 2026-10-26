@@ -11,6 +11,7 @@ export const TERMS = [
   ["accion", "Acción", "Un pedacito de una empresa.", "Si comprás una acción de Apple, sos dueño de una parte (chiquitísima) de Apple. Si a la empresa le va bien y vale más, tu acción también.", "Comprar 1 acción de YPF a $46.800.", "basico"],
   ["portfolio", "Portfolio", "Todo lo que tenés invertido, junto.", "Es tu cartera: las acciones, CEDEARs, cripto o lo que sea que compraste. En Valeur lo ves en Portfolio, con cuánto vale hoy y cuánto ganaste.", "10 CEDEARs de Apple + 0,01 Bitcoin + 5 acciones de Galicia.", "basico"],
   ["cripto", "Criptomoneda", "Dinero digital que no emite ningún banco central.", "Bitcoin, Ethereum y otras. Se compran y venden las 24 horas, todos los días, y su precio se mueve mucho más que el de una acción.", "Bitcoin pasó de US$ 16.000 a más de US$ 100.000 en dos años.", "basico"],
+  ["dividendo", "Dividendo", "La parte de la ganancia que una empresa reparte entre sus accionistas.", "Algunas empresas pagan cada tres meses una parte de lo que ganaron. Para cobrarlo tenés que tener la acción antes del día de corte; el pago llega unos días o semanas después. Los CEDEARs cobran su parte según cuántas acciones representan.", "Coca-Cola paga US$ 0,53 por acción cada tres meses.", "basico"],
   ["indice", "Índice", "Un número que resume cómo le va a un grupo de empresas.", "El S&P 500 sigue a las 500 empresas más grandes de EE.UU.; el Merval, a las principales de la bolsa argentina. Si el índice sube, en general al mercado le fue bien.", "\"El S&P 500 subió 1% hoy\".", "basico"],
   ["broker", "Broker (ALyC)", "La empresa por la que comprás y vendés.", "En Argentina se llaman ALyC (Agente de Liquidación y Compensación) y los controla la CNV. Valeur no es un broker: acá registrás lo que hiciste ahí para seguirlo.", "Balanz, IOL, Bull Market, Cocos.", "basico"],
   ["cedear", "CEDEAR", "Una acción de afuera que se compra en pesos en Argentina.", "Representa acciones de empresas extranjeras (Apple, Google, MercadoLibre) y cotiza en la bolsa argentina. Como su precio sigue a la acción en dólares, sirve también para cubrirse del dólar.", "AAPL.BA es el CEDEAR de Apple; AAPLD.BA es el mismo, pero en dólares.", "argentina"],
@@ -19,6 +20,7 @@ export const TERMS = [
   ["variacion", "Variación del día", "Cuánto subió o bajó algo desde el cierre de ayer.", "Se mide en %. Un +2% quiere decir que vale 2% más que al cierre anterior. Es lo que ves en verde o en rojo al lado de cada precio.", "Ayer cerró en $100 y hoy está en $103: +3%.", "medir"],
   ["rendimiento", "Rendimiento", "Cuánto ganaste (o perdiste) en relación a lo que pusiste.", "Se calcula como (lo que vale hoy − lo que pusiste) ÷ lo que pusiste. Sirve para comparar inversiones de distinto tamaño.", "Pusiste US$ 1.000 y hoy vale US$ 1.200: +20%.", "medir"],
   ["anual", "Rendimiento por año", "El rendimiento repartido parejo en cada año.", "Si algo creció mucho en 5 años, te dice cuánto equivale por año. Sirve para comparar con un plazo fijo o con la inflación.", "Duplicar la plata en 5 años es más o menos +15% por año.", "medir"],
+  ["resultados", "Resultados (balance)", "Cuando la empresa cuenta cuánto vendió y cuánto ganó.", "Las empresas de EE.UU. presentan resultados cada tres meses. Antes, los analistas estiman cuánto va a ganar por acción: si le va mejor de lo esperado el precio suele subir, y si le va peor, bajar. En el Calendario ves cuándo presentan las tuyas.", "\"NVIDIA presenta el 17 de noviembre; esperan US$ 2,47 por acción\".", "medir"],
   ["promedio", "Precio promedio", "Lo que te costó, en promedio, cada unidad que tenés.", "Si compraste en distintos momentos a distintos precios, el promedio pondera cuánto compraste en cada uno. Valeur lo usa para calcular tu ganancia.", "5 a $100 y 5 a $120: promedio $110.", "medir"],
   ["diversificar", "Diversificar", "No poner todos los huevos en la misma canasta.", "Repartir la plata entre distintas empresas, sectores, países o tipos de activo, así si a uno le va mal no se lleva todo.", "Tener tecnología, energía, un índice y algo de cripto.", "riesgo"],
   ["volatilidad", "Volatilidad", "Qué tanto se mueve un precio para arriba y para abajo.", "Más volátil quiere decir subidas y bajadas más grandes. No es ni bueno ni malo, pero hay que estar preparado para aguantar las caídas.", "Una cripto puede moverse 10% en un día; Coca-Cola, rara vez.", "riesgo"],
@@ -48,6 +50,8 @@ const ICON = {
   promediar: "bi-calendar-check",
   postura: "bi-signpost-split",
   alerta: "bi-bell",
+  dividendo: "bi-cash-coin",
+  resultados: "bi-clipboard-data",
 };
 
 export const TERM = Object.fromEntries(

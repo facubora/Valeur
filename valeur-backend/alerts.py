@@ -139,6 +139,8 @@ def run_once(fetch_quotes):
 
 
 def _loop(fetch_quotes):
+    import events  # acá adentro: events también usa este módulo
+
     while True:
         try:
             n = run_once(fetch_quotes)
@@ -146,6 +148,13 @@ def _loop(fetch_quotes):
                 print(f"[alertas] {n} aviso(s) enviados", flush=True)
         except Exception as e:  # una vuelta que falla no corta las siguientes
             print(f"[alertas] falló la vuelta: {e}", file=sys.stderr, flush=True)
+        # una vez por día: los resultados y cortes de dividendo de mañana
+        try:
+            n = events.daily()
+            if n:
+                print(f"[eventos] {n} aviso(s) de mañana", flush=True)
+        except Exception as e:
+            print(f"[eventos] falló el aviso diario: {e}", file=sys.stderr, flush=True)
         time.sleep(EVERY)
 
 
