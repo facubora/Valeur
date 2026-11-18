@@ -240,7 +240,9 @@ export function useHistory(trades, range = "6m", cur = "USD", mep = null) {
 // (así abre con los acentos bien)
 const csvNum = (n, d) => Number(n).toLocaleString("es-AR", { useGrouping: false, maximumFractionDigits: d });
 const csvCell = (v) => {
-  const s = v == null ? "" : String(v);
+  let s = v == null ? "" : String(v);
+  // un texto que arranca con = + - @ Excel lo toma como fórmula: se anula con '
+  if (/^[=+\-@\t\r]/.test(s) && !/^-?\d/.test(s)) s = "'" + s;
   return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 };
 
