@@ -909,34 +909,34 @@ flowchart LR
 <h1>8. Decisiones arquitectónicas (ADR)</h1>
 <p>Cada decisión con su contexto, las alternativas, lo que elegimos y sus consecuencias. Las ADR 1 a 4 vienen de la versión anterior (actualizadas); las demás son nuevas.</p>
 
-<h3>ADR-01 · Cliente-servidor en capas, un monolito por lado <span class="tag">vigente</span></h3>
+<h2>ADR-01 · Cliente-servidor en capas, un monolito por lado <span class="tag">vigente</span></h2>
 <p><b>Contexto:</b> equipo de 3, un año de cursada. <b>Alternativas:</b> microservicios; serverless; monolito por capas. <b>Decisión:</b> una SPA y una API chica, cada una un solo desplegable. <b>Consecuencias:</b> desarrollo y despliegue simples, poca infraestructura; si la API creciera mucho habría que separarla.</p>
 
-<h3>ADR-02 · Supabase en lugar de MySQL propio <span class="tag">vigente</span></h3>
+<h2>ADR-02 · Supabase en lugar de MySQL propio <span class="tag">vigente</span></h2>
 <p><b>Contexto:</b> hacían falta usuarios, datos relacionales y seguridad sin presupuesto. <b>Alternativas:</b> MySQL local con login propio; MongoDB; Supabase. <b>Decisión:</b> arrancamos con MySQL y migramos a Supabase (Postgres administrado + Auth). <b>Consecuencias:</b> backups, autenticación y RLS listos sin mantenerlos; dependemos de un servicio externo incluso en desarrollo.</p>
 
-<h3>ADR-03 · Autenticación delegada en Supabase Auth <span class="tag">reemplaza al JWT propio</span></h3>
+<h2>ADR-03 · Autenticación delegada en Supabase Auth <span class="tag">reemplaza al JWT propio</span></h2>
 <p><b>Contexto:</b> la primera versión emitía y validaba un JWT propio en Flask. <b>Decisión:</b> pasar todo a Supabase Auth; Flask no maneja usuarios. <b>Consecuencias:</b> hash bcrypt, expiración, refresh rotativo, recuperación por mail y límite de intentos sin código propio; la sesión vive en el navegador (ver el Manual Técnico).</p>
 
-<h3>ADR-04 · Datos de mercado con yfinance <span class="tag">vigente</span></h3>
+<h2>ADR-04 · Datos de mercado con yfinance <span class="tag">vigente</span></h2>
 <p><b>Contexto:</b> miles de tickers con historia larga, sin presupuesto. <b>Alternativas:</b> APIs pagas (Alpha Vantage, IEX); yfinance. <b>Decisión:</b> yfinance. <b>Consecuencias:</b> costo cero y CEDEARs de BYMA incluidos; no es oficial y puede cambiar, lo mitigamos con errores controlados y caché.</p>
 
-<h3>ADR-05 · Autorización en la base con RLS, no en la API</h3>
+<h2>ADR-05 · Autorización en la base con RLS, no en la API</h2>
 <p><b>Contexto:</b> el front habla directo con la base. <b>Alternativas:</b> que todo pase por Flask y validar el dueño en cada endpoint; políticas RLS. <b>Decisión:</b> RLS en todas las tablas, más funciones <code>security definer</code> para lo que se comparte (portfolio en %, estadísticas de admin). <b>Consecuencias:</b> una sola regla que vale para cualquier cliente; las políticas hay que probarlas con cuidado porque un error abre datos.</p>
 
-<h3>ADR-06 · El backend solo da mercado; las alertas usan la service role key</h3>
+<h2>ADR-06 · El backend solo da mercado; las alertas usan la service role key</h2>
 <p><b>Contexto:</b> las alertas tienen que avisar aunque nadie tenga la app abierta. <b>Alternativas:</b> revisar solo en el navegador; un servicio aparte; un hilo en la API. <b>Decisión:</b> un hilo dentro de la API que cada 3 minutos lee las alertas con la <i>service role key</i> y escribe la notificación; la app también revisa mientras está abierta, y un "claim" condicional evita avisar dos veces. <b>Consecuencias:</b> un solo proceso para levantar; la clave secreta queda solo en el <code>.env</code> del backend.</p>
 
-<h3>ADR-07 · Dólar MEP calculado con CEDEARs</h3>
+<h2>ADR-07 · Dólar MEP calculado con CEDEARs</h2>
 <p><b>Contexto:</b> Yahoo no tiene AL30/GD30. <b>Decisión:</b> MEP = precio en pesos / precio en dólares del mismo CEDEAR (AAPL.BA / AAPLD.BA, etc.), mediana de 6 pares por día. <b>Consecuencias:</b> serie histórica gratis desde 2017; puede diferir unos pesos del MEP de bonos.</p>
 
-<h3>ADR-08 · Posiciones derivadas de las operaciones</h3>
+<h2>ADR-08 · Posiciones derivadas de las operaciones</h2>
 <p><b>Contexto:</b> guardar posiciones duplicaría datos. <b>Decisión:</b> solo se guardan <code>trades</code>; posiciones, costo promedio, evolución y composición se calculan. <b>Consecuencias:</b> historial completo y nada que se desincronice; las reglas (no vender de más) se validan sobre toda la historia (trigger 0008).</p>
 
-<h3>ADR-09 · Privacidad en porcentajes</h3>
+<h2>ADR-09 · Privacidad en porcentajes</h2>
 <p><b>Contexto:</b> compartir el portfolio es útil, mostrar cuánta plata tiene alguien no. <b>Decisión:</b> privado por defecto; amigos o todos a elección; se comparte solo peso y rendimiento. <b>Consecuencias:</b> la función <code>shared_portfolio</code> escala las cantidades para que no se puedan reconstruir montos.</p>
 
-<h3>ADR-10 · Entrega local con un comando, sin hosting</h3>
+<h2>ADR-10 · Entrega local con un comando, sin hosting</h2>
 <p><b>Contexto:</b> el docente tiene que poder probarla fácil; es un trabajo escolar. <b>Alternativas:</b> hosting gratuito (Vercel + Render); ejecutable; script de arranque. <b>Decisión:</b> el docente clona el repositorio y corre <code>iniciar.sh</code> / <code>iniciar.bat</code>; los datos están en Supabase con una cuenta de prueba cargada (<code>demo.py profe</code>). El modo práctica quedó guardado en la rama <code>modo-practica</code>. <b>Consecuencias:</b> sin costos ni servidores que mantener; requiere Python y Node instalados.</p>
 
 <h1>9. Atributos de calidad</h1>
