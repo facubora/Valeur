@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
-import { BrowserRouter, Routes, Route, useLocation, useNavigate, useNavigationType } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import { supabase } from "./lib/supabase";
+import { useAuth } from "./context/AuthContext";
 import LandingPage from "./pages/LandingPage";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -82,6 +83,16 @@ function RecoveryRedirect() {
   return null;
 }
 
+/* Rutas privadas: sin sesión, a entrar. Está acá una sola vez para que una
+   pantalla nueva no quede abierta por olvidarse el chequeo adentro. Los
+   permisos de verdad los pone la base (RLS): esto es para no mostrar la
+   pantalla vacía. */
+function Private({ children }) {
+  const { user, loading } = useAuth();
+  if (!loading && !user) return <Navigate to="/login" replace />;
+  return children;
+}
+
 function App() {
   return (
     <BrowserRouter>
@@ -93,15 +104,15 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/recuperar" element={<ForgotPassword />} />
         <Route path="/nueva-clave" element={<NewPassword />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/home" element={<Private><Home /></Private>} />
+        <Route path="/dashboard" element={<Private><Dashboard /></Private>} />
         <Route path="/tickersearch" element={<Tickersearch />} />
-        <Route path="/comunidad" element={<Community />} />
-        <Route path="/u/:username" element={<Profile />} />
-        <Route path="/simulador" element={<Simulator />} />
+        <Route path="/comunidad" element={<Private><Community /></Private>} />
+        <Route path="/u/:username" element={<Private><Profile /></Private>} />
+        <Route path="/simulador" element={<Private><Simulator /></Private>} />
         <Route path="/aprende" element={<Learn />} />
-        <Route path="/calendario" element={<Calendar />} />
-        <Route path="/admin" element={<Admin />} />
+        <Route path="/calendario" element={<Private><Calendar /></Private>} />
+        <Route path="/admin" element={<Private><Admin /></Private>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>

@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "oversized-h1",
+        "value": "*",
+        "files": [
+          "docs/entrega/fuente/arquitectura.html"
+        ],
+        "createdAt": "2026-11-18T00:50:32.359Z",
+        "reason": "Claude: documento A4 para imprimir a PDF; los h1 son títulos de sección a 21pt, no un hero web"
+      }
+    ]
+  }
+}

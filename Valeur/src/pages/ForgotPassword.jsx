@@ -4,7 +4,7 @@ import AuthLayout, { IconField, FormError, SubmitButton } from "../components/Au
 import RecoverySteps from "../components/RecoverySteps";
 import { useAuth } from "../context/AuthContext";
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+import { EMAIL_RE } from "../lib/validate";
 
 /* Recuperar la contraseña: pide el mail y manda el enlace para elegir una nueva */
 export default function ForgotPassword() {

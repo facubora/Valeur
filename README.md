@@ -79,21 +79,43 @@ Valeur/                    Front (React + Vite)
     ├── lib/               datos: portfolio, mercado, comunidad, alertas, simulador, glosario
     ├── context/           sesión (AuthContext) y tema (ThemeContext)
     └── styles/            app.css, shell.css, social.css, landing.css
-supabase/migrations/       las tablas, permisos y funciones, en orden (0001 a 0006)
+supabase/migrations/       las tablas, permisos y funciones, en orden (0001 a 0008)
 valeur-backend/
 ├── backend.py             API de precios (y arranca el chequeo de alertas)
 ├── alerts.py              revisa las alertas de todos y deja la notificación
 ├── events.py              próximos resultados y dividendos, y el aviso del día antes
 ├── supa.py                acceso a Supabase con la service role key
-└── demo.py                carga (y borra) datos de ejemplo
+├── demo.py                carga (y borra) datos de ejemplo y la cuenta de prueba
+└── tests/                 tests del backend (pytest)
+Valeur/tests/              tests del front (Vitest)
+docs/entrega/              TP3 corregido y manual técnico (PDF)
 docs/capturas/             las capturas de este README
+iniciar.sh / iniciar.bat   levantan backend y front con un comando
 ```
 
 ---
 
-## Levantarlo en tu compu
+## Probarlo rápido (para el docente)
 
-Necesitás **Node.js 18+**, **Python 3.9+** y un proyecto gratis en [supabase.com](https://supabase.com).
+Solo hace falta tener instalados **Python 3.9+** y **Node.js 20+**. La base de datos y las cuentas ya están en la nube (Supabase), con datos de ejemplo cargados.
+
+```bash
+git clone https://github.com/facubora/Valeur.git
+cd Valeur
+./iniciar.sh          # Mac / Linux. En Windows: doble clic en iniciar.bat
+```
+
+La primera vez instala todo (un par de minutos) y después abre **http://localhost:5173**.
+
+**Cuenta de prueba:** `profe@demo.valeur.test`. La contraseña está en la entrega de Classroom. La cuenta ya tiene portfolio, activos seguidos, alertas, amigos y una comunidad con recomendaciones.
+
+Documentación de la entrega en [`docs/entrega/`](docs/entrega/): el documento de arquitectura (TP3 corregido) y el manual técnico de testing y seguridad.
+
+---
+
+## Levantarlo en tu compu (con tu propio Supabase)
+
+Necesitás **Node.js 20+**, **Python 3.9+** y un proyecto gratis en [supabase.com](https://supabase.com).
 
 ### 1. Supabase
 
@@ -109,6 +131,7 @@ Necesitás **Node.js 18+**, **Python 3.9+** y un proyecto gratis en [supabase.co
    | `0005_admin.sql` | Admins, reportes y los números del panel |
    | `0006_practice.sql` | Modo práctica (en pausa: el código vive en la rama `modo-practica`; correrla no cambia nada en la app) |
    | `0007_events.sql` | Avisos de resultados y dividendos (tipo de notificación nuevo) |
+   | `0008_trade_rules.sql` | La base rechaza ventas de más, fechas futuras y precio cero (aunque se saltee el front) |
 
 3. Hacete admin (una sola vez, con tu usuario después de registrarte):
    ```sql
@@ -134,6 +157,8 @@ PORT=5002 python backend.py       # http://localhost:5002
 | `SUPABASE_SERVICE_ROLE_KEY` | La service_role key. Con esto andan las alertas con la app cerrada |
 | `ALERTS_EVERY` | Cada cuántos segundos se revisan las alertas (180 por defecto, mínimo 60) |
 | `CORS_ORIGINS` | Otros orígenes permitidos además de localhost, separados por coma |
+| `FLASK_DEBUG` | `1` para recargar al guardar y ver los errores con detalle (solo en tu compu) |
+| `HOST` | Dónde escucha: `127.0.0.1` por defecto; `0.0.0.0` para abrirlo desde otro dispositivo de la red |
 
 Al arrancar tiene que decir `[alertas] revisando cada 180 s`.
 
@@ -152,13 +177,23 @@ npm run dev                       # http://localhost:5173
 | `VITE_SUPABASE_ANON_KEY` | La anon key (es pública: la protege el RLS) |
 | `VITE_MARKET_API` | La URL del backend, por ejemplo `http://localhost:5002/api` |
 
-### 4. Datos de ejemplo (opcional)
+### 4. Tests
+
+```bash
+cd valeur-backend && pip install -r requirements-dev.txt && python -m pytest   # backend: unitarias + API
+cd Valeur && npm test                                                            # front: cálculos y validaciones (Vitest)
+```
+
+Ninguno toca internet ni la base real: los precios de Yahoo se reemplazan por datos falsos y Supabase queda sin configurar.
+
+### 5. Datos de ejemplo (opcional)
 
 Para mostrar la app con comunidad, el backend puede cargar usuarios de ejemplo con recomendaciones, seguidores y "me sirve":
 
 ```bash
 cd valeur-backend
 python demo.py cargar --usuario TU_USUARIO   # los de ejemplo te siguen a vos
+python demo.py profe --clave CONTRASEÑA      # cuenta de prueba con todo cargado
 python demo.py borrar                        # saca todo lo de ejemplo
 ```
 

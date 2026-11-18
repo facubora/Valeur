@@ -2,6 +2,7 @@
 # recomendaciones, seguidores y "me sirve".
 #
 #   python demo.py cargar [--usuario TU_USUARIO] [--amigos]
+#   python demo.py profe --clave CONTRASEÑA   (cuenta de prueba con todo cargado)
 #   python demo.py borrar
 #   python demo.py prueba        (muestra qué haría, sin tocar nada)
 #
@@ -49,6 +50,84 @@ FOLLOWS = [
     ("martu_cedears", "ana_inversiones"), ("leo_trader", "martu_cedears"), ("martu_cedears", "leo_trader"),
     ("cami_crypto", "ana_inversiones"), ("juan_cruz", "leo_trader"),
 ]
+
+# Cuenta de prueba para el docente: portfolio, seguidos y alertas ya cargados
+PROFE = ("profe", "Docente (prueba)")
+# activo, compra/venta, cantidad, hace cuántos días, nota
+PROFE_TRADES = [
+    ("AAPL.BA", "buy", 20, 160, "Primera compra: de a poco y a largo plazo"),
+    ("MELI.BA", "buy", 2, 130, "La empresa argentina que más creció"),
+    ("KO.BA", "buy", 15, 100, "Defensiva y paga dividendos"),
+    ("NVDA", "buy", 3, 75, None),
+    ("BTC-USD", "buy", 0.01, 60, "Un poquito de cripto"),
+    ("AAPL.BA", "sell", 5, 30, "Tomé algo de ganancia"),
+]
+PROFE_WATCH = [("GGAL.BA", "Grupo Galicia"), ("YPFD.BA", "YPF"), ("TSLA", "Tesla"), ("SPY", "S&P 500"), ("MSFT.BA", "Microsoft")]
+# activo, tipo, cuánto (precio relativo al actual, o % del día)
+PROFE_ALERTS = [("AAPL.BA", "above", 1.10), ("GGAL.BA", "below", 0.90), ("BTC-USD", "down_pct", 5)]
+
+
+def _close_at(symbol, days):
+    """Cierre de hace `days` días (el último disponible antes de esa fecha)"""
+    from backend import yf
+
+    df = yf.Ticker(symbol).history(period="1y", interval="1d")["Close"].dropna()
+    day = (datetime.now(timezone.utc) - timedelta(days=days)).date()
+    before = df[[d.date() <= day for d in df.index]]
+    return round(float((before if len(before) else df).iloc[-1]), 4)
+
+
+def profe(clave, dry=False):
+    """Crea (o rehace) la cuenta de prueba con datos para recorrer todo"""
+    if not supa.configured():
+        sys.exit("Faltan SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY en el .env")
+    if not dry and (not clave or len(clave) < 8):
+        sys.exit("Poné una contraseña de 8 o más: python demo.py profe --clave CONTRASEÑA")
+    from backend import fetch_quotes
+
+    username, name = PROFE
+    email = f"{username}@{DOMAIN}"
+    trades = [{"symbol": s, "side": side, "qty": q, "price": _close_at(s, d),
+               "executed_at": (datetime.now(timezone.utc) - timedelta(days=d)).date().isoformat(), "note": n}
+              for s, side, q, d, n in PROFE_TRADES]
+    quotes = fetch_quotes(sorted({s for s, *_ in PROFE_ALERTS}))
+    alerts = []
+    for s, kind, k in PROFE_ALERTS:
+        q = quotes.get(s)
+        if q:
+            alerts.append({"symbol": s, "kind": kind, "value": round(q["price"] * k, 2) if kind in ("above", "below") else k})
+    print(f"Cuenta {email}: {len(trades)} operaciones, {len(PROFE_WATCH)} seguidos, {len(alerts)} alertas")
+    if dry:
+        for t in trades:
+            print(f"  {t['executed_at']} {t['side']} {t['qty']} {t['symbol']} a {t['price']}")
+        return
+
+    ids = demo_users()
+    if username in ids:
+        uid = ids[username]
+        _admin("PUT", f"users/{uid}", {"password": clave})
+    else:
+        uid = _admin("POST", "users", {
+            "email": email, "password": clave, "email_confirm": True,
+            "user_metadata": {"username": username, "demo": True},
+        })["id"]
+    supa.rest("PATCH", "profiles", params={"id": "eq." + uid}, json={
+        "display_name": name, "bio": "Cuenta para probar Valeur.", "visibility": "friends",
+    }, prefer="return=minimal")
+    for table in ("trades", "watchlist", "alerts"):
+        supa.rest("DELETE", table, params={"user_id": "eq." + uid}, prefer="return=minimal")
+    supa.rest("POST", "trades", json=[dict(t, user_id=uid) for t in trades], prefer="return=minimal")
+    supa.rest("POST", "watchlist", json=[{"user_id": uid, "symbol": s, "name": n} for s, n in PROFE_WATCH], prefer="return=minimal")
+    if alerts:
+        supa.rest("POST", "alerts", json=[dict(a, user_id=uid) for a in alerts], prefer="return=minimal")
+    # los de ejemplo lo siguen y él sigue a algunos: así tiene amigos y feed
+    others = {u: i for u, i in ids.items() if u != username}
+    follows = [{"follower_id": i, "followee_id": uid} for i in others.values()]
+    follows += [{"follower_id": uid, "followee_id": others[u]} for u in ("ana_inversiones", "cami_crypto", "juan_cruz") if u in others]
+    if follows:
+        supa.rest("POST", "follows", json=follows, prefer="return=minimal,resolution=ignore-duplicates")
+    print(f"Listo: entrá con {email}" + ("" if others else " (corré antes 'python demo.py cargar' para que tenga comunidad)"))
+
 
 def _admin(method, path, json=None):
     headers = supa._headers()
@@ -105,7 +184,8 @@ def cargar(usuario=None, amigos=False, dry=False):
             print(f"  @{who}: {stance} {sym} (hace {days} días)" + ("" if quotes.get(sym) else " — sin precio, se saltea"))
         return
 
-    ids = demo_users()
+    people = {p[0] for p in PEOPLE}
+    ids = {u: i for u, i in demo_users().items() if u in people}
     for username, name, bio, vis, verified in PEOPLE:
         if username not in ids:
             u = _admin("POST", "users", {
@@ -172,10 +252,13 @@ if __name__ == "__main__":
     usuario = args[args.index("--usuario") + 1] if "--usuario" in args and args.index("--usuario") + 1 < len(args) else None
     if cmd == "cargar":
         cargar(usuario, amigos="--amigos" in args)
+    elif cmd == "profe":
+        clave = args[args.index("--clave") + 1] if "--clave" in args and args.index("--clave") + 1 < len(args) else None
+        profe(clave, dry="--prueba" in args)
     elif cmd == "prueba":
         cargar(usuario, dry=True)
     elif cmd == "borrar":
         borrar()
     else:
         print(__doc__ if __doc__ else "python demo.py cargar|borrar|prueba [--usuario U] [--amigos]")
-        print("Uso: python demo.py cargar [--usuario TU_USUARIO] [--amigos] | borrar | prueba")
+        print("Uso: python demo.py cargar [--usuario TU_USUARIO] [--amigos] | profe --clave CONTRASEÑA | borrar | prueba")
