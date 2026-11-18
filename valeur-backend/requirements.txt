@@ -3,3 +3,4 @@ flask-cors>=4.0
 requests>=2.31
 python-dotenv>=1.0
 yfinance>=0.2
+tzdata>=2024.1   # zonas horarias en Windows (zoneinfo)
