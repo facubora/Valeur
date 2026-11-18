@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Valeur — Manual Técnico: Testing y Seguridad</title>
+<link rel="stylesheet" href="estilo.css">
+<script src="mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: "neutral", fontFamily: "Helvetica Neue, Arial, sans-serif", securityLevel: "loose", flowchart: { wrappingWidth: 420, useMaxWidth: true }, sequence: { useMaxWidth: true }, er: { useMaxWidth: true } });</script>
+</head>
+<body>
+
+<section class="cover">
+  <div>
+    <div class="kicker">2.º Parcial · Desarrollo de Sistemas</div>
+    <h1>Valeur</h1>
+    <div class="sub">Manual Técnico: métodos de testeo y medidas de seguridad</div>
+  </div>
+  <table class="meta">
+    <tr><td>Institución</td><td>Instituto Industrial Luis A. Huergo</td></tr>
+    <tr><td>Curso</td><td>6.º año · Especialidad Computación</td></tr>
+    <tr><td>Equipo</td><td>Borassi · Aguilar · Seralvo</td></tr>
+    <tr><td>Repositorio</td><td>github.com/facubora/Valeur</td></tr>
+    <tr><td>Fecha</td><td>Noviembre de 2026</td></tr>
+  </table>
+</section>
+
+<section class="toc">
+  <h2>Contenido</h2>
+  <ol>
+    <li>Resumen</li>
+    <li>Métodos de testeo
+      <ol><li>Estrategia y niveles de prueba</li><li>Herramientas y cómo correrlas</li><li>Qué cubre cada suite</li><li>Matriz de casos de prueba</li><li>Recorrido manual de la aplicación</li></ol></li>
+    <li>Medidas de seguridad
+      <ol><li>Qué delegamos en plataformas y librerías</li><li>Autenticación y manejo de sesiones</li><li>Autorización y control de acceso</li><li>Contraseñas y secretos</li><li>Validación y sanitización de datos</li><li>Manejo seguro de errores</li><li>Dependencias y configuración</li></ol></li>
+    <li>Riesgos conocidos y próximos pasos</li>
+  </ol>
+</section>
+
+<h1>1. Resumen</h1>
+<p>Valeur es una aplicación web para seguir inversiones (CEDEARs, acciones, cripto), ver el mercado y compartir recomendaciones con otros usuarios. Tiene tres piezas:</p>
+<ul>
+  <li><b>Front</b> (React + Vite): todas las pantallas. Habla directo con Supabase para la cuenta y los datos del usuario.</li>
+  <li><b>Supabase</b> (Postgres + Auth, en la nube): cuentas, contraseñas, sesiones y todas las tablas, protegidas con <i>Row Level Security</i> (RLS).</li>
+  <li><b>Backend propio</b> (Python + Flask + yfinance): precios, gráficos, dólar MEP y calendario desde Yahoo Finance; además revisa las alertas de precio de todos los usuarios y deja las notificaciones.</li>
+</ul>
+<p>Este manual explica <b>cómo probamos</b> que eso funciona (tests automáticos y pruebas manuales) y <b>qué protege</b> a la aplicación, separando lo que programamos nosotros de lo que nos dan Supabase y las librerías.</p>
+
+<div class="note">Números de esta entrega: <b>116 tests automáticos</b> (66 en el backend con PyTest y 50 en el front con Vitest), todos pasando, más <b>11 casos</b> probados sobre una base Postgres local para las reglas de la base de datos y un recorrido manual de todas las pantallas.</div>
+
+<h1>2. Métodos de testeo</h1>
+
+<h2>2.1 Estrategia y niveles de prueba</h2>
+<p>Seguimos la idea de la <b>pirámide de tests</b>: muchas pruebas chicas y rápidas sobre la lógica (unitarias), menos pruebas sobre la comunicación entre piezas (integración) y pocas pruebas de punta a punta, que son las más lentas y frágiles.</p>
+
+<figure><pre class="mermaid">
+flowchart TB
+  E2E["<b>Funcionales / E2E</b><br/>Flujos completos en el navegador<br/>(manuales, con la matriz de casos)"]
+  INT["<b>Integración</b><br/>Endpoints HTTP de la API (cliente de pruebas de Flask)<br/>Reglas de la base (Postgres local)"]
+  UNIT["<b>Unitarias</b><br/>Cálculos del portfolio, validaciones, formatos,<br/>reglas de alertas, simulador (PyTest + Vitest)"]
+  E2E --- INT --- UNIT
+  style E2E fill:#eef0fb,stroke:#3a4fd8
+  style INT fill:#e3e7fa,stroke:#3a4fd8
+  style UNIT fill:#d4daf7,stroke:#3a4fd8
+</pre><figcaption>Figura 1. Niveles de prueba de Valeur (arriba, pocas y lentas; abajo, muchas y rápidas).</figcaption></figure>
+
+<table>
+  <thead><tr><th style="width:18%">Nivel</th><th>Qué probamos</th><th style="width:24%">Cómo</th></tr></thead>
+  <tbody>
+    <tr><td><b>Unitarias</b></td><td>Funciones de negocio aisladas, sin red ni base: costo promedio y ganancia del portfolio, ventas de más, conversión pesos/dólares con el MEP, simulador "¿y si hubiera invertido?", reglas de las alertas, validación de email, usuario, contraseña y tickers, formatos de precios, exportación a CSV.</td><td>PyTest (backend) y Vitest (front).</td></tr>
+    <tr><td><b>Integración</b></td><td>Los endpoints de la API: códigos de estado, forma del JSON, límites, errores, CORS y cabeceras. Yahoo Finance se reemplaza por datos falsos para que el resultado no dependa de internet.<br/>Las reglas de la base (triggers y restricciones) se prueban corriendo las migraciones en un Postgres local.</td><td>Cliente de pruebas de Flask + PyTest.<br/>Postgres 17 local con las migraciones 0001, 0002 y 0008.</td></tr>
+    <tr><td><b>Funcionales / E2E</b></td><td>Flujos completos de usuario en el navegador, con datos reales: entrar, registrar operaciones, ventas inválidas, buscar, alertas, comunidad, privacidad, acceso de admin.</td><td>Manual, siguiendo la matriz de casos (sección 2.4).</td></tr>
+  </tbody>
+</table>
+
+<div class="note">Elegimos que los E2E sean manuales porque la app depende de servicios externos con datos que cambian todos los días (precios de Yahoo, cuentas en Supabase). Automatizarlos implicaría simular ambos servicios enteros; con el tiempo que teníamos, preferimos cubrir bien la lógica con tests automáticos y recorrer los flujos a mano con una lista fija.</div>
+
+<h2>2.2 Herramientas y cómo correrlas</h2>
+<table>
+  <thead><tr><th style="width:18%">Herramienta</th><th>Para qué</th><th style="width:40%">Comando</th></tr></thead>
+  <tbody>
+    <tr><td><b>PyTest</b> 8</td><td>Tests del backend (unitarias + API).</td><td><code>cd valeur-backend</code><br/><code>pip install -r requirements-dev.txt</code><br/><code>python -m pytest</code></td></tr>
+    <tr><td><b>Vitest</b> 4</td><td>Tests del front (lógica en <code>src/lib</code>).</td><td><code>cd Valeur && npm test</code></td></tr>
+    <tr><td><b>ESLint</b></td><td>Análisis estático del front (errores comunes de React y hooks).</td><td><code>cd Valeur && npm run lint</code></td></tr>
+    <tr><td><b>npm audit</b></td><td>Vulnerabilidades conocidas en las dependencias.</td><td><code>cd Valeur && npm audit</code></td></tr>
+    <tr><td><b>Postgres</b> local</td><td>Probar las reglas de la base sin tocar la base real.</td><td>Ver sección 2.3, "Reglas de la base".</td></tr>
+  </tbody>
+</table>
+<p>Ningún test automático toca internet ni la base de datos real: en el backend, <code>tests/conftest.py</code> deja Supabase "sin configurar" y reemplaza Yahoo Finance por precios inventados; en el front, las funciones probadas son puras (reciben datos y devuelven un resultado).</p>
+
+<h2>2.3 Qué cubre cada suite</h2>
+<h3>Backend — <code>valeur-backend/tests/</code> (66 tests)</h3>
+<table>
+  <thead><tr><th style="width:26%">Archivo</th><th>Casos</th></tr></thead>
+  <tbody>
+    <tr><td><code>test_unit.py</code><br/><span class="tag">unitarias</span></td><td>Validación de tickers (acepta <code>AAPL</code>, <code>MELI.BA</code>, <code>^MERV</code>; rechaza <code>AAPL;DROP</code>, <code>&lt;script&gt;</code>, <code>' OR 1=1</code>, más de 15 caracteres). Parámetros numéricos acotados (<code>limit=abc</code> → valor por defecto). Tipo de activo y moneda. Formato argentino de precios. Reglas de las alertas (sube a, baja a, % del día, una sola vez por rueda, pausadas). Acción de origen de cada CEDEAR para el calendario. Aviso diario de eventos una sola vez por día y desde las 10.</td></tr>
+    <tr><td><code>test_api.py</code><br/><span class="tag">integración</span></td><td><code>/api/health</code>, <code>/api/quote</code> (ok, 400, 404, 502 sin detalles internos), <code>/api/candles</code> (límite y parámetros inválidos), <code>/api/batch</code> (mezcla de válidos, inválidos e inexistentes; máximo 60 símbolos; 400 sin parámetros), <code>/api/search</code>, <code>/api/events</code>, ruta inexistente (404 en JSON), método no permitido (405), cabeceras de seguridad y CORS (solo orígenes permitidos).</td></tr>
+  </tbody>
+</table>
+
+<h3>Front — <code>Valeur/tests/</code> (50 tests)</h3>
+<table>
+  <thead><tr><th style="width:26%">Archivo</th><th>Casos</th></tr></thead>
+  <tbody>
+    <tr><td><code>portfolio.test.js</code></td><td>Costo promedio ponderado, ganancia y variación del día; la venta saca costo en proporción; posición cerrada desaparece; sin cotización usa el costo; CEDEAR en pesos convertido a dólares con el MEP; la composición suma 100%. Ventas de más (por fecha, no por orden de la lista). CSV: separador, fecha y decimales argentinos, notas con <code>;</code> o comillas y <b>notas que empiezan con <code>=</code> neutralizadas</b> (inyección de fórmulas en Excel).</td></tr>
+    <tr><td><code>market.test.js</code></td><td>Tipo y moneda de cada activo, formatos de dinero y porcentaje, conversión con el MEP (sin MEP no inventa un número), horario de BYMA y NYSE, validación de alertas (valores no positivos, porcentajes absurdos, precio ya superado, alerta duplicada) y el simulador (compra única, mensual, entradas inválidas).</td></tr>
+    <tr><td><code>password.test.js</code></td><td>Puntaje de la contraseña: las comunes valen 0 aunque sean largas, las cortas nunca pasan de 1; reglas obligatorias (8 o más, no común, confirmación igual).</td></tr>
+    <tr><td><code>validate.test.js</code></td><td>Email (<code>usuario@dominio</code> se rechaza) y nombre de usuario (mismas reglas que el <i>check</i> de la base).</td></tr>
+  </tbody>
+</table>
+
+<h3>Reglas de la base — Postgres local</h3>
+<p>Para la migración <code>0008_trade_rules.sql</code> (la base rechaza ventas de más y fechas futuras aunque alguien se saltee el front), levantamos un Postgres 17 vacío, creamos un esquema <code>auth</code> mínimo como el de Supabase, corrimos las migraciones 0001, 0002 y 0008 (la 0008 dos veces, para comprobar que se puede repetir) y probamos estos 11 casos:</p>
+<table>
+  <thead><tr><th>Operación</th><th style="width:38%">Resultado</th></tr></thead>
+  <tbody>
+    <tr><td>Compra de 10 AAPL hace 10 días</td><td class="ok">Aceptada</td></tr>
+    <tr><td>Venta de 4 hace 5 días</td><td class="ok">Aceptada</td></tr>
+    <tr><td>Venta de 7 hoy (quedan 6)</td><td>Rechazada: "no alcanza la cantidad"</td></tr>
+    <tr><td>Venta de 6 hoy (justo lo que queda)</td><td class="ok">Aceptada</td></tr>
+    <tr><td>Venta anterior a la primera compra</td><td>Rechazada</td></tr>
+    <tr><td>Compra con fecha dentro de 3 días</td><td>Rechazada: "La fecha no puede ser futura"</td></tr>
+    <tr><td>Compra con precio 0</td><td>Rechazada (restricción <code>price &gt; 0</code>)</td></tr>
+    <tr><td>Borrar la compra que respalda las ventas</td><td>Rechazada</td></tr>
+    <tr><td>Mover una venta antes de la compra</td><td>Rechazada</td></tr>
+    <tr><td>Borrar las ventas</td><td class="ok">Aceptada</td></tr>
+    <tr><td>Borrar la compra (ya sin ventas)</td><td class="ok">Aceptada</td></tr>
+  </tbody>
+</table>
+
+<h2>2.4 Matriz de casos de prueba</h2>
+<p>Casos representativos de los flujos principales, los casos borde y el manejo de errores. La última columna indica dónde está automatizado o si se prueba a mano.</p>
+<table>
+  <thead><tr><th style="width:7%">ID</th><th style="width:13%">Módulo</th><th style="width:10%">Tipo</th><th style="width:27%">Entrada / precondición</th><th style="width:27%">Resultado esperado</th><th style="width:16%">Dónde</th></tr></thead>
+  <tbody>
+    <tr><td>TC-01</td><td>Autenticación</td><td>E2E</td><td>En <code>/login</code>, email y contraseña correctos de la cuenta de prueba.</td><td>Entra y llega a <code>/home</code> con "Buenas …, <i>usuario</i>".</td><td>Manual</td></tr>
+    <tr><td>TC-02</td><td>Autenticación</td><td>E2E</td><td>En <code>/login</code>, contraseña incorrecta.</td><td>Mensaje "Email o contraseña incorrectos", sin decir cuál de los dos falló ni mostrar detalles internos.</td><td>Manual</td></tr>
+    <tr><td>TC-03</td><td>Validación de datos</td><td>Unitaria</td><td>Email <code>usuario@dominio</code> (sin punto en el dominio).</td><td>La validación lo rechaza; el formulario muestra "El email no es válido" y no se envía.</td><td><code>validate.test.js</code></td></tr>
+    <tr><td>TC-04</td><td>Registro</td><td>Unitaria</td><td>Contraseña <code>12345678</code> (larga pero común).</td><td>Puntaje 0: "Esa contraseña es muy común, elegí otra".</td><td><code>password.test.js</code></td></tr>
+    <tr><td>TC-05</td><td>Portfolio</td><td>Unitaria</td><td>Compras de 10 AAPL a 100 y 10 a 200; precio actual 180.</td><td>Costo promedio 150, valor 3.600, ganancia +600 (+20%).</td><td><code>portfolio.test.js</code></td></tr>
+    <tr><td>TC-06</td><td>Lógica de negocio</td><td>E2E</td><td>Con 30 NVDAD.BA, registrar una venta de 999.</td><td>Se bloquea: "Solo tenés 30 NVDAD.BA para vender". No se guarda nada.</td><td>Manual</td></tr>
+    <tr><td>TC-07</td><td>Lógica de negocio</td><td>Integración</td><td>Insertar la misma venta de más directo en la base, salteando el front.</td><td>La base la rechaza (trigger <code>trades_check_balance</code>).</td><td>Postgres local</td></tr>
+    <tr><td>TC-08</td><td>Control de acceso</td><td>Integración</td><td>Con la sesión del usuario A, leer <code>trades</code> del usuario B por la API de Supabase.</td><td>Devuelve una lista vacía: la política RLS solo deja ver las filas propias.</td><td>Manual (API)</td></tr>
+    <tr><td>TC-09</td><td>Control de acceso</td><td>Integración</td><td>Con la sesión de A, insertar una operación con <code>user_id</code> de B.</td><td>Status 403: "new row violates row-level security policy".</td><td>Manual (API)</td></tr>
+    <tr><td>TC-10</td><td>Control de acceso</td><td>E2E</td><td>Usuario sin permisos de admin entra a <code>/admin</code>.</td><td>Vuelve a <code>/home</code>; la función <code>admin_stats</code> responde error 42501 (403).</td><td>Manual</td></tr>
+    <tr><td>TC-11</td><td>Rutas privadas</td><td>E2E</td><td>Sin sesión, abrir <code>/dashboard</code>.</td><td>Redirige a <code>/login</code>.</td><td>Manual</td></tr>
+    <tr><td>TC-12</td><td>API de mercado</td><td>Integración</td><td><code>GET /api/quote/AAPL;DROP</code></td><td>Status 400 <code>{"error": "Invalid symbol"}</code>; no se consulta a Yahoo.</td><td><code>test_api.py</code></td></tr>
+    <tr><td>TC-13</td><td>Manejo de errores</td><td>Integración</td><td>Yahoo Finance falla con un error que trae una ruta interna.</td><td>Status 502 <code>{"error": "Market data unavailable"}</code>, sin la ruta ni la traza.</td><td><code>test_api.py</code></td></tr>
+    <tr><td>TC-14</td><td>API de mercado</td><td>Integración</td><td><code>GET /api/batch</code> con 100 símbolos, algunos inválidos.</td><td>Responde 200 con 60 como máximo; los inválidos vuelven como <code>null</code>.</td><td><code>test_api.py</code></td></tr>
+    <tr><td>TC-15</td><td>CORS</td><td>Integración</td><td>Pedido con <code>Origin: https://sitio-malo.com</code>.</td><td>La respuesta no trae <code>Access-Control-Allow-Origin</code>: el navegador lo bloquea.</td><td><code>test_api.py</code></td></tr>
+    <tr><td>TC-16</td><td>Alertas</td><td>Unitaria</td><td>Alerta "sube a US$ 90" cuando ya cotiza a 100; alerta "+3% en el día" que ya avisó hoy.</td><td>La primera se rechaza ("poné un precio más alto"); la segunda no vuelve a avisar hasta la próxima rueda.</td><td><code>market.test.js</code>, <code>test_unit.py</code></td></tr>
+    <tr><td>TC-17</td><td>Exportar CSV</td><td>Unitaria</td><td>Operación con nota <code>=HYPERLINK("http://x")</code>.</td><td>En el CSV queda <code>'=HYPERLINK…</code>: Excel lo muestra como texto y no lo ejecuta.</td><td><code>portfolio.test.js</code></td></tr>
+    <tr><td>TC-18</td><td>Estados vacíos</td><td>E2E</td><td>Cuenta nueva sin operaciones ni seguidos.</td><td>Portfolio "fantasma" punteado invitando a la primera operación; listas vacías con mensaje y acción.</td><td>Manual</td></tr>
+  </tbody>
+</table>
+
+<h2>2.5 Recorrido manual de la aplicación</h2>
+<p>Antes de la entrega recorrimos todas las pantallas con una cuenta con datos reales, mirando que carguen sin errores en la consola del navegador, que los números coincidan entre pantallas y que los formularios rechacen lo inválido sin guardar nada:</p>
+<table>
+  <thead><tr><th style="width:24%">Pantalla</th><th>Qué se verificó</th></tr></thead>
+  <tbody>
+    <tr><td>Landing, Entrar, Registro, Recuperar, 404</td><td>Cargan sin sesión; validaciones de los formularios; la 404 muestra la ruta pedida.</td></tr>
+    <tr><td>Inicio</td><td>Valor del portfolio y variación del día iguales a los del Portfolio; movimientos, alertas y seguidos.</td></tr>
+    <tr><td>Portfolio</td><td>Valor, invertido y ganancia coinciden entre la cabecera, el resumen y las posiciones; composición suma 100%; formulario de operación con ticker vacío, venta de más y fecha futura.</td></tr>
+    <tr><td>Mercado y activo</td><td>Explorador por rubro y tipo, conversión a dólar MEP, gráfico, recomendaciones de la comunidad sobre el activo.</td></tr>
+    <tr><td>Comunidad y perfil</td><td>Feed, personas para seguir, portfolio compartido solo en porcentajes.</td></tr>
+    <tr><td>Calendario, Simulador, Aprendé</td><td>Eventos agrupados por mes con "la tenés / la seguís"; simulación comparada con el S&amp;P 500; tarjetas.</td></tr>
+    <tr><td>Admin</td><td>Un usuario que no es admin es devuelto al Inicio.</td></tr>
+    <tr><td>Buscador ⌘K</td><td>Busca por nombre ("mercado" → MELI, MELI.BA, BYMA…).</td></tr>
+  </tbody>
+</table>
+<p>Durante este recorrido encontramos y corregimos: errores del backend que mostraban el mensaje interno de Yahoo, el modo <i>debug</i> de Flask abierto a la red, el CSV que permitía fórmulas, código y estilos que ya no se usaban (unas 4.000 líneas) y la falta de una protección central para las rutas privadas.</p>
+
+<h1>3. Medidas de seguridad</h1>
+
+<figure><pre class="mermaid">
+flowchart LR
+  U["Navegador<br/>(SPA React)"]
+  subgraph SB["Supabase (nube) — delegado"]
+    AUTH["Auth<br/>bcrypt · JWT · refresh"]
+    API["API REST (PostgREST)<br/>consultas parametrizadas"]
+    DB[("Postgres<br/>RLS · checks · triggers")]
+  end
+  subgraph BE["Backend propio — programado por nosotros"]
+    FL["Flask<br/>validación · CORS · errores genéricos"]
+    AL["Revisión de alertas<br/>(service role key)"]
+  end
+  Y["Yahoo Finance"]
+  U -- "HTTPS + JWT" --> AUTH
+  U -- "HTTPS + JWT" --> API --> DB
+  U -- "HTTP local · solo datos públicos" --> FL --> Y
+  AL -- "HTTPS + service role" --> API
+</pre><figcaption>Figura 2. Dónde está cada barrera. Lo de Supabase lo da la plataforma; las reglas (políticas RLS, checks, triggers) y todo el backend los escribimos nosotros.</figcaption></figure>
+
+<h2>3.1 Qué delegamos en plataformas y librerías</h2>
+<p>Valeur no tiene un servidor propio de cuentas: usamos <b>Supabase</b>. Eso nos libera de programar a mano varias cosas difíciles de hacer bien, pero no de todo. La tabla separa qué da cada herramienta y qué sigue siendo responsabilidad nuestra.</p>
+<table>
+  <thead><tr><th style="width:17%">Proveedor</th><th style="width:43%">Qué nos da de forma nativa</th><th>Qué nos ahorra / qué sigue siendo nuestro</th></tr></thead>
+  <tbody>
+    <tr><td><b>Supabase Auth</b></td><td>Registro, inicio de sesión, hash de contraseñas con <b>bcrypt</b> (con <i>salt</i>), emisión de tokens JWT firmados con expiración, renovación con <i>refresh token</i> rotativo, cierre de sesión que revoca el refresh, mail de recuperación con enlace de un solo uso, límite de intentos (<i>rate limit</i>).</td><td>No guardamos ni vemos contraseñas, no firmamos tokens ni manejamos sesiones en un servidor propio. <b>Nuestro:</b> reglas de contraseña en el front, mensajes de error traducidos que no filtran información, pedir la contraseña actual para cambiarla.</td></tr>
+    <tr><td><b>Supabase Postgres + PostgREST</b></td><td>Base administrada con backups, conexión cifrada (HTTPS/TLS) y una API REST que arma las consultas <b>parametrizadas</b> (no concatenamos SQL nunca). El motor de <b>Row Level Security</b> aplica las políticas en cada consulta.</td><td>Nos protege de inyección SQL en todo el acceso a datos del front. <b>Nuestro:</b> escribir las políticas RLS de cada tabla, las restricciones (<i>checks</i>), los triggers que protegen campos sensibles y las funciones que exponen datos de otros con cuidado (sección 3.3).</td></tr>
+    <tr><td><b>React</b></td><td>Escapa automáticamente todo el texto que se muestra (nombres, bios, recomendaciones), así un <code>&lt;script&gt;</code> escrito por un usuario se ve como texto y no se ejecuta.</td><td>Nos protege de XSS. <b>Nuestro:</b> no usar <code>dangerouslySetInnerHTML</code> ni <code>innerHTML</code> (revisado: no hay ninguno en el código).</td></tr>
+    <tr><td><b>Flask-CORS</b></td><td>Agrega las cabeceras CORS según una lista de orígenes.</td><td><b>Nuestro:</b> la lista (solo <code>localhost</code>, <code>127.0.0.1</code> y los de la variable <code>CORS_ORIGINS</code>).</td></tr>
+    <tr><td><b>GitHub</b></td><td>Control de versiones y aviso de secretos subidos por error.</td><td><b>Nuestro:</b> <code>.gitignore</code> para <code>.env</code>, <code>venv</code>, <code>node_modules</code> y archivos compilados.</td></tr>
+  </tbody>
+</table>
+<div class="note warn"><b>Sobre el hosting:</b> por decisión del equipo, Valeur se entrega para correr en la compu del docente (<code>./iniciar.sh</code> o <code>iniciar.bat</code>), no en un hosting. Por eso no contamos con protecciones de hosting como HTTPS automático para el front o mitigación de DDoS. El front y el backend corren en <code>localhost</code>, y todo lo que sale de la compu (Supabase y Yahoo) viaja por HTTPS.</div>
+
+<h2>3.2 Autenticación y manejo de sesiones</h2>
+<ul>
+  <li><b>Mecanismo:</b> email y contraseña con Supabase Auth. Al entrar, Supabase devuelve un <i>access token</i> (JWT firmado, <b>dura 1 hora</b>) y un <i>refresh token</i>. La librería <code>supabase-js</code> renueva el access token sola antes de que venza; cada pedido a la base lleva el JWT y Postgres sabe quién es el usuario con <code>auth.uid()</code>.</li>
+  <li><b>Dónde se guarda:</b> en el <code>localStorage</code> del navegador (es lo que hace <code>supabase-js</code> en una SPA). No usamos cookies <code>HttpOnly</code> porque no hay un servidor propio de páginas; lo compensamos con la protección contra XSS de la sección 3.1.</li>
+  <li><b>Cierre de sesión:</b> el menú de la cuenta llama a <code>supabase.auth.signOut()</code>, que borra la sesión local y <b>revoca el refresh token</b> en Supabase; después se vuelve a <code>/login</code>.</li>
+  <li><b>Recuperar contraseña:</b> <code>/recuperar</code> pide el email y Supabase manda un enlace de un solo uso que lleva a <code>/nueva-clave</code>. El mensaje es el mismo exista o no la cuenta, así no se puede averiguar qué emails están registrados.</li>
+  <li><b>Cambiar contraseña:</b> se pide la actual y se verifica antes de aceptar la nueva.</li>
+  <li><b>Reglas de contraseña:</b> 8 caracteres o más, se rechazan las más comunes (<code>12345678</code>, <code>password</code>, <code>qwerty123</code>…) y un medidor muestra qué tan fuerte es.</li>
+  <li><b>Rutas privadas:</b> un componente <code>Private</code> en <code>App.jsx</code> envía a <code>/login</code> a quien no tiene sesión. Está en un solo lugar, así una pantalla nueva no queda abierta por olvidarse el chequeo. Igual, la barrera real es la base: sin sesión, la API no devuelve datos privados.</li>
+</ul>
+
+<h2>3.3 Autorización y control de acceso</h2>
+<p>La autorización está en la <b>base de datos</b>, no en el código del front: aunque alguien modifique la app o le pegue directo a la API con su token, Postgres aplica las mismas reglas. Todas las tablas tienen RLS activado.</p>
+<table>
+  <thead><tr><th style="width:24%">Tabla</th><th>Quién puede qué</th></tr></thead>
+  <tbody>
+    <tr><td><code>trades</code>, <code>watchlist</code>, <code>alerts</code></td><td>Solo el dueño lee, crea, edita y borra sus filas (<code>auth.uid() = user_id</code>).</td></tr>
+    <tr><td><code>profiles</code></td><td>Lectura pública (nombre, bio, verificado); cada uno edita solo el suyo. Un trigger (<code>protect_profile</code>) impide que un usuario se ponga <code>is_admin</code> o se marque como verificado a sí mismo: esos campos solo los cambia un admin.</td></tr>
+    <tr><td><code>follows</code>, <code>post_likes</code></td><td>Lectura pública; cada uno crea y borra solo los suyos.</td></tr>
+    <tr><td><code>posts</code></td><td>Se ven las públicas y las "solo amigos" si sos amigo; cada uno publica y borra las propias; el admin puede borrar cualquiera.</td></tr>
+    <tr><td><code>notifications</code></td><td>Cada uno ve, marca como leídas y borra las suyas. Las que crean otros (seguidores, "me sirve") las insertan triggers de la base, no el front.</td></tr>
+    <tr><td><code>verification_requests</code>, <code>reports</code></td><td>Cada uno ve los suyos y solo puede crearlos en estado pendiente; solo el admin ve todos y los resuelve.</td></tr>
+  </tbody>
+</table>
+<p><b>Datos de otros, con cuidado.</b> El portfolio de otra persona no se lee de <code>trades</code> (RLS lo impide), sino con la función <code>shared_portfolio</code>, que primero llama a <code>can_see_portfolio</code> (dueño, perfil público, o "solo amigos" y son amigos) y después devuelve <b>solo porcentajes y cantidades escaladas, nunca montos</b>. Las funciones de admin (<code>admin_stats</code> y la revisión de verificaciones y reportes) comprueban <code>is_admin()</code> adentro y responden error 42501 (403) a cualquier otro.</p>
+<p><b>Reglas de negocio en el servidor.</b> Además de validar en el formulario, la base rechaza operaciones con cantidad o precio no positivos, fecha futura, ventas de más y borrar una compra que respalda ventas posteriores (migración <code>0008</code>, probada en 2.3).</p>
+
+<h2>3.4 Contraseñas y secretos</h2>
+<ul>
+  <li><b>Contraseñas:</b> nunca pasan por nuestro código del lado del servidor ni se guardan en nuestras tablas. Supabase las guarda con <b>bcrypt + salt</b>. <code>profiles</code> no tiene email ni contraseña.</li>
+  <li><b>Claves:</b>
+    <ul>
+      <li>La <i>anon key</i> del front es pública por diseño: solo permite lo que dejan las políticas RLS. Por eso está en <code>Valeur/.env.example</code>, para que la app funcione al clonar.</li>
+      <li>La <i>service role key</i> (que saltea el RLS) vive <b>solo</b> en <code>valeur-backend/.env</code>, que no se sube al repositorio. La usa solo el proceso que revisa las alertas, y nunca llega al navegador.</li>
+    </ul></li>
+  <li><b>Repositorio:</b> <code>.gitignore</code> excluye <code>.env</code>, <code>venv/</code>, <code>node_modules/</code>, <code>dist/</code> y <code>__pycache__/</code>. Hubo una vez un <code>.env</code> del backend subido por error: se sacó del repositorio y las claves que contenía deben considerarse expuestas y rotarse.</li>
+  <li><b>Comunicación cifrada:</b> todo lo que sale de la compu va por HTTPS/TLS (Supabase, Yahoo Finance, fuentes y logos).</li>
+</ul>
+
+<h2>3.5 Validación y sanitización de datos</h2>
+<table>
+  <thead><tr><th style="width:20%">Dónde</th><th>Qué se valida</th></tr></thead>
+  <tbody>
+    <tr><td><b>Backend Flask</b></td><td>Cada ticker pasa por <code>^[A-Z0-9.=^-]{1,15}$</code> antes de consultar a Yahoo (si no, 400). Los parámetros numéricos se acotan (<code>limit</code> entre 1 y 5000; si no es número, valor por defecto). La búsqueda se corta a 64 caracteres. <code>/api/batch</code> y <code>/api/events</code> aceptan como máximo 60 símbolos. Los valores <code>NaN</code> de Yahoo se descartan para no romper el JSON.</td></tr>
+    <tr><td><b>Base de datos</b></td><td><i>Checks</i> en cada tabla: formato de ticker y de usuario, <code>side</code> solo <code>buy</code>/<code>sell</code>, cantidad &gt; 0, precio &gt; 0, largo máximo de notas (200), bios (160), recomendaciones (500), valores permitidos de tipo de alerta, postura, audiencia, categoría y motivo de reporte; más los triggers de 3.3.</td></tr>
+    <tr><td><b>Front</b></td><td>Todos los formularios validan antes de enviar y muestran el error al lado del campo. Es para la experiencia del usuario: la seguridad no depende de esto.</td></tr>
+    <tr><td><b>Inyección SQL</b></td><td>No hay SQL armado con texto: el front usa <code>supabase-js</code> (PostgREST parametriza) y el backend no tiene SQL propio.</td></tr>
+    <tr><td><b>XSS</b></td><td>React escapa todo; no se usa HTML crudo.</td></tr>
+    <tr><td><b>Inyección en CSV</b></td><td>Al exportar operaciones, un texto que empieza con <code>= + - @</code> se prefija con <code>'</code> para que Excel no lo ejecute como fórmula.</td></tr>
+    <tr><td><b>CORS</b></td><td>El backend responde con <code>Access-Control-Allow-Origin</code> solo a <code>localhost</code>, <code>127.0.0.1</code> y los orígenes de <code>CORS_ORIGINS</code>.</td></tr>
+  </tbody>
+</table>
+
+<h2>3.6 Manejo seguro de errores</h2>
+<ul>
+  <li><b>Backend:</b> si Yahoo Finance falla, la respuesta es <code>502 {"error": "Market data unavailable"}</code>; el detalle queda solo en la consola del servidor. Las rutas inexistentes y los métodos no permitidos responden JSON (<code>404</code>, <code>405</code>) en vez de la página HTML de Flask, y cualquier error no previsto responde <code>500 {"error": "Internal server error"}</code>, sin traza.</li>
+  <li><b>Modo debug apagado:</b> la consola interactiva de Flask (que permite ejecutar código) solo se prende con <code>FLASK_DEBUG=1</code>, y aun así escucha solo en la propia compu. Por defecto el servidor escucha en <code>127.0.0.1</code>.</li>
+  <li><b>Front:</b> los errores de Supabase se traducen a mensajes en castellano y sin detalles técnicos ("Email o contraseña incorrectos", "Sin conexión con el servidor. Probá de nuevo."). Las acciones que fallan muestran un aviso y no dejan la pantalla rota.</li>
+  <li><b>Cabeceras:</b> cada respuesta del backend lleva <code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: DENY</code>, <code>Referrer-Policy: no-referrer</code> y <code>Cache-Control: no-store</code>.</li>
+</ul>
+
+<h2>3.7 Dependencias y configuración</h2>
+<ul>
+  <li>Revisamos las dependencias del front con <code>npm audit</code> y actualizamos las que tenían vulnerabilidades conocidas, entre ellas <code>react-router</code>. Quedan avisos solo en herramientas de desarrollo (Vitest y su buscador de archivos), que no forman parte de la app que se usa.</li>
+  <li>La configuración va por variables de entorno (<code>.env</code>); los ejemplos sin secretos están en <code>.env.example</code>.</li>
+</ul>
+
+<h1>4. Riesgos conocidos y próximos pasos</h1>
+<table>
+  <thead><tr><th style="width:30%">Riesgo</th><th>Mitigación actual / próximo paso</th></tr></thead>
+  <tbody>
+    <tr><td>La sesión vive en <code>localStorage</code> (un XSS podría leerla).</td><td>React escapa todo y no usamos HTML crudo. Si se publicara la app, sumar una política CSP en el hosting.</td></tr>
+    <tr><td>El backend de mercado no limita la cantidad de pedidos por cliente.</td><td>Hoy corre en la compu de cada uno, detrás de una caché de 60 s por símbolo. Si se publicara, agregar un límite por IP.</td></tr>
+    <tr><td>Yahoo Finance no es una API oficial y puede cambiar.</td><td>Errores controlados (502 genérico) y la app sigue funcionando sin precios (muestra "—" y el costo).</td></tr>
+    <tr><td>Los E2E son manuales.</td><td>Automatizarlos con Playwright y una base de Supabase de prueba.</td></tr>
+    <tr><td>Claves que estuvieron en el repositorio.</td><td>Rotar la <i>service role key</i> y la clave de Alpha Vantage en sus paneles.</td></tr>
+  </tbody>
+</table>
+
+</body>
+</html>
