@@ -8,3 +8,9 @@ dist/
 Valeur/.env
 Valeur/.env.*
 !Valeur/.env.example
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+docs/entrega/fuente/mermaid.min.js

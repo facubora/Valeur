@@ -5,7 +5,9 @@
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from werkzeug.exceptions import HTTPException
 import yfinance as yf
+import logging
 import os
 import re
 import threading
@@ -14,11 +16,44 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+log = logging.getLogger("valeur")
 
 # CORS: cualquier origen local (localhost / 127.0.0.1, cualquier puerto) + los de CORS_ORIGINS
 _origins = [r"^http://localhost(:\d+)?$", r"^http://127\.0\.0\.1(:\d+)?$"]
 _origins += [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
 CORS(app, origins=_origins)
+
+
+# ─── Errores y cabeceras ──────────────────────────────────────────────────────
+# Al que llama le llega un mensaje corto y fijo; el detalle (el error de
+# Yahoo, la traza) queda solo en la consola del servidor.
+
+def upstream_error(e):
+    """El proveedor de datos falló: se anota acá y se responde 502 sin detalles"""
+    log.warning("fallo consultando el mercado: %r", e)
+    return jsonify({"error": "Market data unavailable"}), 502
+
+
+@app.errorhandler(HTTPException)
+def http_error(e):
+    # 404, 405, etc. en JSON en vez de la página HTML de Flask
+    return jsonify({"error": e.name}), e.code
+
+
+@app.errorhandler(Exception)
+def unexpected_error(e):
+    log.exception("error inesperado")
+    return jsonify({"error": "Internal server error"}), 500
+
+
+@app.after_request
+def security_headers(resp):
+    # es una API de JSON: que el navegador no adivine tipos ni la meta en frames
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["X-Frame-Options"] = "DENY"
+    resp.headers["Referrer-Policy"] = "no-referrer"
+    resp.headers["Cache-Control"] = resp.headers.get("Cache-Control", "no-store")
+    return resp
 
 # Símbolos como los entiende Yahoo: AAPL, MELI.BA, BTC-USD, ^MERV, USDARS=X
 SYMBOL_RE = re.compile(r"^[A-Z0-9.=^-]{1,15}$")
@@ -115,7 +150,7 @@ def get_candles(symbol):
         })
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 502
+        return upstream_error(e)
 
 
 # ─── Quote ────────────────────────────────────────────────────────────────────
@@ -156,7 +191,7 @@ def get_quote(symbol):
         })
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 502
+        return upstream_error(e)
 
 
 # ─── Lote de cotizaciones + sparkline ─────────────────────────────────────────
@@ -235,7 +270,7 @@ def get_batch():
         try:
             out = fetch_quotes(symbols)
         except Exception as e:
-            return jsonify({"error": str(e)}), 502
+            return upstream_error(e)
     out.update({s: None for s in invalid})
     return jsonify({"quotes": out})
 
@@ -279,7 +314,7 @@ def get_mep():
         data = mep_data()
         return jsonify(data) if data else (jsonify({"error": "No data"}), 502)
     except Exception as e:
-        return jsonify({"error": str(e)}), 502
+        return upstream_error(e)
 
 
 # ─── Búsqueda ─────────────────────────────────────────────────────────────────
@@ -300,7 +335,7 @@ def search_symbol():
             for r in results[:8]
         ]})
     except Exception as e:
-        return jsonify({"error": str(e)}), 502
+        return upstream_error(e)
 
 
 # ─── Próximos resultados y dividendos (events.py) ──────────────────────────────
@@ -318,10 +353,16 @@ def health():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="[%(name)s] %(message)s")
+    # El modo debug (recarga al guardar + consola interactiva ante un error)
+    # solo si se pide con FLASK_DEBUG=1, y nunca abierto a la red: esa consola
+    # permite ejecutar código en la máquina. Por defecto, solo esta compu.
+    debug = os.getenv("FLASK_DEBUG") == "1"
+    host = os.getenv("HOST", "127.0.0.1")
     # con debug, Flask corre dos procesos (el que vigila los cambios y el que
     # atiende): las alertas se revisan solo en el que atiende
-    if os.getenv("WERKZEUG_RUN_MAIN") == "true":
+    if not debug or os.getenv("WERKZEUG_RUN_MAIN") == "true":
         import alerts
         alerts.start(lambda syms: fetch_quotes([s for s in syms if valid_symbol(s)]))
-    app.run(debug=True, port=int(os.getenv("PORT", 5001)), host="0.0.0.0")
+    app.run(debug=debug, port=int(os.getenv("PORT", 5001)), host=host if not debug else "127.0.0.1")
     

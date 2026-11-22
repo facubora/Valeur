@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Valeur — Documento de Arquitectura (TP3 corregido)</title>
+<link rel="stylesheet" href="estilo.css">
+<script src="mermaid.min.js"></script>
+<script>mermaid.initialize({ startOnLoad: true, theme: "neutral", fontFamily: "Helvetica Neue, Arial, sans-serif", securityLevel: "loose", flowchart: { wrappingWidth: 420, useMaxWidth: true }, sequence: { useMaxWidth: true, mirrorActors: false, messageFontSize: 13, actorFontSize: 13, noteFontSize: 12 }, er: { useMaxWidth: true }, class: { useMaxWidth: true }, state: { useMaxWidth: true } });</script>
+<style>figure.seq svg { max-height: 200mm; }</style>
+</head>
+<body>
+
+<section class="cover">
+  <div>
+    <div class="kicker">TP3 corregido · 2.º Parcial · Desarrollo de Sistemas</div>
+    <h1>Valeur</h1>
+    <div class="sub">Documento de Arquitectura y Diseño</div>
+  </div>
+  <table class="meta">
+    <tr><td>Institución</td><td>Instituto Industrial Luis A. Huergo</td></tr>
+    <tr><td>Curso</td><td>6.º año · Especialidad Computación</td></tr>
+    <tr><td>Equipo</td><td>Borassi (diseño y programación) · Aguilar y Seralvo (documentación)</td></tr>
+    <tr><td>Repositorio</td><td>github.com/facubora/Valeur</td></tr>
+    <tr><td>Versión</td><td>2.0 · Noviembre de 2026 (reemplaza la versión del 16/09/2026)</td></tr>
+  </table>
+</section>
+
+<section class="toc">
+  <h2>Contenido</h2>
+  <ol>
+    <li>Qué cambió respecto de la versión anterior</li>
+    <li>Contexto y alcance del sistema
+      <ol><li>Problema y objetivos</li><li>Roles de usuario</li><li>Funcionalidades</li><li>Restricciones</li><li>Diagrama de contexto (C4 nivel 1)</li><li>Diagrama de contenedores (C4 nivel 2)</li></ol></li>
+    <li>Modelo de datos
+      <ol><li>Diagrama entidad-relación</li><li>Diccionario de datos</li><li>Funciones y triggers de la base</li></ol></li>
+    <li>Diseño de módulos (UML)</li>
+    <li>Diagramas de comportamiento, por funcionalidad</li>
+    <li>Especificación de interfaces (contrato de API)
+      <ol><li>API de mercado (Flask)</li><li>Acceso a datos por Supabase</li></ol></li>
+    <li>Vista de despliegue</li>
+    <li>Decisiones arquitectónicas (ADR)</li>
+    <li>Atributos de calidad</li>
+    <li>Riesgos y deuda técnica</li>
+    <li>Glosario</li>
+  </ol>
+</section>
+
+<h1>1. Qué cambió respecto de la versión anterior</h1>
+<p>La versión del 16/09 documentaba el MVP (cotización, gráfico, búsqueda, cuenta y un portfolio básico). La devolución fue:</p>
+<div class="note">"Buen uso de diagramas y secciones para explicar el flujo en su proyecto. Buena defensa oral. <b>No incluyen diagramas ni ayuda para todas las funcionalidades planteadas para el proyecto como pedía la consigna.</b>"</div>
+<p>Esta versión describe el producto final completo y agrega un diagrama para cada funcionalidad.</p>
+<table>
+  <thead><tr><th style="width:38%">Faltaba o estaba desactualizado</th><th>Qué hicimos en esta versión</th></tr></thead>
+  <tbody>
+    <tr><td>Diagramas solo de registro y búsqueda.</td><td>Sección 5: un diagrama por funcionalidad (12 flujos), con diagramas de secuencia UML para los principales, un diagrama de estados para las alertas y diagramas de actividad para las validaciones.</td></tr>
+    <tr><td>Alcance del MVP: comunidad, alertas, perfiles y notificaciones "fuera de esta entrega".</td><td>Todo eso está hecho y documentado: portfolio, mercado, alertas, notificaciones, comunidad, perfiles y privacidad, verificación, panel de admin, calendario, simulador y Aprendé (2.3).</td></tr>
+    <tr><td>Modelo de datos de 3 tablas, sin DER ni diccionario.</td><td>DER completo de las 13 tablas y diccionario de datos con tipos, restricciones y descripción (sección 3).</td></tr>
+    <tr><td>El diagrama llamado "C4 nivel 1" era en realidad de contenedores.</td><td>C4 nivel 1 (contexto: actores y sistemas externos) y C4 nivel 2 (contenedores), por separado.</td></tr>
+    <tr><td>Tabla de endpoints sin parámetros, ejemplos ni errores.</td><td>Contrato de API con método, ruta, parámetros, ejemplo de respuesta y códigos de error, más el acceso a datos por Supabase (sección 6).</td></tr>
+    <tr><td>Diagrama de componentes del front con componentes que ya no existen.</td><td>Diagrama de módulos actualizado (sección 4).</td></tr>
+    <tr><td>Riesgos ya resueltos: sin caché, sin tests, control de sesión página por página.</td><td>Hay caché en el backend, 116 tests automáticos y una protección central de rutas (sección 10).</td></tr>
+  </tbody>
+</table>
+
+<h1>2. Contexto y alcance del sistema</h1>
+
+<h2>2.1 Problema y objetivos</h2>
+<p><b>Problema.</b> Quien empieza a invertir en Argentina tiene la información desparramada: el broker muestra lo que tiene pero no lo explica, los precios de los CEDEARs están en pesos y hay que pasarlos al dólar MEP a mano, las plataformas profesionales son caras y confusas, y lo que opinan otros inversores está en redes sin forma de saber si acertaron.</p>
+<p><b>Objetivo general.</b> Una aplicación web gratuita donde una persona sin formación financiera pueda seguir sus inversiones en pesos o dólares, entender el mercado, enterarse a tiempo de lo que le importa y aprender de lo que recomienda su gente, viendo cómo les fue.</p>
+<table>
+  <thead><tr><th style="width:30%">Objetivo</th><th>Cómo lo cumple Valeur</th></tr></thead>
+  <tbody>
+    <tr><td>Saber cuánto vale lo que tengo</td><td>Portfolio calculado a partir de las operaciones, con precios en vivo y conversión al dólar MEP.</td></tr>
+    <tr><td>Entender el mercado sin ser experto</td><td>Explorador por rubros, gráfico de velas, "Para vos" según intereses, glosario Aprendé y términos explicados en la misma pantalla.</td></tr>
+    <tr><td>No perderme lo importante</td><td>Alertas de precio que avisan aunque la app esté cerrada, calendario de resultados y dividendos con aviso el día antes.</td></tr>
+    <tr><td>Aprender de otros</td><td>Comunidad con recomendaciones que muestran cómo les fue desde que se dijeron, cuentas verificadas y amigos.</td></tr>
+    <tr><td>Cuidar los datos</td><td>Cada usuario ve solo lo suyo; el portfolio se comparte solo en porcentajes y solo con quien el dueño elige.</td></tr>
+  </tbody>
+</table>
+
+<h2>2.2 Roles de usuario</h2>
+<table>
+  <thead><tr><th style="width:20%">Rol</th><th>Qué puede hacer</th></tr></thead>
+  <tbody>
+    <tr><td><b>Visitante</b></td><td>Ver la landing, registrarse, entrar, recuperar la contraseña, explorar el mercado y ver un activo, leer Aprendé.</td></tr>
+    <tr><td><b>Usuario registrado</b></td><td>Todo lo anterior más: portfolio, seguidos, alertas, notificaciones, comunidad (recomendar, "me sirve", seguir, reportar), perfil y privacidad, pedir verificación, calendario y simulador.</td></tr>
+    <tr><td><b>Usuario verificado</b></td><td>Un usuario registrado aprobado por un admin (analista, asesor, creador…): su recomendación lleva la marca de verificado y aparece en el filtro "Verificados".</td></tr>
+    <tr><td><b>Administrador</b></td><td>Además: aprobar o rechazar pedidos de verificación, revisar recomendaciones reportadas (descartar el reporte o borrarla) y ver los números de la app.</td></tr>
+    <tr><td><b>Proceso de alertas</b> (sistema)</td><td>No es una persona: un hilo del backend que cada 3 minutos revisa las alertas de todos y una vez por día avisa los eventos de mañana.</td></tr>
+  </tbody>
+</table>
+
+<h2>2.3 Funcionalidades</h2>
+<table>
+  <thead><tr><th style="width:17%">Módulo</th><th style="width:15%">Pantalla</th><th>Qué hace</th><th style="width:13%">Diagramas</th></tr></thead>
+  <tbody>
+    <tr><td><b>Cuenta</b></td><td><code>/register</code> <code>/login</code> <code>/recuperar</code> <code>/nueva-clave</code></td><td>Registro con usuario único, entrar, salir, recuperar y cambiar la contraseña, reglas de contraseña.</td><td>5.1, 5.2</td></tr>
+    <tr><td><b>Inicio</b></td><td><code>/home</code></td><td>Termómetro (MEP, Merval, S&amp;P, BTC), resumen del portfolio, lo que más se movió de lo tuyo, alertas y seguidos.</td><td>5.3, 5.4</td></tr>
+    <tr><td><b>Portfolio</b></td><td><code>/dashboard</code></td><td>Registrar compras y ventas, posiciones con costo promedio y ganancia, evolución contra lo invertido, composición, historial, exportar a CSV.</td><td>5.3</td></tr>
+    <tr><td><b>Mercado</b></td><td><code>/tickersearch</code></td><td>Explorador por tipo y rubro, "Para vos", buscador, detalle del activo con gráfico de velas, seguir, lo que dice la comunidad, activos similares.</td><td>5.4</td></tr>
+    <tr><td><b>Alertas y notificaciones</b></td><td>Activo, Mercado, campanita</td><td>Alertas "llega a", "baja a", "sube/cae X% en el día"; notificaciones de alertas, seguidores, recomendaciones, "me sirve", verificación y eventos.</td><td>5.5, 5.6</td></tr>
+    <tr><td><b>Comunidad</b></td><td><code>/comunidad</code></td><td>Recomendar comprar, mantener o vender con su resultado desde ese día, "me sirve", filtros, seguir personas, amigos (seguimiento mutuo), reportar.</td><td>5.7</td></tr>
+    <tr><td><b>Perfil y privacidad</b></td><td><code>/u/:usuario</code></td><td>Perfil público, editar datos e intereses, elegir quién ve el portfolio (nadie, amigos, todos), portfolio compartido solo en porcentajes.</td><td>5.8</td></tr>
+    <tr><td><b>Verificación y admin</b></td><td>Perfil, <code>/admin</code></td><td>Pedir verificación; el admin aprueba o rechaza, revisa reportes y ve estadísticas.</td><td>5.9</td></tr>
+    <tr><td><b>Calendario</b></td><td><code>/calendario</code></td><td>Próximos resultados (con lo que esperan los analistas) y dividendos de lo que tenés o seguís; aviso el día antes.</td><td>5.10</td></tr>
+    <tr><td><b>Simulador</b></td><td><code>/simulador</code></td><td>"¿Y si hubiera invertido?": de una vez o todos los meses, en pesos o dólares, comparado con S&amp;P 500, Bitcoin o dólares.</td><td>5.11</td></tr>
+    <tr><td><b>Aprendé</b></td><td><code>/aprende</code></td><td>Glosario en tarjetas con ejemplo y progreso; el mismo texto aparece en un "?" al lado de cada término en la app.</td><td>5.12</td></tr>
+    <tr><td><b>Generales</b></td><td>Todas</td><td>Buscador ⌘K, modo claro/oscuro, moneda preferida, esqueletos de carga, estados vacíos, 404, instalable (PWA).</td><td>4</td></tr>
+  </tbody>
+</table>
+
+<h2>2.4 Restricciones</h2>
+<ul>
+  <li><b>Organizativas:</b> equipo de 3, cursada anual, trabajo académico sin presupuesto.</li>
+  <li><b>Técnicas:</b> React + Vite en el front, Python + Flask en el backend, Supabase (Postgres + Auth) como base y autenticación, en su plan gratuito. La app se entrega para correr en la compu del docente con un solo comando (<code>iniciar.sh</code> / <code>iniciar.bat</code>); la base y las cuentas están en la nube.</li>
+  <li><b>De datos:</b> los precios, velas y eventos vienen de Yahoo Finance mediante la librería <code>yfinance</code>, gratuita, sin contrato ni garantía. Yahoo no tiene los bonos argentinos, así que el dólar MEP se calcula con los CEDEARs (ADR-07).</li>
+</ul>
+
+<h2>2.5 Diagrama de contexto (C4 nivel 1)</h2>
+<p>Muestra a Valeur como una caja negra: quién lo usa y con qué sistemas externos se comunica.</p>
+<figure><pre class="mermaid">
+flowchart TB
+  V(["<b>Visitante</b><br/>Persona sin cuenta"])
+  U(["<b>Usuario registrado</b><br/>Sigue sus inversiones y la comunidad"])
+  A(["<b>Administrador</b><br/>Modera y verifica"])
+  VAL["<b>Valeur</b><br/>App web para seguir inversiones,<br/>el mercado y lo que recomienda tu gente"]
+  Y["<b>Yahoo Finance</b><br/>[sistema externo]<br/>Precios, velas, búsqueda,<br/>resultados y dividendos"]
+  S["<b>Supabase</b><br/>[sistema externo]<br/>Base de datos, cuentas,<br/>sesiones y mails de recuperación"]
+  L["<b>Proveedores de logos</b><br/>[sistema externo]<br/>Imágenes de las empresas"]
+  V -- "explora el mercado,<br/>se registra" --> VAL
+  U -- "carga operaciones, crea alertas,<br/>recomienda, sigue" --> VAL
+  A -- "aprueba verificaciones,<br/>revisa reportes" --> VAL
+  VAL -- "pide precios y eventos<br/>(HTTPS, yfinance)" --> Y
+  VAL -- "guarda y lee datos,<br/>autentica (HTTPS)" --> S
+  VAL -- "muestra logos (HTTPS)" --> L
+  S -. "mail para recuperar<br/>la contraseña" .-> U
+  classDef person fill:#3a4fd8,color:#fff,stroke:#2a3bb0
+  classDef sys fill:#d4daf7,stroke:#3a4fd8
+  classDef ext fill:#eceef3,stroke:#8a8fa0
+  class V,U,A person
+  class VAL sys
+  class Y,S,L ext
+</pre><figcaption>Figura 1. Contexto de Valeur (C4 nivel 1).</figcaption></figure>
+
+<h2>2.6 Diagrama de contenedores (C4 nivel 2)</h2>
+<p>Abre la caja de Valeur: qué piezas se ejecutan por separado y cómo se hablan.</p>
+<figure><pre class="mermaid">
+flowchart LR
+  U(["Usuario<br/>(navegador)"])
+  subgraph VAL["Valeur"]
+    SPA["<b>SPA</b><br/>[React 19 + Vite]<br/>Todas las pantallas.<br/>Cálculo del portfolio y el simulador."]
+    API["<b>API de mercado</b><br/>[Python + Flask]<br/>Precios, velas, MEP, búsqueda,<br/>calendario. Caché en memoria."]
+    W["<b>Proceso de alertas</b><br/>[hilo dentro de la API]<br/>Revisa alertas cada 3 min,<br/>avisa eventos de mañana."]
+  end
+  subgraph SB["Supabase"]
+    AUTH["<b>Auth</b><br/>Cuentas, contraseñas (bcrypt),<br/>sesiones JWT"]
+    REST["<b>API REST + Realtime</b><br/>[PostgREST]"]
+    DB[("<b>Postgres</b><br/>13 tablas con RLS,<br/>funciones y triggers")]
+  end
+  Y["Yahoo Finance"]
+  U --> SPA
+  SPA -- "JSON / HTTP" --> API
+  SPA -- "supabase-js: login, sesión" --> AUTH
+  SPA -- "supabase-js: datos (JWT)" --> REST
+  REST --> DB
+  API -- "yfinance / HTTPS" --> Y
+  W -- "HTTPS (service role key)" --> REST
+  W -. "usa los precios de" .-> API
+</pre><figcaption>Figura 2. Contenedores (C4 nivel 2). El front habla directo con Supabase para todo lo de la cuenta; la API propia solo da datos de mercado.</figcaption></figure>
+
+<h1>3. Modelo de datos</h1>
+<p>Toda la persistencia está en Postgres (Supabase). Las cuentas viven en <code>auth.users</code>, que administra Supabase Auth; nuestras tablas cuelgan de ahí por <code>user_id</code>. Las posiciones del portfolio <b>no se guardan</b>: se calculan a partir de <code>trades</code>, que es la única fuente de verdad.</p>
+
+<h2>3.1 Diagrama entidad-relación</h2>
+<figure><pre class="mermaid">
+erDiagram
+  AUTH_USERS ||--|| PROFILES : "tiene"
+  PROFILES ||--o{ TRADES : "registra"
+  PROFILES ||--o{ WATCHLIST : "sigue"
+  PROFILES ||--o{ ALERTS : "crea"
+  PROFILES ||--o{ NOTIFICATIONS : "recibe"
+  PROFILES ||--o{ EVENT_NOTICES : "avisado"
+  PROFILES {
+    uuid id PK
+    text username UK
+    text display_name
+    text bio
+    text visibility
+    text_array interests
+    bool verified
+    text verified_label
+    bool is_admin
+  }
+  TRADES {
+    uuid id PK
+    uuid user_id FK
+    text symbol
+    text side
+    numeric qty
+    numeric price
+    date executed_at
+    text note
+  }
+  WATCHLIST {
+    uuid user_id PK
+    text symbol PK
+    text name
+  }
+  ALERTS {
+    uuid id PK
+    uuid user_id FK
+    text symbol
+    text kind
+    numeric value
+    bool active
+    timestamptz triggered_at
+  }
+  NOTIFICATIONS {
+    uuid id PK
+    uuid user_id FK
+    text kind
+    text title
+    text body
+    uuid actor_id FK
+    timestamptz read_at
+  }
+  EVENT_NOTICES {
+    uuid user_id PK
+    text base PK
+    text kind PK
+    date day PK
+  }
+</pre><figcaption>Figura 3a. DER: cuenta, portfolio, alertas y notificaciones. <code>trades</code>, <code>watchlist</code>, <code>alerts</code>, <code>notifications</code> y <code>event_notices</code> referencian <code>auth.users(id)</code>, que es el mismo id del perfil.</figcaption></figure>
+<figure><pre class="mermaid">
+erDiagram
+  PROFILES ||--o{ FOLLOWS : "sigue a"
+  PROFILES ||--o{ POSTS : "publica"
+  POSTS ||--o{ POST_LIKES : "recibe"
+  PROFILES ||--o{ POST_LIKES : "me sirve"
+  POSTS ||--o{ REPORTS : "reportado"
+  PROFILES ||--o{ REPORTS : "reporta"
+  PROFILES ||--o{ VERIFICATION_REQUESTS : "pide"
+  PROFILES ||--o| PRACTICE_ACCOUNTS : "practica"
+  PROFILES ||--o{ PRACTICE_TRADES : "opera"
+  FOLLOWS {
+    uuid follower_id PK
+    uuid followee_id PK
+  }
+  POSTS {
+    uuid id PK
+    uuid user_id FK
+    text symbol
+    text stance
+    text body
+    numeric price_at
+    text audience
+  }
+  POST_LIKES {
+    uuid post_id PK
+    uuid user_id PK
+  }
+  REPORTS {
+    uuid id PK
+    uuid post_id FK
+    uuid reporter_id FK
+    text reason
+    text status
+  }
+  VERIFICATION_REQUESTS {
+    uuid id PK
+    uuid user_id FK
+    text category
+    text reason
+    text status
+  }
+  PRACTICE_ACCOUNTS {
+    uuid user_id PK
+    numeric cash
+  }
+  PRACTICE_TRADES {
+    uuid id PK
+    uuid user_id FK
+    text symbol
+    numeric qty
+  }
+</pre><figcaption>Figura 3b. DER: comunidad y moderación. <code>follows</code> relaciona dos perfiles (seguidor y seguido). Las tablas de modo práctica existen en la base, pero la pantalla quedó fuera de esta versión (ADR-10). Todas las tablas tienen <i>Row Level Security</i>.</figcaption></figure>
+
+<h2>3.2 Diccionario de datos</h2>
+<p>Se omiten en cada tabla <code>created_at</code> (fecha de alta, <code>now()</code> por defecto).</p>
+
+<h3>profiles — perfil público de cada cuenta</h3>
+<table><thead><tr><th style="width:18%">Campo</th><th style="width:16%">Tipo</th><th style="width:28%">Restricción</th><th>Descripción</th></tr></thead><tbody>
+<tr><td><code>id</code></td><td>uuid</td><td>PK, FK → auth.users, cascade</td><td>Mismo id que la cuenta de Supabase Auth.</td></tr>
+<tr><td><code>username</code></td><td>text</td><td>único, <code>^[a-zA-Z0-9_]{3,30}$</code></td><td>Nombre de usuario (aparece como @usuario).</td></tr>
+<tr><td><code>display_name</code></td><td>text</td><td>≤ 40</td><td>Nombre para mostrar.</td></tr>
+<tr><td><code>bio</code></td><td>text</td><td>≤ 160</td><td>Descripción corta.</td></tr>
+<tr><td><code>visibility</code></td><td>text</td><td><code>private | friends | public</code>, default private</td><td>Quién ve su portfolio (en porcentajes).</td></tr>
+<tr><td><code>interests</code></td><td>text[]</td><td>default vacío</td><td>Rubros elegidos (para "Para vos").</td></tr>
+<tr><td><code>verified</code>, <code>verified_label</code></td><td>bool, text</td><td>solo los cambia un admin (trigger)</td><td>Marca de verificado y su categoría.</td></tr>
+<tr><td><code>is_admin</code></td><td>bool</td><td>default false; el usuario no lo puede cambiar</td><td>Acceso al panel de admin.</td></tr>
+</tbody></table>
+
+<h3>trades — operaciones de compra y venta</h3>
+<table><thead><tr><th style="width:18%">Campo</th><th style="width:16%">Tipo</th><th style="width:28%">Restricción</th><th>Descripción</th></tr></thead><tbody>
+<tr><td><code>id</code></td><td>uuid</td><td>PK</td><td></td></tr>
+<tr><td><code>user_id</code></td><td>uuid</td><td>FK → auth.users, cascade</td><td>Dueño.</td></tr>
+<tr><td><code>symbol</code></td><td>text</td><td><code>^[A-Z0-9.=^-]{1,12}$</code></td><td>Ticker como lo entiende Yahoo (AAPL, MELI.BA, BTC-USD).</td></tr>
+<tr><td><code>name</code></td><td>text</td><td></td><td>Nombre de la empresa (para mostrar).</td></tr>
+<tr><td><code>side</code></td><td>text</td><td><code>buy | sell</code></td><td>Compra o venta.</td></tr>
+<tr><td><code>qty</code></td><td>numeric(18,6)</td><td>&gt; 0</td><td>Cantidad (admite fracciones, por cripto).</td></tr>
+<tr><td><code>price</code></td><td>numeric(18,4)</td><td>&gt; 0</td><td>Precio unitario, en la moneda del activo.</td></tr>
+<tr><td><code>executed_at</code></td><td>date</td><td>≥ 1990, no futura; sin ventas de más (trigger)</td><td>Fecha de la operación.</td></tr>
+<tr><td><code>note</code></td><td>text</td><td>≤ 200</td><td>Por qué la hizo (opcional).</td></tr>
+</tbody></table>
+
+<h3>watchlist — activos seguidos</h3>
+<table><thead><tr><th style="width:18%">Campo</th><th style="width:16%">Tipo</th><th style="width:28%">Restricción</th><th>Descripción</th></tr></thead><tbody>
+<tr><td><code>user_id</code>, <code>symbol</code></td><td>uuid, text</td><td>PK compuesta</td><td>Un activo se sigue una sola vez.</td></tr>
+<tr><td><code>name</code></td><td>text</td><td></td><td>Nombre para mostrar.</td></tr>
+<tr><td><code>added_at</code></td><td>timestamptz</td><td>default now()</td><td>Desde cuándo lo sigue.</td></tr>
+</tbody></table>
+
+<h3>alerts — alertas de precio</h3>
+<table><thead><tr><th style="width:18%">Campo</th><th style="width:16%">Tipo</th><th style="width:28%">Restricción</th><th>Descripción</th></tr></thead><tbody>
+<tr><td><code>id</code>, <code>user_id</code></td><td>uuid</td><td>PK, FK</td><td></td></tr>
+<tr><td><code>symbol</code></td><td>text</td><td>formato de ticker</td><td></td></tr>
+<tr><td><code>kind</code></td><td>text</td><td><code>above | below | up_pct | down_pct</code></td><td>Llega a, baja a, sube X% o cae X% en el día.</td></tr>
+<tr><td><code>value</code></td><td>numeric(18,4)</td><td>&gt; 0</td><td>Precio o porcentaje.</td></tr>
+<tr><td><code>active</code></td><td>bool</td><td>default true</td><td>Las de precio se desactivan al saltar; las de % siguen.</td></tr>
+<tr><td><code>triggered_at</code></td><td>timestamptz</td><td></td><td>Última vez que saltó (para no repetir en la misma rueda).</td></tr>
+</tbody></table>
+
+<h3>notifications — avisos de la campanita</h3>
+<table><thead><tr><th style="width:18%">Campo</th><th style="width:16%">Tipo</th><th style="width:28%">Restricción</th><th>Descripción</th></tr></thead><tbody>
+<tr><td><code>id</code>, <code>user_id</code></td><td>uuid</td><td>PK, FK</td><td>Destinatario.</td></tr>
+<tr><td><code>kind</code></td><td>text</td><td><code>alert | follow | post | like | verified | event</code></td><td>Tipo de aviso.</td></tr>
+<tr><td><code>title</code>, <code>body</code></td><td>text</td><td>≤ 140, ≤ 280</td><td>Texto.</td></tr>
+<tr><td><code>symbol</code>, <code>link</code></td><td>text</td><td></td><td>Activo relacionado y a dónde lleva.</td></tr>
+<tr><td><code>actor_id</code></td><td>uuid</td><td>FK → profiles</td><td>Quién lo provocó (el que te siguió, etc.).</td></tr>
+<tr><td><code>read_at</code></td><td>timestamptz</td><td></td><td>Cuándo se leyó (null = sin leer).</td></tr>
+</tbody></table>
+
+<h3>follows, posts, post_likes — comunidad</h3>
+<table><thead><tr><th style="width:22%">Campo</th><th style="width:16%">Tipo</th><th style="width:26%">Restricción</th><th>Descripción</th></tr></thead><tbody>
+<tr><td><code>follows.follower_id</code>, <code>followee_id</code></td><td>uuid</td><td>PK compuesta, distintos entre sí</td><td>Quién sigue a quién. Si es mutuo, son amigos.</td></tr>
+<tr><td><code>posts.symbol</code></td><td>text</td><td>formato de ticker</td><td>Activo recomendado.</td></tr>
+<tr><td><code>posts.stance</code></td><td>text</td><td><code>buy | hold | sell</code></td><td>Comprar, mantener o vender.</td></tr>
+<tr><td><code>posts.body</code></td><td>text</td><td>1 a 500</td><td>Por qué.</td></tr>
+<tr><td><code>posts.price_at</code></td><td>numeric(18,4)</td><td></td><td>Precio al publicar: con él se calcula "cómo le fue".</td></tr>
+<tr><td><code>posts.audience</code></td><td>text</td><td><code>public | friends</code></td><td>Quién la ve.</td></tr>
+<tr><td><code>post_likes.post_id</code>, <code>user_id</code></td><td>uuid</td><td>PK compuesta</td><td>"Me sirve" (uno por persona).</td></tr>
+</tbody></table>
+
+<h3>verification_requests, reports — moderación</h3>
+<table><thead><tr><th style="width:22%">Campo</th><th style="width:16%">Tipo</th><th style="width:26%">Restricción</th><th>Descripción</th></tr></thead><tbody>
+<tr><td><code>verification_requests.category</code></td><td>text</td><td><code>analista | asesor | broker | creador | periodista | otro</code></td><td>Qué tipo de cuenta dice ser.</td></tr>
+<tr><td><code>…link</code>, <code>…reason</code></td><td>text</td><td>≤ 200; 10 a 500</td><td>Prueba y motivo.</td></tr>
+<tr><td><code>…status</code></td><td>text</td><td><code>pending | approved | rejected</code>; el usuario solo crea pending</td><td>Estado; al aprobar se marca el perfil (trigger).</td></tr>
+<tr><td><code>reports.reason</code></td><td>text</td><td><code>spam | misleading | offensive | other</code></td><td>Motivo del reporte.</td></tr>
+<tr><td><code>reports.status</code></td><td>text</td><td><code>open | dismissed</code>; único por post y persona</td><td>Si el admin lo descartó.</td></tr>
+</tbody></table>
+
+<h3>event_notices — avisos de eventos ya enviados</h3>
+<table><thead><tr><th style="width:22%">Campo</th><th style="width:16%">Tipo</th><th style="width:26%">Restricción</th><th>Descripción</th></tr></thead><tbody>
+<tr><td><code>user_id</code>, <code>base</code>, <code>kind</code>, <code>day</code></td><td>uuid, text, text, date</td><td>PK compuesta; kind <code>earnings | exdiv</code></td><td>Evita avisar dos veces el mismo evento (aunque se tengan AAPL y AAPL.BA).</td></tr>
+</tbody></table>
+
+<h2>3.3 Funciones y triggers de la base</h2>
+<table>
+  <thead><tr><th style="width:28%">Nombre</th><th>Qué hace</th></tr></thead>
+  <tbody>
+    <tr><td><code>handle_new_user</code> (trigger)</td><td>Al registrarse, crea la fila en <code>profiles</code> con el usuario elegido.</td></tr>
+    <tr><td><code>username_available(text)</code></td><td>El formulario de registro pregunta si el usuario está libre.</td></tr>
+    <tr><td><code>protect_profile</code> (trigger)</td><td>Impide que un usuario cambie <code>is_admin</code>, <code>verified</code> o <code>verified_label</code>.</td></tr>
+    <tr><td><code>is_friend(a, b)</code>, <code>can_see_portfolio(id)</code></td><td>Seguimiento mutuo; si el que pregunta puede ver un portfolio según la privacidad del dueño.</td></tr>
+    <tr><td><code>shared_portfolio(id)</code>, <code>shared_trades(id)</code></td><td>Portfolio de otro en porcentajes y sus últimos movimientos (sin montos), solo si <code>can_see_portfolio</code>.</td></tr>
+    <tr><td><code>notify_follow</code>, <code>notify_post</code>, <code>notify_like</code>, <code>review_verification</code> (triggers)</td><td>Crean las notificaciones de nuevos seguidores, recomendaciones de quien seguís, "me sirve" y verificación aprobada o rechazada.</td></tr>
+    <tr><td><code>is_admin()</code>, <code>admin_stats()</code></td><td>Si el usuario actual es admin; números de la app (solo admin).</td></tr>
+    <tr><td><code>trades_check_row</code>, <code>trades_check_balance</code> (triggers)</td><td>Rechazan fechas futuras y ventas de más (migración 0008).</td></tr>
+  </tbody>
+</table>
+
+<h1>4. Diseño de módulos (UML)</h1>
+<p>El front se organiza en capas: las <b>páginas</b> arman la pantalla con <b>componentes</b>, y piden y guardan datos solo a través de los módulos de <b>lib</b>, que son los únicos que hablan con Supabase o con la API. Así, cambiar de dónde sale un dato toca un solo archivo.</p>
+<figure><pre class="mermaid">
+classDiagram
+  direction LR
+  class Paginas {
+    Home · Dashboard · Tickersearch
+    Community · Profile · Calendar
+    Simulator · Learn · Admin
+    Login · Register · NotFound
+  }
+  class Componentes {
+    AppShell · TradeModal · AssetChart
+    PortfolioChart · AlertEditor
+    NotificationBell · CommandPalette
+    PostCard · ProfileModal · Modal
+  }
+  class AuthContext {
+    user · loading
+    signIn() · signUp() · signOut()
+    resetPassword() · changePassword()
+  }
+  class portfolio {
+    useTrades() · addTrade() · deleteTrade()
+    computePositions() · findOversell()
+    useHistory() · tradesCsv()
+  }
+  class market {
+    getQuote() · getCandles() · useBatch()
+    useMep() · convert() · fmtPrice()
+    marketStatus()
+  }
+  class alerts {
+    useAlerts() · addAlert() · alertError()
+    useAlertWatcher() · useNotifications()
+  }
+  class social {
+    useFeed() · createPost() · setLike()
+    follow() · useSharedPortfolio()
+    requestVerification() · reportPost()
+  }
+  class otrosLib {
+    simulate · events · catalog
+    glossary · password · validate
+  }
+  class supabase_js {
+    auth · from(tabla) · rpc() · channel()
+  }
+  class API_Flask {
+    /api/quote · /api/candles · /api/batch
+    /api/mep · /api/search · /api/events
+  }
+  Paginas --> Componentes
+  Paginas --> AuthContext
+  Paginas --> portfolio
+  Paginas --> market
+  Paginas --> alerts
+  Paginas --> social
+  Paginas --> otrosLib
+  AuthContext --> supabase_js
+  portfolio --> supabase_js
+  alerts --> supabase_js
+  social --> supabase_js
+  portfolio ..> market : precios y MEP
+  market --> API_Flask
+  otrosLib --> API_Flask
+</pre><figcaption>Figura 4. Módulos del front y de quién depende cada uno.</figcaption></figure>
+
+<figure><pre class="mermaid">
+classDiagram
+  direction LR
+  class backend_py {
+    +valid_symbol(s)
+    +fetch_quotes(symbols)
+    +mep_data()
+    rutas /api/*
+    errores JSON · cabeceras
+  }
+  class events_py {
+    +underlying(symbol)
+    +events_for(symbols)
+    +notify_tomorrow()
+    +daily()
+    ruta /api/events
+  }
+  class alerts_py {
+    +fires(alerta, cotizacion)
+    +message(alerta, cotizacion)
+    +claim(alerta)
+    +run_once(fetch_quotes)
+    +start(fetch_quotes)
+  }
+  class supa_py {
+    +configured()
+    +rest(metodo, tabla)
+    +rpc(nombre, args)
+  }
+  class demo_py {
+    +cargar() · borrar()
+    +profe(clave)
+  }
+  class yfinance {
+    Ticker · download · Search
+  }
+  backend_py --> events_py : registra la ruta
+  backend_py --> alerts_py : arranca el hilo
+  alerts_py --> supa_py
+  events_py --> supa_py
+  alerts_py ..> backend_py : usa fetch_quotes
+  backend_py --> yfinance
+  events_py --> yfinance
+  demo_py --> supa_py
+</pre><figcaption>Figura 5. Módulos del backend.</figcaption></figure>
+
+<h1>5. Diagramas de comportamiento, por funcionalidad</h1>
+<p>Un diagrama por cada funcionalidad de la tabla 2.3. Los flujos principales están como diagramas de secuencia UML, y los que son más bien reglas, como diagramas de actividad o de estados.</p>
+
+<h2>5.1 Registro e inicio de sesión</h2>
+<figure class="seq"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor U as Usuario
+  participant F as SPA (Register / Login)
+  participant A as Supabase Auth
+  participant DB as Postgres
+  U->>F: completa usuario, email y contraseña
+  F->>F: valida formato, largo y que no sea común
+  F->>DB: rpc username_available(usuario)
+  DB-->>F: true / false
+  alt usuario tomado o datos inválidos
+    F-->>U: mensaje al lado del campo
+  else todo bien
+    F->>A: signUp(email, contraseña, {username})
+    A->>A: guarda el hash (bcrypt)
+    A->>DB: inserta en auth.users
+    DB->>DB: trigger handle_new_user crea profiles
+    A-->>F: sesión (JWT + refresh)
+    F-->>U: va a /home
+  end
+  Note over U,A: Entrar: signInWithPassword → JWT. Si falla: "Email o contraseña incorrectos".
+</pre><figcaption>Figura 6. Registro (y entrar, en la nota).</figcaption></figure>
+
+<h2>5.2 Recuperar y cambiar la contraseña</h2>
+<figure class="seq"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor U as Usuario
+  participant F as SPA
+  participant A as Supabase Auth
+  U->>F: /recuperar → escribe su email
+  F->>A: resetPasswordForEmail(email, redirectTo=/nueva-clave)
+  A-->>U: mail con enlace de un solo uso
+  F-->>U: "Si tenés cuenta, te llega un enlace" (igual exista o no)
+  U->>F: abre el enlace → /nueva-clave
+  A-->>F: evento PASSWORD_RECOVERY (sesión temporal)
+  U->>F: contraseña nueva + confirmación
+  F->>A: updateUser({password})
+  A-->>F: ok
+  F-->>U: listo, ya entra con la nueva
+  Note over U,A: Cambiar estando adentro: primero signInWithPassword con la actual. Si es correcta, updateUser.
+</pre><figcaption>Figura 7. Recuperar la contraseña.</figcaption></figure>
+
+<h2>5.3 Registrar una operación y ver el portfolio</h2>
+<figure class="seq"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor U as Usuario
+  participant F as SPA (TradeModal / Dashboard)
+  participant M as API de mercado
+  participant R as Supabase REST
+  participant DB as Postgres
+  U->>F: elige activo, compra/venta, cantidad, precio y fecha
+  F->>M: GET /api/quote/{símbolo}
+  M-->>F: precio actual (para sugerirlo)
+  F->>F: valida (ver figura 9)
+  F->>R: insert trades (JWT)
+  R->>DB: INSERT con RLS: user_id = auth.uid()
+  DB->>DB: checks + triggers: fecha no futura, sin ventas de más
+  alt rechazada
+    DB-->>F: error
+    F-->>U: mensaje claro, no se guarda
+  else aceptada
+    DB-->>F: fila creada
+    F->>R: select trades del usuario
+    F->>M: GET /api/batch?symbols=… y /api/mep
+    F->>F: computePositions(): costo promedio, valor, ganancia, composición
+    F-->>U: portfolio actualizado
+  end
+</pre><figcaption>Figura 8. Registrar una operación. Las posiciones se calculan en el front, a partir de las operaciones.</figcaption></figure>
+
+<figure><pre class="mermaid">
+flowchart TD
+  S([Registrar]) --> T{¿Ticker válido<br/>y con cotización?}
+  T -- no --> E1[/"Elegí un ticker válido"/]
+  T -- sí --> Q{¿Cantidad &gt; 0<br/>y precio &gt; 0?}
+  Q -- no --> E2[/"La cantidad / el precio tiene que ser mayor a cero"/]
+  Q -- sí --> D{¿Fecha entre 1990 y hoy?}
+  D -- no --> E3[/"La fecha no puede ser futura"/]
+  D -- sí --> V{¿Es venta?}
+  V -- no --> OK([Guardar])
+  V -- sí --> H{¿Alcanza lo que<br/>tenía ese día?}
+  H -- no --> E4[/"Solo tenés N para vender"/]
+  H -- sí --> OK
+  OK --> B{¿La base la acepta?<br/>RLS + triggers}
+  B -- no --> E5[/mensaje del error/]
+  B -- sí --> FIN([Operación registrada])
+</pre><figcaption>Figura 9. Actividad: validación de una operación. Las mismas reglas se repiten en la base para que no dependan del front.</figcaption></figure>
+
+<h2>5.4 Ver un activo (Mercado) e Inicio</h2>
+<figure class="seq"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor U as Usuario
+  participant F as SPA (Tickersearch)
+  participant M as API de mercado
+  participant Y as Yahoo Finance
+  participant R as Supabase REST
+  U->>F: busca "galicia" (o ⌘K)
+  F->>M: GET /api/search?q=galicia
+  M->>Y: Search
+  M-->>F: [{GGAL}, {GGAL.BA}, …]
+  U->>F: elige GGAL.BA
+  par datos de mercado
+    F->>M: GET /api/quote/GGAL.BA
+    F->>M: GET /api/candles/GGAL.BA?interval=daily&range=1y
+    M->>Y: history()
+    M-->>F: precio, variación y velas (JSON)
+  and datos del usuario y la comunidad
+    F->>R: watchlist, alerts y posts sobre GGAL.BA
+    R-->>F: filas que el RLS deja ver
+  end
+  F->>M: GET /api/events?symbols=GGAL.BA
+  M-->>F: próximo resultado / dividendo
+  F-->>U: gráfico, cifras, comunidad, próximo evento
+  Note over U,R: Las listas (explorador, Inicio) piden muchos símbolos juntos con /api/batch, con caché de 60 s.
+</pre><figcaption>Figura 10. Buscar y ver un activo.</figcaption></figure>
+
+<h2>5.5 Alertas de precio</h2>
+<figure class="seq"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor U as Usuario
+  participant F as SPA
+  participant R as Supabase (REST + Realtime)
+  participant W as Proceso de alertas
+  participant M as fetch_quotes (caché)
+  U->>F: "Avisame si AAPL.BA llega a ARS 24.000"
+  F->>F: alertError(): mayor a cero, no duplicada, no superada
+  F->>R: insert alerts
+  loop cada 3 minutos
+    W->>R: GET alerts activas (service role)
+    W->>M: precios de esos símbolos
+    W->>W: fires(alerta, precio)
+    opt se cumple
+      W->>R: PATCH alerts (claim: solo si nadie la tomó antes)
+      W->>R: POST notifications
+      R-->>F: realtime: nueva notificación
+      F-->>U: campanita + aviso del navegador
+    end
+  end
+  Note over U,M: Con la app abierta, useAlertWatcher también las revisa cada 60 s. El claim evita avisar dos veces.
+</pre><figcaption>Figura 11. Una alerta desde que se crea hasta que avisa, aunque la app esté cerrada.</figcaption></figure>
+
+<figure><pre class="mermaid">
+stateDiagram-v2
+  direction LR
+  [*] --> Activa: crea
+  Activa --> Pausada: pausa
+  Pausada --> Activa: reactiva
+  Activa --> Disparada: llega al precio
+  Disparada --> Activa: reactiva
+  Activa --> AvisoHoy: sube o cae X%
+  AvisoHoy --> Activa: nueva rueda
+  Activa --> [*]: borra
+  Pausada --> [*]: borra
+  Disparada --> [*]: borra
+</pre><figcaption>Figura 12. Estados de una alerta. Las de precio (<code>above</code>, <code>below</code>) pasan a Disparada y se desactivan; las de porcentaje (<code>up_pct</code>, <code>down_pct</code>) avisan una vez por rueda.</figcaption></figure>
+
+<h2>5.6 Notificaciones</h2>
+<figure><pre class="mermaid">
+flowchart LR
+  subgraph Origen
+    A1[Alguien te sigue] --> T1[trigger notify_follow]
+    A2[Alguien que seguís recomienda] --> T2[trigger notify_post]
+    A3[Le sirvió tu recomendación] --> T3[trigger notify_like]
+    A4[Admin resuelve tu verificación] --> T4[trigger review_verification]
+    A5[Se cumplió una alerta] --> T5[proceso de alertas / app abierta]
+    A6[Mañana hay resultados o dividendo] --> T6[events.daily, desde las 10]
+  end
+  T1 & T2 & T3 & T4 & T5 & T6 --> N[(notifications)]
+  N -- realtime --> B[Campanita: pestañas, leer, borrar, ir al link]
+</pre><figcaption>Figura 13. De dónde sale cada notificación. Las que provoca otra persona las crea la base, no el front.</figcaption></figure>
+
+<h2>5.7 Comunidad: recomendar, "me sirve", seguir y reportar</h2>
+<figure class="seq"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor A as Autora
+  actor B as Seguidor
+  participant F as SPA (Community)
+  participant M as API de mercado
+  participant R as Supabase REST
+  participant DB as Postgres
+  A->>F: Recomendar: MELI.BA, mantener, texto, público
+  F->>M: GET /api/quote/MELI.BA
+  F->>R: insert posts (price_at = precio actual)
+  DB->>DB: trigger notify_post → notificación a sus seguidores
+  B->>F: abre el feed
+  F->>R: select posts (RLS: públicas, propias o de amigos)
+  F->>M: precios actuales
+  F-->>B: recomendación con "−16% desde que lo dijo"
+  B->>F: "Me sirve"
+  F->>R: insert post_likes
+  DB->>DB: trigger notify_like → notificación a la autora
+  B->>F: Seguir a la autora
+  F->>R: insert follows
+  DB->>DB: trigger notify_follow (si es mutuo, son amigos)
+  opt contenido inapropiado
+    B->>F: Reportar (spam, engañosa…)
+    F->>R: insert reports (único por persona)
+  end
+</pre><figcaption>Figura 14. Comunidad.</figcaption></figure>
+
+<h2>5.8 Perfil, privacidad y portfolio compartido</h2>
+<figure class="seq"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor V as Visitante del perfil
+  participant F as SPA (Profile /u/ana)
+  participant R as Supabase REST
+  participant DB as Postgres
+  V->>F: abre /u/ana
+  F->>R: select profiles where username = ana
+  F->>R: rpc shared_portfolio(ana.id)
+  R->>DB: can_see_portfolio(ana.id)
+  alt dueña, perfil público, o "amigos" y son amigos
+    DB-->>F: símbolo, peso y rendimiento (sin montos)
+    F-->>V: composición en % y cómo le va
+  else privado o no son amigos
+    DB-->>F: vacío
+    F-->>V: "Este portfolio es privado"
+  end
+  Note over V,DB: La dueña cambia la privacidad en Editar perfil → update profiles.visibility (con confirmación).
+</pre><figcaption>Figura 15. Ver el portfolio de otra persona respetando su privacidad.</figcaption></figure>
+
+<h2>5.9 Verificación y panel de administración</h2>
+<figure class="seq"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor U as Usuario
+  actor AD as Admin
+  participant F as SPA
+  participant R as Supabase REST
+  participant DB as Postgres
+  U->>F: Perfil → Verificado: categoría, link y motivo
+  F->>R: insert verification_requests (status = pending)
+  AD->>F: /admin
+  F->>R: rpc admin_stats()
+  R->>DB: is_admin()?
+  alt no es admin
+    DB-->>F: error 42501
+    F-->>AD: vuelve a /home
+  else es admin
+    DB-->>F: números de la app
+    F->>R: pedidos pendientes y recomendaciones reportadas
+    AD->>F: Aprobar pedido
+    F->>R: update verification_requests status = approved
+    DB->>DB: trigger review_verification: marca el perfil + notificación
+    AD->>F: Borrar recomendación reportada
+    F->>R: delete posts (política solo admin)
+  end
+</pre><figcaption>Figura 16. Verificación y moderación.</figcaption></figure>
+
+<h2>5.10 Calendario de resultados y dividendos</h2>
+<figure class="seq"><pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor U as Usuario
+  participant F as SPA (Calendar)
+  participant M as API (events.py)
+  participant Y as Yahoo Finance
+  participant W as Proceso de alertas
+  participant R as Supabase REST
+  U->>F: abre /calendario
+  F->>F: símbolos que tiene (trades) o sigue (watchlist)
+  F->>M: GET /api/events?symbols=AAPL.BA,KO.BA,…
+  M->>M: underlying(): AAPL.BA → AAPL, YPFD.BA → YPF
+  M->>Y: calendar + dividendos (caché 6 h, en paralelo)
+  M-->>F: [{kind, date, eps, revenue, amount}]
+  F-->>U: eventos por mes, "la tenés / la seguís", cuánto falta
+  loop una vez por día, desde las 10
+    W->>R: trades y watchlist de todos
+    W->>M: eventos de mañana
+    W->>R: insert event_notices (si ya existía, no se repite)
+    W->>R: insert notifications (kind = event)
+  end
+</pre><figcaption>Figura 17. Calendario y aviso del día antes.</figcaption></figure>
+
+<h2>5.11 Simulador "¿Y si hubiera invertido?"</h2>
+<figure><pre class="mermaid">
+flowchart TD
+  S([Elige activo, monto, moneda,<br/>desde cuándo y si es de una vez o mensual]) --> C[GET /api/candles/símbolo?range=max]
+  C --> MEP{¿La moneda elegida es<br/>distinta de la del activo?}
+  MEP -- sí --> GM[GET /api/mep: MEP de cada día]
+  MEP -- no --> SIM
+  GM --> SIM["simulate(): compra el primer día<br/>(y el primero de cada mes si es mensual),<br/>valúa cada día al MEP de ese día"]
+  SIM --> CMP{¿Comparar con S&amp;P 500,<br/>Bitcoin o dólares?}
+  CMP -- sí --> C2[Misma simulación con el otro activo]
+  CMP -- no --> R
+  C2 --> R([Resultado: valor hoy, ganancia, por año,<br/>peor y mejor momento, gráfico])
+</pre><figcaption>Figura 18. Actividad del simulador. Todo el cálculo se hace en el front.</figcaption></figure>
+
+<h2>5.12 Aprendé</h2>
+<figure><pre class="mermaid">
+flowchart LR
+  G[(glossary.js<br/>20 términos en 4 grupos)] --> L[Aprendé: tarjetas que se dan vuelta,<br/>búsqueda y progreso]
+  G --> T["Term: '?' al lado de cada término<br/>en Mercado, Portfolio, Comunidad…"]
+  T -- "Ver más en Aprendé" --> L
+  L -- "Probalo en el Simulador" --> SIM[Simulador]
+  L --> P[(localStorage:<br/>términos vistos)]
+</pre><figcaption>Figura 19. Aprendé: un solo glosario alimenta las tarjetas y las ayudas de toda la app; no usa el backend.</figcaption></figure>
+
+<h1>6. Especificación de interfaces (contrato de API)</h1>
+
+<h2>6.1 API de mercado (Flask)</h2>
+<p>Base: <code>http://localhost:5002/api</code>. Todas las respuestas son JSON. No requiere sesión: solo devuelve datos públicos de mercado. Los símbolos se validan con <code>^[A-Z0-9.=^-]{1,15}$</code>. CORS solo para <code>localhost</code> y <code>127.0.0.1</code> (y <code>CORS_ORIGINS</code>).</p>
+<table>
+  <thead><tr><th style="width:8%">Método</th><th style="width:22%">Ruta</th><th style="width:30%">Parámetros</th><th>Devuelve</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td><code>/quote/{símbolo}</code></td><td>—</td><td>Cotización del día: precio, cambio, %, volumen, cierre anterior.</td></tr>
+    <tr><td>GET</td><td><code>/candles/{símbolo}</code></td><td><code>interval</code>: daily · weekly · monthly · hourly · 30min<br/><code>range</code>: 1m · 3m · 6m · 1y · 5y · max<br/><code>limit</code>: 1–5000</td><td>Velas OHLCV.</td></tr>
+    <tr><td>GET</td><td><code>/batch</code></td><td><code>symbols</code>: hasta 60, separados por coma</td><td>Cotización + cierres del último mes de cada uno (null si no hay datos).</td></tr>
+    <tr><td>GET</td><td><code>/mep</code></td><td>—</td><td>Dólar MEP de hoy y su historia diaria.</td></tr>
+    <tr><td>GET</td><td><code>/search</code></td><td><code>q</code>: texto (máx. 64)</td><td>Hasta 8 coincidencias: símbolo, nombre, tipo.</td></tr>
+    <tr><td>GET</td><td><code>/events</code></td><td><code>symbols</code>: hasta 60</td><td>Resultados y dividendos de los próximos 120 días.</td></tr>
+    <tr><td>GET</td><td><code>/health</code></td><td>—</td><td><code>{"status": "ok"}</code></td></tr>
+  </tbody>
+</table>
+
+<h3>Ejemplos de respuesta exitosa (200)</h3>
+<pre class="code">GET /api/quote/MELI.BA
+{ "symbol": "MELI.BA", "price": 20230.0, "change": -190.0, "change_pct": -0.9305,
+  "volume": 15, "prev_close": 20420.0, "latest_date": "2026-11-17" }
+
+GET /api/candles/AAPL?interval=daily&amp;range=1m&amp;limit=2
+{ "symbol": "AAPL", "interval": "daily", "range": "1mo", "intraday": false, "count": 2,
+  "candles": [ { "time": "2026-11-14", "date": "2026-11-14", "open": 350.1, "high": 354.4,
+                 "low": 349.3, "close": 352.78, "volume": 41230000 }, … ] }
+
+GET /api/batch?symbols=AAPL,NOPE,&lt;x&gt;
+{ "quotes": { "AAPL": { "price": 351.91, "change_pct": -0.2466, "closes": [342.94, …], … },
+              "NOPE": null, "&lt;X&gt;": null } }
+
+GET /api/mep
+{ "rate": 1589.71, "date": "2026-11-17", "series": [["2017-09-11", 35.45], …] }
+
+GET /api/search?q=galicia
+{ "results": [ { "symbol": "GGAL", "name": "Grupo Financiero Galicia S.A.", "type": "EQUITY" }, … ] }
+
+GET /api/events?symbols=KO.BA
+{ "today": "2026-11-17",
+  "events": [ { "symbol": "KO.BA", "base": "KO", "kind": "exdiv", "date": "2026-11-30", "amount": 0.53 },
+              { "symbol": "KO.BA", "base": "KO", "kind": "divpay", "date": "2026-12-14", "amount": 0.53 } ] }</pre>
+
+<h3>Códigos de error</h3>
+<table>
+  <thead><tr><th style="width:12%">Status</th><th style="width:40%">Cuándo</th><th>Cuerpo</th></tr></thead>
+  <tbody>
+    <tr><td>400</td><td>Símbolo con formato inválido</td><td><code>{"error": "Invalid symbol"}</code></td></tr>
+    <tr><td>400</td><td>Falta <code>symbols</code> en /batch o <code>q</code> en /search</td><td><code>{"error": "Param 'symbols' required"}</code></td></tr>
+    <tr><td>404</td><td>Símbolo válido pero sin datos en Yahoo</td><td><code>{"error": "Symbol not found or no data"}</code></td></tr>
+    <tr><td>404</td><td>Ruta inexistente</td><td><code>{"error": "Not Found"}</code></td></tr>
+    <tr><td>405</td><td>Método distinto de GET</td><td><code>{"error": "Method Not Allowed"}</code></td></tr>
+    <tr><td>500</td><td>Error no previsto</td><td><code>{"error": "Internal server error"}</code></td></tr>
+    <tr><td>502</td><td>Yahoo Finance falló o no respondió</td><td><code>{"error": "Market data unavailable"}</code></td></tr>
+  </tbody>
+</table>
+<p>Nunca se devuelven trazas, rutas del servidor ni mensajes internos de Yahoo: quedan en la consola del backend.</p>
+
+<h2>6.2 Acceso a datos por Supabase</h2>
+<p>Para todo lo que es de la cuenta, el front usa <code>supabase-js</code>, que habla con la API REST de Supabase (<code>https://&lt;proyecto&gt;.supabase.co/rest/v1</code>) enviando el JWT de la sesión. No pasa por la API propia. Las políticas RLS de la base deciden qué puede hacer cada uno.</p>
+<table>
+  <thead><tr><th style="width:22%">Recurso</th><th style="width:34%">Operaciones que usa la app</th><th>Errores posibles</th></tr></thead>
+  <tbody>
+    <tr><td><code>trades</code></td><td>select propias · insert · delete</td><td>403 (RLS: otro <code>user_id</code>), 400 (check: cantidad, precio, fecha, venta de más).</td></tr>
+    <tr><td><code>watchlist</code></td><td>select propias · insert · delete</td><td>409 si ya lo sigue.</td></tr>
+    <tr><td><code>alerts</code></td><td>select propias · insert · update (valor, activa) · delete</td><td>400 (check), 403 (RLS).</td></tr>
+    <tr><td><code>notifications</code></td><td>select propias · update <code>read_at</code> · delete · realtime</td><td>403.</td></tr>
+    <tr><td><code>profiles</code></td><td>select · update la propia</td><td>Los campos protegidos se ignoran (trigger).</td></tr>
+    <tr><td><code>follows</code>, <code>post_likes</code></td><td>select · insert · delete propios</td><td>409 si ya existe; 400 seguirse a sí mismo.</td></tr>
+    <tr><td><code>posts</code></td><td>select (feed, filtros) · insert · delete</td><td>400 (texto vacío o &gt; 500).</td></tr>
+    <tr><td><code>verification_requests</code>, <code>reports</code></td><td>insert · select propios (admin: todos, update)</td><td>403 si no es admin; 409 reporte repetido.</td></tr>
+  </tbody>
+</table>
+<table>
+  <thead><tr><th style="width:30%">Función (rpc)</th><th style="width:30%">Parámetros</th><th>Respuesta</th></tr></thead>
+  <tbody>
+    <tr><td><code>username_available</code></td><td><code>candidate</code> text</td><td><code>true</code> / <code>false</code> (también sin sesión).</td></tr>
+    <tr><td><code>shared_portfolio</code></td><td><code>target</code> uuid</td><td>Filas <code>{symbol, name, units, avg_cost, since}</code> con cantidades escaladas; vacío si no se puede ver.</td></tr>
+    <tr><td><code>shared_trades</code></td><td><code>target</code> uuid, <code>lim</code> int</td><td>Últimos movimientos <code>{symbol, name, side, executed_at}</code>, sin montos.</td></tr>
+    <tr><td><code>admin_stats</code></td><td>—</td><td>JSON con usuarios, recomendaciones, operaciones, pendientes; error 42501 (403) si no es admin.</td></tr>
+  </tbody>
+</table>
+<p>Autenticación (Supabase Auth): <code>signUp</code>, <code>signInWithPassword</code>, <code>signOut</code>, <code>resetPasswordForEmail</code>, <code>updateUser</code>. Errores traducidos en el front: credenciales inválidas, email ya registrado, contraseña corta, enlace vencido, demasiados intentos, sin conexión.</p>
+
+<h1>7. Vista de despliegue</h1>
+<p>Para la entrega, el front y el backend corren en la compu de quien prueba la app; la base, las cuentas y los mails están en Supabase (nube). <code>iniciar.sh</code> (Mac/Linux) o <code>iniciar.bat</code> (Windows) crean el entorno de Python, instalan las dependencias, levantan los dos procesos y abren el navegador.</p>
+<figure><pre class="mermaid">
+flowchart LR
+  subgraph PC["Compu del docente"]
+    BR["Navegador<br/>localhost:5173"]
+    VITE["Vite (Node 20+)<br/>sirve la SPA · :5173"]
+    FLASK["Flask (Python 3.9+)<br/>API + proceso de alertas · 127.0.0.1:5002"]
+    BR --> VITE
+    BR -- "HTTP local" --> FLASK
+  end
+  subgraph NUBE["Internet"]
+    SUPA["Supabase<br/>Auth · Postgres · Realtime"]
+    YF["Yahoo Finance"]
+  end
+  BR -- "HTTPS + JWT" --> SUPA
+  FLASK -- HTTPS --> YF
+  FLASK -. "HTTPS (si hay service role key)" .-> SUPA
+</pre><figcaption>Figura 20. Despliegue de la entrega. Sin la <i>service role key</i> en el <code>.env</code> del backend, las alertas se revisan solo con la app abierta.</figcaption></figure>
+<p><b>Si se publicara:</b> el front compilado (<code>npm run build</code>) en un hosting estático con HTTPS (Vercel, Netlify), la API en un servicio de contenedores (Render, Railway) con <code>CORS_ORIGINS</code> apuntando al dominio del front, y Supabase igual que ahora. El código ya está preparado: todo se configura por variables de entorno.</p>
+
+<h1>8. Decisiones arquitectónicas (ADR)</h1>
+<p>Cada decisión con su contexto, las alternativas, lo que elegimos y sus consecuencias. Las ADR 1 a 4 vienen de la versión anterior (actualizadas); las demás son nuevas.</p>
+
+<h2>ADR-01 · Cliente-servidor en capas, un monolito por lado <span class="tag">vigente</span></h2>
+<p><b>Contexto:</b> equipo de 3, un año de cursada. <b>Alternativas:</b> microservicios; serverless; monolito por capas. <b>Decisión:</b> una SPA y una API chica, cada una un solo desplegable. <b>Consecuencias:</b> desarrollo y despliegue simples, poca infraestructura; si la API creciera mucho habría que separarla.</p>
+
+<h2>ADR-02 · Supabase en lugar de MySQL propio <span class="tag">vigente</span></h2>
+<p><b>Contexto:</b> hacían falta usuarios, datos relacionales y seguridad sin presupuesto. <b>Alternativas:</b> MySQL local con login propio; MongoDB; Supabase. <b>Decisión:</b> arrancamos con MySQL y migramos a Supabase (Postgres administrado + Auth). <b>Consecuencias:</b> backups, autenticación y RLS listos sin mantenerlos; dependemos de un servicio externo incluso en desarrollo.</p>
+
+<h2>ADR-03 · Autenticación delegada en Supabase Auth <span class="tag">reemplaza al JWT propio</span></h2>
+<p><b>Contexto:</b> la primera versión emitía y validaba un JWT propio en Flask. <b>Decisión:</b> pasar todo a Supabase Auth; Flask no maneja usuarios. <b>Consecuencias:</b> hash bcrypt, expiración, refresh rotativo, recuperación por mail y límite de intentos sin código propio; la sesión vive en el navegador (ver el Manual Técnico).</p>
+
+<h2>ADR-04 · Datos de mercado con yfinance <span class="tag">vigente</span></h2>
+<p><b>Contexto:</b> miles de tickers con historia larga, sin presupuesto. <b>Alternativas:</b> APIs pagas (Alpha Vantage, IEX); yfinance. <b>Decisión:</b> yfinance. <b>Consecuencias:</b> costo cero y CEDEARs de BYMA incluidos; no es oficial y puede cambiar, lo mitigamos con errores controlados y caché.</p>
+
+<h2>ADR-05 · Autorización en la base con RLS, no en la API</h2>
+<p><b>Contexto:</b> el front habla directo con la base. <b>Alternativas:</b> que todo pase por Flask y validar el dueño en cada endpoint; políticas RLS. <b>Decisión:</b> RLS en todas las tablas, más funciones <code>security definer</code> para lo que se comparte (portfolio en %, estadísticas de admin). <b>Consecuencias:</b> una sola regla que vale para cualquier cliente; las políticas hay que probarlas con cuidado porque un error abre datos.</p>
+
+<h2>ADR-06 · El backend solo da mercado; las alertas usan la service role key</h2>
+<p><b>Contexto:</b> las alertas tienen que avisar aunque nadie tenga la app abierta. <b>Alternativas:</b> revisar solo en el navegador; un servicio aparte; un hilo en la API. <b>Decisión:</b> un hilo dentro de la API que cada 3 minutos lee las alertas con la <i>service role key</i> y escribe la notificación; la app también revisa mientras está abierta, y un "claim" condicional evita avisar dos veces. <b>Consecuencias:</b> un solo proceso para levantar; la clave secreta queda solo en el <code>.env</code> del backend.</p>
+
+<h2>ADR-07 · Dólar MEP calculado con CEDEARs</h2>
+<p><b>Contexto:</b> Yahoo no tiene AL30/GD30. <b>Decisión:</b> MEP = precio en pesos / precio en dólares del mismo CEDEAR (AAPL.BA / AAPLD.BA, etc.), mediana de 6 pares por día. <b>Consecuencias:</b> serie histórica gratis desde 2017; puede diferir unos pesos del MEP de bonos.</p>
+
+<h2>ADR-08 · Posiciones derivadas de las operaciones</h2>
+<p><b>Contexto:</b> guardar posiciones duplicaría datos. <b>Decisión:</b> solo se guardan <code>trades</code>; posiciones, costo promedio, evolución y composición se calculan. <b>Consecuencias:</b> historial completo y nada que se desincronice; las reglas (no vender de más) se validan sobre toda la historia (trigger 0008).</p>
+
+<h2>ADR-09 · Privacidad en porcentajes</h2>
+<p><b>Contexto:</b> compartir el portfolio es útil, mostrar cuánta plata tiene alguien no. <b>Decisión:</b> privado por defecto; amigos o todos a elección; se comparte solo peso y rendimiento. <b>Consecuencias:</b> la función <code>shared_portfolio</code> escala las cantidades para que no se puedan reconstruir montos.</p>
+
+<h2>ADR-10 · Entrega local con un comando, sin hosting</h2>
+<p><b>Contexto:</b> el docente tiene que poder probarla fácil; es un trabajo escolar. <b>Alternativas:</b> hosting gratuito (Vercel + Render); ejecutable; script de arranque. <b>Decisión:</b> el docente clona el repositorio y corre <code>iniciar.sh</code> / <code>iniciar.bat</code>; los datos están en Supabase con una cuenta de prueba cargada (<code>demo.py profe</code>). El modo práctica quedó guardado en la rama <code>modo-practica</code>. <b>Consecuencias:</b> sin costos ni servidores que mantener; requiere Python y Node instalados.</p>
+
+<h1>9. Atributos de calidad</h1>
+<table>
+  <thead><tr><th style="width:17%">Atributo</th><th>Escenario</th><th style="width:30%">Cómo lo cumplimos</th></tr></thead>
+  <tbody>
+    <tr><td>Performance</td><td>Un usuario abre el Mercado con 60 activos: la lista tiene que cargar en pocos segundos.</td><td>Un solo pedido <code>/api/batch</code> para todos, caché de 60 s, esqueletos mientras carga.</td></tr>
+    <tr><td>Usabilidad</td><td>Alguien sin conocimientos busca "galicia" y no "GGAL".</td><td>Búsqueda por nombre, ⌘K, términos explicados con "?", estados vacíos que dicen qué hacer.</td></tr>
+    <tr><td>Seguridad</td><td>Un usuario intenta leer o modificar operaciones de otro directo por la API.</td><td>RLS: lectura vacía, escritura 403 (ver Manual Técnico).</td></tr>
+    <tr><td>Integridad</td><td>Alguien registra una venta de más salteando el front.</td><td>Trigger <code>trades_check_balance</code> la rechaza.</td></tr>
+    <tr><td>Disponibilidad</td><td>Yahoo Finance no responde.</td><td>502 controlado; la app sigue mostrando el portfolio con el costo y "—" en el precio.</td></tr>
+    <tr><td>Mantenibilidad</td><td>Cambiar cómo se calcula el portfolio.</td><td>La lógica está en <code>lib/portfolio.js</code>, con tests que avisan si algo se rompe.</td></tr>
+  </tbody>
+</table>
+
+<h1>10. Riesgos y deuda técnica</h1>
+<table>
+  <thead><tr><th style="width:32%">Tema</th><th>Estado</th></tr></thead>
+  <tbody>
+    <tr><td>Control de sesión página por página <span class="tag">resuelto</span></td><td>Ahora hay un componente <code>Private</code> central en <code>App.jsx</code>; las páginas igual se protegen solas y la base no devuelve datos sin sesión.</td></tr>
+    <tr><td>Sin caché <span class="tag">resuelto</span></td><td>Caché en memoria: 60 s por cotización, 15 min el MEP, 6 h los eventos.</td></tr>
+    <tr><td>Sin tests automáticos <span class="tag">resuelto</span></td><td>116 tests (PyTest + Vitest). Los E2E siguen siendo manuales.</td></tr>
+    <tr><td>Parte social sin definir <span class="tag">resuelto</span></td><td>Comunidad completa con su modelo de datos (sección 3).</td></tr>
+    <tr><td>Dependencia de Yahoo Finance <span class="tag">abierto</span></td><td>No es una API oficial. Mitigación: errores controlados y caché.</td></tr>
+    <tr><td>Avisos con la app cerrada dependen de que el backend esté corriendo <span class="tag">abierto</span></td><td>En una publicación real, correr <code>alerts.py</code> como proceso aparte o una función programada.</td></tr>
+    <tr><td>Datos raros de activos poco operados <span class="tag">abierto</span></td><td>Un CEDEAR sin operaciones por días puede mostrar una variación enorme el día que vuelve a operar (dato real de Yahoo).</td></tr>
+  </tbody>
+</table>
+
+<h1>11. Glosario</h1>
+<table><tbody>
+  <tr><td style="width:22%"><b>Ticker</b></td><td>Símbolo de un activo (AAPL, MELI.BA, BTC-USD).</td></tr>
+  <tr><td><b>CEDEAR</b></td><td>Certificado que representa una acción del exterior y se compra en pesos en BYMA (los terminados en D, en dólares).</td></tr>
+  <tr><td><b>Dólar MEP</b></td><td>Dólar que se obtiene comprando un activo en pesos y vendiéndolo en dólares; Valeur lo usa para convertir.</td></tr>
+  <tr><td><b>Vela japonesa</b></td><td>Apertura, máximo, mínimo y cierre de un período.</td></tr>
+  <tr><td><b>Costo promedio</b></td><td>Lo que pagaste en promedio por cada unidad que tenés.</td></tr>
+  <tr><td><b>Corte de dividendo</b></td><td>Último día para tener la acción y cobrar el próximo dividendo.</td></tr>
+  <tr><td><b>SPA</b></td><td>Aplicación web de una sola página que cambia el contenido sin recargar.</td></tr>
+  <tr><td><b>API REST / endpoint</b></td><td>Interfaz HTTP entre sistemas / cada URL que responde un pedido.</td></tr>
+  <tr><td><b>JWT</b></td><td>Token firmado que identifica al usuario en cada pedido sin guardar sesión en un servidor.</td></tr>
+  <tr><td><b>RLS</b></td><td><i>Row Level Security</i>: reglas de la base que deciden, fila por fila, quién puede leer o escribir.</td></tr>
+  <tr><td><b>Service role key</b></td><td>Clave de Supabase que saltea el RLS; solo para procesos de confianza del servidor.</td></tr>
+  <tr><td><b>Trigger</b></td><td>Función de la base que se ejecuta sola ante un insert, update o delete.</td></tr>
+  <tr><td><b>Hash (bcrypt)</b></td><td>Transformación irreversible de una contraseña, con <i>salt</i>, para no guardarla en texto plano.</td></tr>
+  <tr><td><b>CORS</b></td><td>Mecanismo del navegador que controla desde qué sitios se puede llamar a una API.</td></tr>
+  <tr><td><b>C4</b></td><td>Forma de dibujar arquitectura en niveles: contexto, contenedores, componentes y código.</td></tr>
+  <tr><td><b>ADR</b></td><td><i>Architecture Decision Record</i>: registro de una decisión, sus alternativas y consecuencias.</td></tr>
+</tbody></table>
+
+</body>
+</html>

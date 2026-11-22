@@ -1848,21 +1848,6 @@
   animation: nrx-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* recomendar desde el detalle de un activo */
-.app-root .vx-modal.cm {
-  width: min(560px, 100%);
-}
-.app-root .cm-body {
-  padding: 8px 24px 24px;
-}
-.app-root .cm-body .composer {
-  padding: 0;
-  border: 0;
-  box-shadow: none;
-  background: transparent;
-  animation: none;
-}
-
 /* ---------- BUSCADOR GLOBAL (⌘K) ---------- */
 .app-root .cmdk-bg {
   align-items: flex-start;
@@ -3356,24 +3341,6 @@
     overflow-x: auto;
     scrollbar-width: none;
   }
-}
-
-/* "Lo que más se recomienda" sin nada todavía: fichas punteadas con la forma
-   de lo que va a haber */
-.app-root .card.talk-tile.gh-talk {
-  border: 1.5px dashed color-mix(in oklch, var(--ink) 14%, transparent);
-  background: transparent;
-  box-shadow: none;
-  pointer-events: none;
-}
-.app-root .gh-talk .tt-top {
-  align-items: center;
-}
-.app-root .gh-bar {
-  display: block;
-  height: 6px;
-  border-radius: 99px;
-  border: 1px dashed color-mix(in oklch, var(--ink) 18%, transparent);
 }
 
 /* ---------- COMUNIDAD ---------- */
@@ -5798,30 +5765,7 @@
     transition: none;
   }
 }
-.app-root .lr-cta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 22px 24px;
-}
-.app-root .lr-cta > div:first-child {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.app-root .lr-cta b {
-  font: 600 1.15rem var(--font-display);
-}
-.app-root .lr-cta span {
-  color: var(--ink-soft);
-  font-size: 0.9rem;
-}
-.app-root .lr-cta-acts {
-  display: flex;
-  gap: 10px;
-}
+
 @media (max-width: 1000px) {
   .app-root .lr-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

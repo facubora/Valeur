@@ -47,49 +47,10 @@
   border-color: var(--accent);
 }
 
-/* ---------- TOPBAR (misma estructura que la landing, ver base.css) ---------- */
-.app-root .scroll-sentinel {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 1px;
-  height: 1px;
-  pointer-events: none;
-  opacity: 0;
-}
-.app-root .top-in nav a {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-.app-root .top-in nav a i {
-  font-size: 0.95em;
-}
-.app-root .top-in nav a.active {
-  color: var(--accent-text);
-}
 .app-root .top .right {
   gap: 8px;
 }
-.app-root .user-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 12px 4px 4px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  font-size: 0.86rem;
-  font-weight: 600;
-  color: var(--ink);
-  max-width: 200px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition:
-    max-width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
-    padding 0.38s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.3s ease;
-}
+
 .app-root .avatar {
   width: 28px;
   height: 28px;
@@ -103,82 +64,6 @@
   color: var(--accent-ink);
   background: var(--accent);
 }
-.app-root .user-chip {
-  cursor: pointer;
-  background: transparent;
-  font-family: var(--font-body);
-  transition:
-    border-color 0.2s,
-    background 0.2s;
-}
-.app-root .user-chip:hover,
-.app-root .user-chip[aria-expanded="true"] {
-  border-color: var(--accent);
-  background: color-mix(in oklch, var(--accent) 8%, transparent);
-}
-.app-root .user-chip .caret {
-  font-size: 0.7rem;
-  color: var(--ink-soft);
-  margin-left: 2px;
-}
-.app-root .user-wrap {
-  position: relative;
-}
-.app-root .user-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 10px);
-  min-width: 220px;
-  padding: 6px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: color-mix(in oklch, var(--surface) 92%, transparent);
-  backdrop-filter: saturate(1.6) blur(16px);
-  -webkit-backdrop-filter: saturate(1.6) blur(16px);
-  box-shadow: 0 24px 60px -24px oklch(0.19 0 0 / 0.55);
-  animation: modal-in 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  z-index: 5;
-}
-.app-root .user-menu .who {
-  padding: 10px 12px 8px;
-  border-bottom: 1px solid var(--line-soft);
-  margin-bottom: 6px;
-}
-.app-root .user-menu .who b {
-  display: block;
-  font-family: var(--font-display);
-}
-.app-root .user-menu .who span {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--ink-soft);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.app-root .user-menu button,
-.app-root .user-menu a {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  text-align: left;
-}
-.app-root .user-menu button:hover,
-.app-root .user-menu a:hover {
-  background: color-mix(in oklch, var(--accent) 10%, transparent);
-  color: var(--accent-text);
-}
-
 
 /* ---------- LAYOUT DE PÁGINA ---------- */
 .app-root .app-main {
@@ -203,93 +88,13 @@
   color: var(--ink-soft);
   font-size: 1.02rem;
 }
-.app-root .sec-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-.app-root .sec-head h2 {
-  font-size: 1.4rem;
-  letter-spacing: -0.02em;
-}
-.app-root .sec-head a {
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--ink);
-}
-.app-root .sec-head a:hover {
-  color: var(--accent-text);
-}
+
 .app-root .card {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 20px;
 }
 
-/* ---------- DASHBOARD: resumen ---------- */
-.app-root .stat-grid {
-  display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 1fr;
-  gap: 14px;
-}
-.app-root .stat {
-  padding: 22px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-.app-root .stat .lbl {
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.09em;
-  color: var(--ink-soft);
-}
-.app-root .stat .val {
-  font-family: var(--font-display);
-  font-size: 1.9rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-  overflow-wrap: anywhere;
-}
-.app-root .stat .sub {
-  font-size: 0.86rem;
-  color: var(--ink-soft);
-}
-.app-root .stat.total {
-  position: relative;
-  overflow: hidden;
-  background: var(--ink);
-  color: var(--ink-invert);
-  border-color: transparent;
-}
-.app-root .stat.total .lbl {
-  color: color-mix(in oklch, var(--ink-invert) 60%, transparent);
-}
-.app-root .stat.total .val {
-  font-size: 2.5rem;
-}
-.app-root .stat.total::after {
-  content: "";
-  position: absolute;
-  width: 260px;
-  height: 260px;
-  right: -90px;
-  top: -110px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    color-mix(in oklch, var(--accent) 70%, transparent),
-    transparent 62%
-  );
-  filter: blur(30px);
-  opacity: 0.8;
-  pointer-events: none;
-}
 .app-root .delta {
   display: inline-flex;
   align-items: center;
@@ -309,12 +114,7 @@
   color: var(--down);
   background: color-mix(in oklch, var(--down) 14%, transparent);
 }
-.app-root .stat.total .delta.up {
-  background: color-mix(in oklch, var(--up) 22%, transparent);
-}
-.app-root .stat.total .delta.down {
-  background: color-mix(in oklch, var(--down) 22%, transparent);
-}
+
 .app-root .txt-up {
   color: var(--up);
 }
@@ -322,102 +122,6 @@
   color: var(--down);
 }
 
-/* ---------- DASHBOARD: posiciones ---------- */
-.app-root .pos-list {
-  overflow: hidden;
-}
-.app-root .pos-row {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr 1fr auto;
-  align-items: center;
-  gap: 18px;
-  padding: 16px 22px;
-  border-bottom: 1px solid var(--line-soft);
-  transition:
-    background 0.2s,
-    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.app-root .pos-row:last-child {
-  border-bottom: 0;
-}
-.app-root .pos-row:hover {
-  background: color-mix(in oklch, var(--accent) 6%, transparent);
-}
-.app-root .pos-row.head {
-  padding: 10px 22px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--ink-soft);
-  background: color-mix(in oklch, var(--surface-2) 60%, transparent);
-}
-.app-root .pos-row.head:hover {
-  background: color-mix(in oklch, var(--surface-2) 60%, transparent);
-}
-.app-root .pos-sym {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-.app-root .pos-sym .tk {
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.68rem;
-  letter-spacing: 0.02em;
-  color: var(--accent-text);
-  background: color-mix(in oklch, var(--accent) 11%, transparent);
-  border: 1px solid color-mix(in oklch, var(--accent) 26%, transparent);
-}
-.app-root .pos-sym b {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 1rem;
-  letter-spacing: -0.01em;
-}
-.app-root .pos-sym span {
-  display: block;
-  font-size: 0.82rem;
-  color: var(--ink-soft);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.app-root .pos-num {
-  font-variant-numeric: tabular-nums;
-  font-size: 0.95rem;
-}
-.app-root .pos-num small {
-  display: block;
-  font-size: 0.78rem;
-  color: var(--ink-soft);
-}
-.app-root .pos-row .go {
-  color: var(--ink-soft);
-  font-size: 1rem;
-  transition:
-    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-    color 0.2s;
-}
-.app-root .pos-row:hover .go {
-  color: var(--accent-text);
-  transform: translateX(4px);
-}
-
-/* ---------- MERCADO: buscador + chips ---------- */
-.app-root .search-card {
-  padding: 18px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
 .app-root .search-form {
   position: relative;
   display: flex;
@@ -563,32 +267,6 @@
   font-weight: 500;
 }
 
-/* ---------- MERCADO: quote + chart ---------- */
-.app-root .quote-bar {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-  padding: 0 4px;
-}
-.app-root .quote-bar .sym {
-  font-family: var(--font-display);
-  font-size: 1.7rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
-}
-.app-root .quote-bar .px {
-  font-family: var(--font-display);
-  font-size: 1.7rem;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-}
-.app-root .quote-bar .chg {
-  font-size: 0.9rem;
-  color: var(--ink-soft);
-}
 .app-root .chart-card {
   overflow: hidden;
 }
@@ -1311,10 +989,7 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-/* ---------- DASHBOARD: layout ---------- */
-.app-root .date-line::first-letter {
-  text-transform: uppercase;
-}
+
 .app-root .head-actions {
   display: flex;
   align-items: center;
@@ -1332,26 +1007,11 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.app-root .dash-grid {
-  display: grid;
-  grid-template-columns: 1.7fr 1fr;
-  gap: 14px;
-  align-items: stretch;
-}
-.app-root .sec-head .sub {
-  font-size: 0.84rem;
-  color: var(--ink-soft);
-}
-.app-root .sec-tools {
-  width: min(280px, 100%);
-}
+
 .app-root .muted {
   color: var(--ink-soft);
 }
-.app-root .card.pad {
-  padding: 20px 22px;
-}
-.app-root .lnk,
+
 .app-root .lnk-btn {
   color: var(--accent-text);
   font-weight: 600;
@@ -1362,7 +1022,6 @@
   font-weight: 600;
   cursor: pointer;
 }
-.app-root .lnk:hover,
 .app-root .lnk-btn:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -1500,11 +1159,8 @@
   background: transparent;
   box-shadow: none;
 }
-.app-root .ghost .sec-head h2,
 .app-root .ghost .lbl,
-.app-root .ghost .ov-val,
-.app-root .ghost .seg,
-.app-root .ghost .alloc .sec-head {
+.app-root .ghost .seg {
   opacity: 0.35;
 }
 .app-root .ghost .seg {
@@ -1515,25 +1171,6 @@
   color: var(--ink);
 }
 
-/* glow suave detrás del overview, respirando */
-.app-root .ghost .overview::before {
-  content: "";
-  position: absolute;
-  width: 420px;
-  height: 420px;
-  right: -140px;
-  top: -200px;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    color-mix(in oklch, var(--accent) 55%, transparent),
-    transparent 62%
-  );
-  filter: blur(50px);
-  opacity: 0.22;
-  pointer-events: none;
-  animation: glow-breathe 5s ease-in-out infinite;
-}
 .app-root .ghost .alloc::before {
   content: "";
   position: absolute;
@@ -1564,51 +1201,7 @@
 .app-root .ghost .gh * {
   color: color-mix(in oklch, var(--ink) 32%, transparent) !important;
 }
-.app-root .ghost .ov-deltas.gh {
-  font-weight: 500;
-}
-.app-root .ghost .pos-row.head {
-  background: transparent;
-  opacity: 0.55;
-}
-.app-root .ghost .pos-num {
-  font-weight: 500;
-}
-.app-root .ghost .alloc-foot small {
-  opacity: 0.55;
-}
 
-/* gráfico: grilla tenue + línea punteada estática con halo */
-.app-root .ghost-chart {
-  position: relative;
-  flex: 1;
-  min-height: 230px;
-  margin: 18px 0 8px;
-  border-radius: 14px;
-  background-image: repeating-linear-gradient(
-    to bottom,
-    color-mix(in oklch, var(--ink) 7%, transparent) 0 1px,
-    transparent 1px 46px
-  );
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
-  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
-}
-.app-root .ghost-chart svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-.app-root .ghost-chart path {
-  fill: none;
-  stroke: color-mix(in oklch, var(--accent) 55%, var(--ink-soft));
-  stroke-width: 2;
-  stroke-dasharray: 7 9;
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
-  filter: drop-shadow(0 0 6px color-mix(in oklch, var(--accent) 45%, transparent));
-}
 .app-root .ghost .alloc-bar {
   background: transparent;
   border: 1px dashed color-mix(in oklch, var(--ink) 25%, transparent);
@@ -1619,34 +1212,10 @@
   background: color-mix(in oklch, var(--ink) 9%, transparent);
   border-radius: 999px;
 }
-.app-root .ghost .alloc-list .dot {
-  background: color-mix(in oklch, var(--ink) 14%, transparent);
-}
-.app-root .ghost .pos-row {
-  border-bottom-style: dashed;
-}
-.app-root .ghost .pos-row:last-child {
-  border-bottom: 0;
-}
-.app-root .ghost .pos-row:hover {
-  background: transparent;
-}
-.app-root .ghost .pos-sym .tk {
-  background: transparent;
-  border: 1px dashed color-mix(in oklch, var(--ink) 25%, transparent);
-  color: color-mix(in oklch, var(--ink) 35%, transparent);
-  font-size: 0.9rem;
-}
+
 .app-root .ghost .card.watch:hover {
   transform: none;
   box-shadow: none;
-}
-.app-root .ghost .card.watch.gh-add {
-  min-height: 108px;
-  display: grid;
-  place-items: center;
-  font-size: 1.3rem;
-  color: color-mix(in oklch, var(--ink) 30%, transparent);
 }
 
 /* loader: mismo fantasma + barrido de luz sobre cada card */
@@ -1666,77 +1235,16 @@
   transform: translateX(-100%);
   animation: shimmer 1.6s ease-in-out infinite;
 }
-.app-root .ghost.loading .overview::before,
 .app-root .ghost.loading .alloc::before {
   animation: none;
 }
-.app-root .ghost.loading .ghost-chart path {
-  opacity: 0.35;
-  filter: none;
-}
+
 @keyframes shimmer {
   to {
     transform: translateX(100%);
   }
 }
 
-/* ---------- DASHBOARD: overview + gráfico ---------- */
-.app-root .overview {
-  padding: 22px 22px 8px;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-.app-root .ov-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-.app-root .ov-top .lbl {
-  font-size: 0.74rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--ink-soft);
-}
-.app-root .ov-val {
-  font-family: var(--font-display);
-  font-size: clamp(2rem, 3.6vw, 2.8rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-  margin-top: 6px;
-  font-variant-numeric: tabular-nums;
-}
-.app-root .ov-deltas {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.app-root .ov-deltas .sep {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--line);
-}
-.app-root .ov-none {
-  flex: 1;
-  min-height: 220px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: var(--ink-soft);
-  text-align: center;
-}
 .app-root .pchart {
   position: relative;
   margin-top: 18px;
@@ -1815,9 +1323,7 @@
   flex-direction: column;
   min-width: 0;
 }
-.app-root .alloc .sec-head {
-  margin-bottom: 14px;
-}
+
 .app-root .alloc-bar {
   display: flex;
   gap: 2px;
@@ -1832,79 +1338,6 @@
   min-width: 3px;
   transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.app-root .alloc-list {
-  list-style: none;
-  margin-top: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-  font-size: 0.9rem;
-  font-variant-numeric: tabular-nums;
-}
-.app-root .alloc-list li {
-  display: grid;
-  grid-template-columns: 10px 1fr auto auto;
-  align-items: center;
-  gap: 10px;
-}
-.app-root .alloc-list .dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-}
-.app-root .alloc-list .w {
-  color: var(--ink-soft);
-}
-.app-root .alloc-list .pl {
-  min-width: 64px;
-  text-align: right;
-  font-weight: 600;
-}
-.app-root .alloc-foot {
-  margin-top: auto;
-  padding-top: 16px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  border-top: 1px solid var(--line-soft);
-}
-.app-root .alloc-foot span {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-top: 12px;
-}
-.app-root .alloc-foot small {
-  font-size: 0.68rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-soft);
-}
-.app-root .alloc-foot b {
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-}
-
-/* ---------- DASHBOARD: posiciones (7 columnas) ---------- */
-.app-root .pos-row {
-  grid-template-columns: 1.5fr 0.8fr 1fr 1fr 1.1fr 1fr auto;
-}
-.app-root .pos-num small {
-  color: var(--ink-soft);
-}
-.app-root .pos-num.txt-up small,
-.app-root .pos-num.txt-down small {
-  color: inherit;
-  opacity: 0.8;
-}
-.app-root .pos-act .icon-btn {
-  width: 34px;
-  height: 34px;
-  font-size: 13px;
-}
-.app-root a.pos-sym:hover b {
-  color: var(--accent-text);
-}
 
 /* ---------- DASHBOARD: seguidos ---------- */
 .app-root .search-form.compact input {
@@ -1916,11 +1349,7 @@
   left: 14px;
   font-size: 0.9rem;
 }
-.app-root .watch-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 14px;
-}
+
 .app-root .card.watch {
   display: flex;
   flex-direction: column;
@@ -1935,59 +1364,14 @@
   transform: translateY(-3px);
   box-shadow: 0 18px 34px -22px color-mix(in oklch, var(--accent) 50%, transparent);
 }
-.app-root .watch-main {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-rows: auto auto;
-  gap: 12px 12px;
-  padding: 18px 18px 14px;
-}
-.app-root .watch-id b {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-}
-.app-root .watch-id > div > span {
-  display: block;
-  font-size: 0.8rem;
-  color: var(--ink-soft);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 130px;
-  min-height: 1.2em;
-}
-.app-root .watch-main .spark {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: center;
-}
+
 .app-root .spark.up {
   color: var(--up);
 }
 .app-root .spark.down {
   color: var(--down);
 }
-.app-root .watch-px {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-variant-numeric: tabular-nums;
-}
-.app-root .watch-px b {
-  font-size: 1rem;
-}
-.app-root .watch-px small {
-  color: var(--ink-soft);
-}
-.app-root .watch-act {
-  display: flex;
-  justify-content: flex-end;
-  gap: 6px;
-  padding: 8px 10px;
-  border-top: 1px solid var(--line-soft);
-}
-.app-root .watch-act .icon-btn,
+
 .app-root .icon-btn.sm {
   width: 32px;
   height: 32px;
@@ -1995,21 +1379,6 @@
   border-radius: 9px;
 }
 
-/* ---------- DASHBOARD: operaciones ---------- */
-.app-root .trade-list {
-  overflow: hidden;
-}
-.app-root .trade-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--line-soft);
-}
-.app-root .trade-row:last-child {
-  border-bottom: 0;
-}
 .app-root .side-ic {
   width: 36px;
   height: 36px;
@@ -2017,37 +1386,6 @@
   display: grid;
   place-items: center;
   font-size: 0.95rem;
-}
-.app-root .trade-row.buy .side-ic {
-  color: var(--up);
-  background: color-mix(in oklch, var(--up) 14%, transparent);
-}
-.app-root .trade-row.sell .side-ic {
-  color: var(--down);
-  background: color-mix(in oklch, var(--down) 14%, transparent);
-}
-.app-root .trade-what b {
-  display: block;
-  font-size: 0.95rem;
-}
-.app-root .trade-what span {
-  display: block;
-  font-size: 0.82rem;
-  color: var(--ink-soft);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.app-root .trade-nums {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.app-root .trade-nums b {
-  display: block;
-}
-.app-root .trade-nums span {
-  font-size: 0.8rem;
-  color: var(--ink-soft);
 }
 
 /* ---------- MODAL: registrar operación ---------- */
@@ -2086,18 +1424,7 @@
     transform: translateY(16px) scale(0.98);
   }
 }
-.app-root .modal-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.app-root .modal-head h2 {
-  font-size: 1.35rem;
-}
-.app-root .trade-form {
-  margin-top: 18px;
-}
+
 .app-root .picked {
   display: flex;
   align-items: center;
@@ -2125,18 +1452,7 @@
 .app-root .picked .chip {
   height: 30px;
 }
-.app-root .seg.full {
-  width: 100%;
-}
-.app-root .seg.full button {
-  flex: 1;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-size: 0.9rem;
-}
+
 .app-root .seg button.on.sell {
   background: var(--down);
   color: #fff;
@@ -2194,43 +1510,13 @@
 .app-root .field label a.link-btn:hover {
   text-decoration: underline;
 }
-.app-root .trade-total {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: color-mix(in oklch, var(--surface-2) 70%, transparent);
-  font-size: 0.9rem;
-  color: var(--ink-soft);
-}
-.app-root .trade-total b {
-  font-family: var(--font-display);
-  font-size: 1.15rem;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
 
-/* ---------- MERCADO: acciones sobre el ticker ---------- */
-.app-root .quote-actions {
-  margin-left: auto;
-  display: flex;
-  gap: 8px;
-  align-self: center;
-}
 .app-root .btn-line.on {
   border-color: color-mix(in oklch, var(--accent) 40%, transparent);
   background: color-mix(in oklch, var(--accent) 12%, transparent);
   color: var(--accent-text);
 }
 
-/* ---------- INICIO ---------- */
-.app-root .home-head {
-  align-items: center;
-}
-.app-root .home-search {
-  width: min(380px, 100%);
-}
 .app-root .follow-empty {
   padding: 16px 18px;
   border: 1px dashed color-mix(in oklch, var(--ink) 20%, transparent);
@@ -2281,34 +1567,6 @@
   white-space: nowrap;
 }
 
-/* "actualizado hace X" + refrescar, a la derecha del título de sección */
-.app-root .sec-meta {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.app-root .sec-head .sub.refresh {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  font-size: 0.84rem;
-  color: var(--ink-soft);
-  cursor: pointer;
-  transition: color 0.2s;
-}
-.app-root .sec-head .sub.refresh:hover:not(:disabled) {
-  color: var(--accent-text);
-}
-.app-root .sec-head .sub.refresh:disabled {
-  cursor: wait;
-}
-.app-root .sec-head .sub.refresh:disabled i {
-  animation: spin 0.9s linear infinite;
-}
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -2339,23 +1597,10 @@
   box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--accent) 28%, transparent);
 }
 
-/* mercado hoy: grilla de tarjetas con aire */
-.app-root .mkt-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 18px;
-}
 .app-root .mkt-tabs {
   display: inline-flex;
 }
-.app-root .mkt-ccy button {
-  height: 30px;
-  padding: 0 12px;
-  font-size: 0.78rem;
-}
+
 .app-root .mkt-tabs button .short {
   display: none;
 }
@@ -2363,11 +1608,7 @@
   height: 34px;
   padding: 0 14px;
 }
-.app-root .mkt-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 14px;
-}
+
 .app-root .card.mkt {
   display: flex;
   flex-direction: column;
@@ -2386,45 +1627,7 @@
 .app-root .card.mkt.on {
   border-color: color-mix(in oklch, var(--accent) 35%, var(--line));
 }
-.app-root .mkt-top {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.app-root .mkt-id {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-}
-.app-root .mkt-bot {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 48px; /* precio (20px) + gap + delta (24px): no salta al cargar */
-}
-.app-root .mkt-id > div {
-  min-width: 0;
-}
-.app-root .mkt-id b {
-  display: block;
-  font-family: var(--font-display);
-  font-size: 1rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.app-root .mkt-id > div > span {
-  display: block;
-  margin-top: 2px;
-  font-size: 0.8rem;
-  color: var(--ink-soft);
-}
-.app-root .mkt-id:hover b {
-  color: var(--accent-text);
-}
+
 .app-root .star {
   width: 36px;
   height: 36px;
@@ -2457,27 +1660,7 @@
   opacity: 0.5;
   cursor: wait;
 }
-.app-root .mkt-spark {
-  height: 36px;
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-.app-root .mkt-px {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 9px;
-  font-variant-numeric: tabular-nums;
-  min-width: 0;
-}
-.app-root .mkt-px b {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  white-space: nowrap;
-}
+
 .app-root .ph-line {
   display: block;
   width: 90px;
@@ -2495,102 +1678,6 @@
   margin: 5px 0;
 }
 
-/* seguidos con logo */
-.app-root .watch-id {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-.app-root .watch-id > div {
-  min-width: 0;
-}
-
-/* resumen del portfolio */
-.app-root .pf-strip {
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr 1.4fr;
-  align-items: center;
-  gap: 18px;
-  padding: 18px 22px;
-  transition:
-    border-color 0.25s,
-    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.app-root .pf-strip:hover {
-  border-color: color-mix(in oklch, var(--accent) 40%, var(--line));
-  transform: translateY(-2px);
-}
-.app-root .pf-strip .lbl {
-  display: block;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--ink-soft);
-}
-.app-root .pf-main b {
-  font-family: var(--font-display);
-  font-size: 1.6rem;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-.app-root .pf-kv {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-.app-root .pf-kv small {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-soft);
-}
-.app-root .pf-kv span {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.app-root .pf-kv em {
-  font-style: normal;
-  color: var(--ink-soft);
-}
-.app-root .pf-strip .go {
-  color: var(--ink-soft);
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.app-root .pf-strip:hover .go {
-  color: var(--accent-text);
-  transform: translateX(4px);
-}
-.app-root .pf-strip.empty {
-  grid-template-columns: auto 1fr;
-  border-style: dashed;
-  background: transparent;
-}
-.app-root .pf-strip.empty .tk {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: grid;
-  place-items: center;
-  border: 1px dashed color-mix(in oklch, var(--ink) 25%, transparent);
-  color: color-mix(in oklch, var(--ink) 40%, transparent);
-}
-.app-root .pf-strip.empty b {
-  display: block;
-  font-size: 0.95rem;
-}
-.app-root .pf-strip.empty > div > span {
-  display: block;
-  font-size: 0.84rem;
-  color: var(--ink-soft);
-}
-
 /* ============================================================
    RESPONSIVE
    ============================================================ */
@@ -2598,32 +1685,7 @@
   .app-root .wrap {
     width: calc(100% - 40px);
   }
-  .app-root .pf-strip {
-    grid-template-columns: 1fr 1fr;
-    row-gap: 14px;
-  }
-  .app-root .pf-strip .pf-main {
-    grid-column: 1 / -1;
-  }
-  .app-root .home-search {
-    width: min(320px, 100%);
-  }
-  .app-root .stat-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .app-root .stat.total {
-    grid-column: 1 / -1;
-  }
-  .app-root .dash-grid {
-    grid-template-columns: 1fr;
-  }
-  .app-root .pos-row {
-    grid-template-columns: 1.4fr 1fr 1.1fr 1fr auto;
-  }
-  .app-root .pos-row .col-shares,
-  .app-root .pos-row .col-avg {
-    display: none;
-  }
+
   .app-root .stats {
     grid-template-columns: 1fr 1fr;
   }
@@ -2646,11 +1708,7 @@
   .app-root .top {
     padding: 10px 0;
   }
-  .app-root .top-in {
-    height: 56px;
-    gap: 8px;
-    padding: 0 8px 0 12px;
-  }
+
   .app-root .top .brand {
     font-size: 1.2rem;
     gap: 8px;
@@ -2659,23 +1717,7 @@
     width: 20px;
     height: 20px;
   }
-  .app-root .top-in nav a {
-    padding: 8px 12px;
-  }
-  .app-root .top-in nav a span {
-    display: none;
-  }
-  .app-root .top-in nav a i {
-    font-size: 1.05rem;
-  }
-  .app-root .user-chip {
-    padding: 3px;
-    gap: 0;
-  }
-  .app-root .user-chip .uname,
-  .app-root .user-chip .caret {
-    display: none;
-  }
+
   .app-root .app-main {
     padding: 24px 0 72px;
     gap: 30px;
@@ -2683,48 +1725,12 @@
   .app-root .page-head p {
     font-size: 0.95rem;
   }
-  .app-root .stat-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-  }
-  .app-root .stat {
-    padding: 14px 12px;
-    gap: 5px;
-  }
-  .app-root .stat .lbl {
-    font-size: 0.66rem;
-    letter-spacing: 0.07em;
-  }
-  .app-root .stat .val {
-    font-size: 1.3rem;
-  }
-  .app-root .stat .sub {
-    font-size: 0.76rem;
-  }
+
   .app-root .delta {
     font-size: 0.74rem;
     padding: 3px 8px;
   }
-  .app-root .stat.total {
-    padding: 20px 18px;
-  }
-  .app-root .stat.total .val {
-    font-size: 2rem;
-  }
-  .app-root .pos-row {
-    grid-template-columns: 1fr auto auto;
-    gap: 12px;
-    padding: 14px 16px;
-  }
-  .app-root .pos-row.head {
-    display: none;
-  }
-  .app-root .pos-row .col-shares,
-  .app-root .pos-row .col-avg,
-  .app-root .pos-row .col-price,
-  .app-root .pos-row .pos-act {
-    display: none;
-  }
+
   .app-root .onboard-steps {
     grid-template-columns: 1fr;
   }
@@ -2739,47 +1745,14 @@
   .app-root .onboard-head {
     padding-left: 16px;
   }
-  .app-root .ghost-chart {
-    min-height: 170px;
-  }
-  .app-root .ghost .card.watch.gh-add {
-    min-height: 84px;
-  }
-  .app-root .overview {
-    padding: 18px 16px 6px;
-  }
-  .app-root .ov-top .seg {
-    width: 100%;
-  }
-  .app-root .ov-top .seg button {
-    flex: 1;
-  }
+
   .app-root .pchart-canvas {
     height: 190px;
   }
   .app-root .alloc {
     padding: 18px 16px;
   }
-  .app-root .sec-head {
-    flex-wrap: wrap;
-  }
-  .app-root .sec-tools {
-    width: 100%;
-  }
-  .app-root .watch-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-  .app-root .watch-main {
-    padding: 14px 12px 10px;
-  }
-  .app-root .watch-main .spark {
-    display: none;
-  }
-  .app-root .trade-row {
-    gap: 10px;
-    padding: 12px;
-  }
+
   .app-root .modal-bg {
     align-items: flex-end;
     padding: 0;
@@ -2792,62 +1765,32 @@
   .app-root .row-2 {
     grid-template-columns: 1fr;
   }
-  .app-root .quote-actions {
-    margin-left: 0;
-    width: 100%;
-  }
-  .app-root .quote-actions .btn {
-    flex: 1;
-    justify-content: center;
-  }
+
   .app-root .head-actions {
     width: 100%;
   }
-  .app-root .home-search {
-    width: 100%;
-  }
-  .app-root .mkt-tabs,
-  .app-root .mkt-ccy {
+
+  .app-root .mkt-tabs {
     display: flex;
     width: 100%;
   }
-  .app-root .mkt-ccy button {
-    flex: 1;
-  }
+
   .app-root .mkt-tabs button {
     flex: 1;
     padding: 0 6px;
     font-size: 0.74rem;
     white-space: nowrap;
   }
-  .app-root .mkt-tabs button .full {
-    display: none;
-  }
+
   .app-root .mkt-tabs button .short {
     display: inline;
   }
-  .app-root .mkt-grid {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
+
   .app-root .card.mkt {
     padding: 14px;
     gap: 12px 10px;
   }
-  .app-root .pf-strip {
-    padding: 16px;
-    gap: 12px;
-  }
-  .app-root .pf-strip .go {
-    display: none;
-  }
-  .app-root .home-head {
-    align-items: stretch;
-  }
-  .app-root .sec-meta {
-    width: 100%;
-    justify-content: space-between;
-  }
+
   .app-root .net-notice {
     flex-wrap: wrap;
     padding: 14px 16px;
@@ -2856,25 +1799,13 @@
     width: 100%;
     justify-content: center;
   }
-  .app-root .mkt-bar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-  .app-root .pf-strip.empty {
-    grid-template-columns: auto 1fr;
-  }
+
   .app-root .head-actions .btn {
     flex: 1;
     justify-content: center;
     white-space: nowrap;
   }
-  .app-root .pos-num {
-    text-align: right;
-  }
-  .app-root .search-card {
-    padding: 14px;
-  }
+
   .app-root .search-form .btn span {
     display: none;
   }
@@ -2884,10 +1815,7 @@
   .app-root .chips .lbl {
     width: 100%;
   }
-  .app-root .quote-bar .sym,
-  .app-root .quote-bar .px {
-    font-size: 1.4rem;
-  }
+
   .app-root .chart-wrap {
     height: 340px;
   }

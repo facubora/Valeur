@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import AuthLayout, { PasswordField, IconField, FormError, SubmitButton } from "../components/AuthLayout";
 import { useAuth } from "../context/AuthContext";
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+import { EMAIL_RE } from "../lib/validate";
 
 export default function Login() {
   const navigate = useNavigate();

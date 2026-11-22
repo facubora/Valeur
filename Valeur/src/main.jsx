@@ -16,6 +16,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   </React.StrictMode>
 );
 // instalable en el celu y que abra sin conexión (public/sw.js)
-if ("serviceWorker" in navigator) {
+// solo en la versión compilada: en desarrollo la caché del SW taparía los cambios
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 }

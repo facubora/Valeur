@@ -3,9 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import AuthLayout, { PasswordField, IconField, FormError, SubmitButton, PasswordRules } from "../components/AuthLayout";
 import { passwordScore } from "../lib/password";
 import { useAuth } from "../context/AuthContext";
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const USERNAME_RE = /^[a-zA-Z0-9_]{3,30}$/;
+import { EMAIL_RE, USERNAME_RE } from "../lib/validate";
 
 export default function Register() {
   const navigate = useNavigate();
