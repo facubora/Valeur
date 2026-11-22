@@ -2278,31 +2278,36 @@
 .app-root .pc-id > div {
   min-width: 0;
 }
+.app-root .person-card .pc-id .p-avatar {
+  font-size: 1rem !important;
+  font-weight: 600;
+}
 .app-root .pc-id > div > b {
   display: flex;
   align-items: center;
-  font-size: 0.98rem;
+  font-size: 1rem;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .app-root .pc-id > div > span {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--ink-soft);
 }
 .app-root .pc-id:hover > div > b {
   color: var(--accent-text);
 }
 .app-root .person-card.compact .pc-id > div > b {
-  font-size: 0.9rem;
+  font-size: 0.8125rem;
 }
 .app-root .pc-bio {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-size: 0.88rem;
+  font-size: 0.8125rem;
   line-height: 1.45;
   color: var(--ink-soft);
   min-height: 2.9em;
@@ -2311,10 +2316,11 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--ink-soft);
 }
 .app-root .person-card .follow-btn {
+  font-size: 0.8125rem;
   margin-top: auto;
 }
 .app-root .person-card:not(.compact) .follow-btn {

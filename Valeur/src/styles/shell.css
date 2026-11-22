@@ -3531,6 +3531,8 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
+/* Tres tamaños en toda la tarjeta: 1rem lo importante (activo, porqué y
+   resultado), 0.8125rem el autor, 0.75rem los datos chicos. Dos grosores. */
 .app-root .card.post.jug {
   --c: oklch(0.55 0.02 265);
   position: relative;
@@ -3565,7 +3567,7 @@
 }
 .app-root .jug-asset b {
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 600;
   transition: color 0.2s;
 }
@@ -3573,7 +3575,7 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   color: var(--ink-soft);
 }
 .app-root .jug-call {
@@ -3582,9 +3584,9 @@
   gap: 5px;
   flex-shrink: 0;
   margin-left: auto;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--c);
 }
@@ -3593,9 +3595,9 @@
   margin: 0;
   padding: 18px 18px 8px;
   font-family: var(--font-display);
-  font-size: 1.04rem;
-  font-weight: 500;
-  line-height: 1.42;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.45;
   letter-spacing: -0.01em;
   color: var(--ink);
   overflow-wrap: anywhere;
@@ -3603,7 +3605,7 @@
 .app-root .jug-body::before {
   content: "\201C";
   margin-right: 2px;
-  font-size: 1.6rem;
+  font-size: 1.5em;
   line-height: 0;
   vertical-align: -0.35em;
   color: var(--c);
@@ -3631,7 +3633,7 @@
   align-items: center;
   overflow: hidden;
   white-space: nowrap;
-  font-size: 0.84rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--ink);
   text-decoration: none;
@@ -3644,8 +3646,13 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 4px 6px;
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   color: var(--ink-soft);
+}
+/* las iniciales del avatar, en la misma escala que el resto */
+.app-root .jug-who .p-avatar {
+  font-size: 0.75rem !important;
+  font-weight: 600;
 }
 .app-root .jug-like,
 .app-root .jug-del {
@@ -3686,13 +3693,13 @@
 .app-root .jug-perf b {
   display: block;
   font-family: var(--font-display);
-  font-size: 1.35rem;
+  font-size: 1rem;
   font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 .app-root .jug-perf small {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--ink-soft);
 }
 /* borrar la propia: se confirma tapando la tarjeta, sin modal */
@@ -3719,6 +3726,13 @@
   display: flex;
   gap: 8px;
   margin-top: 4px;
+}
+/* en la página del activo: solo la postura, sin repetir el activo */
+.app-root .jug-band.only-call {
+  padding: 10px 18px;
+}
+.app-root .jug-band.only-call .jug-call {
+  margin-left: 0;
 }
 .app-root .card.post.jug.hl {
   box-shadow:

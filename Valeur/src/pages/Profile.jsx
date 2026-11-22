@@ -314,7 +314,7 @@ export default function Profile() {
         ) : posts.data.length ? (
           <div className="feed-grid">
             {posts.data.map((post) => (
-              <PostCard key={post.id} post={post} uid={uid} quote={quotes[post.symbol]} />
+              <PostCard key={post.id} post={post} uid={uid} quote={quotes[post.symbol]} hideAuthor />
             ))}
           </div>
         ) : (
