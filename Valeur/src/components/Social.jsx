@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "./Logo";
 import { initials } from "../lib/session";
-import { lookup } from "../lib/catalog";
+import { lookup, KIND_LABEL } from "../lib/catalog";
+import { assetKind } from "../lib/market";
 import { STANCE, REPORT_REASONS, follow, unfollow, setLike, deletePost, reportPost, changed, timeAgo } from "../lib/social";
 import { attempt } from "../lib/feedback";
 
@@ -85,6 +86,25 @@ export function FollowButton({ uid, target, graph, size = "sm", name = null }) {
 }
 
 /* Tarjeta de persona para grillas: identidad, bio y botón de seguir */
+/* Si el nombre para mostrar es el mismo usuario ("testing" y "@testing"),
+   no se repite */
+const sameName = (p) => !p.display_name || p.display_name.trim().toLowerCase() === p.username.toLowerCase();
+
+/* Nombre y tipo del activo para la tarjeta: AAPL.BA → Apple · CEDEAR,
+   GGAL.BA → Grupo Galicia · Acción argentina, BTC-USD → Bitcoin · Cripto */
+function assetInfo(symbol) {
+  const s = symbol.toUpperCase();
+  const m = lookup(s);
+  if (m) return { name: m.name, kind: s !== m.symbol && m.cedear ? "CEDEAR" : KIND_LABEL[m.kind] || "" };
+  if (s.endsWith(".BA")) {
+    const local = lookup(s.slice(0, -3));
+    if (local?.tags?.includes("argentina")) return { name: local.name, kind: "Acción argentina" };
+    return { name: null, kind: "BYMA" };
+  }
+  const k = assetKind(s);
+  return { name: null, kind: KIND_LABEL[k] || "" };
+}
+
 export function PersonCard({ p, uid, graph, compact = false }) {
   const vis = { public: ["bi-globe2", "Portfolio público"], friends: ["bi-people", "Portfolio para amigos"] }[p.visibility];
   return (
@@ -96,7 +116,7 @@ export function PersonCard({ p, uid, graph, compact = false }) {
             {p.display_name || p.username}
             {p.verified && <Verified label={p.verified_label} />}
           </b>
-          <span>@{p.username}</span>
+          {sameName(p) ? null : <span>@{p.username}</span>}
         </div>
       </Link>
       {!compact && (
@@ -129,15 +149,17 @@ const tickerUrl = (s) => `/tickersearch?symbol=${encodeURIComponent(s)}`;
 
 /* Recomendación como "jugada": arriba una franja del color de la postura con
    el activo; en el medio el porqué, como una cita; abajo quién lo dijo y cómo
-   le fue desde entonces. Borrar la propia se confirma en la misma tarjeta. */
-export function PostCard({ post, uid, quote, onChange, highlight = false }) {
+   le fue desde entonces. Borrar la propia se confirma en la misma tarjeta.
+   Lo que ya dice la pantalla no se repite: en la página del activo va sin el
+   activo (hideAsset) y en el perfil de alguien, sin el autor (hideAuthor). */
+export function PostCard({ post, uid, quote, onChange, highlight = false, hideAsset = false, hideAuthor = false }) {
   const [busy, setBusy] = useState(false);
   const [asking, setAsking] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [reported, setReported] = useState(false);
   const likes = post.post_likes?.length || 0;
   const liked = post.post_likes?.some((l) => l.user_id === uid);
-  const meta = lookup(post.symbol);
+  const info = assetInfo(post.symbol);
   const st = STANCE[post.stance] || STANCE.hold;
   const since = quote && post.price_at ? (quote.price / Number(post.price_at) - 1) * 100 : null;
   // ¿va en la dirección que dijo? (comprar → sube, vender → baja)
@@ -169,28 +191,36 @@ export function PostCard({ post, uid, quote, onChange, highlight = false }) {
 
   return (
     <article className={"card post jug " + post.stance + (highlight ? " hl" : "")}>
-      <Link to={tickerUrl(post.symbol)} className="jug-band">
-        <Logo symbol={post.symbol} size={38} />
-        <span className="jug-asset">
-          <b>{post.symbol}</b>
-          <small>{meta?.name || " "}</small>
-        </span>
-        <span className="jug-call">
-          <i className={"bi " + st.icon} /> {st.label}
-        </span>
-      </Link>
+      {hideAsset ? (
+        <div className="jug-band only-call">
+          <span className="jug-call">
+            <i className={"bi " + st.icon} /> {st.label}
+          </span>
+        </div>
+      ) : (
+        <Link to={tickerUrl(post.symbol)} className="jug-band">
+          <Logo symbol={post.symbol} size={38} />
+          <span className="jug-asset">
+            <b>{info.name || post.symbol}</b>
+            <small>{[info.name && post.symbol, info.kind].filter(Boolean).join(" · ")}</small>
+          </span>
+          <span className="jug-call">
+            <i className={"bi " + st.icon} /> {st.label}
+          </span>
+        </Link>
+      )}
 
       <blockquote className="jug-body">{post.body}</blockquote>
 
       <footer className="jug-foot">
         <div className="jug-who">
-          {a && (
+          {a && !hideAuthor && (
             <Link to={`/u/${a.username}`} aria-label={`Perfil de @${a.username}`}>
               <Avatar name={a.username} size={28} />
             </Link>
           )}
           <div>
-            {a && (
+            {a && !hideAuthor && (
               <Link to={`/u/${a.username}`} className="jug-name">
                 {a.display_name || a.username}
                 {a.verified && <Verified label={a.verified_label} />}

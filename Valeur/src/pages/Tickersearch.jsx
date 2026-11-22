@@ -868,7 +868,7 @@ function AssetDetail({ symbol, uid, user, ctx, onOpen }) {
           ) : total > 0 ? (
             <div className="post-list">
               {posts.data.slice(0, 6).map((p) => (
-                <PostCard key={p.id} post={p} uid={uid} quote={p.symbol === symbol ? quote : null} />
+                <PostCard key={p.id} post={p} uid={uid} quote={p.symbol === symbol ? quote : null} hideAsset={p.symbol === symbol} />
               ))}
             </div>
           ) : (
