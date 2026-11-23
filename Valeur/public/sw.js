@@ -2,7 +2,7 @@
    - Páginas: primero la red; sin conexión, la última versión guardada.
    - Archivos de la app con hash (/assets/…): de la caché, no cambian.
    - Lo demás del mismo sitio: red primero, caché de respaldo.
-   No toca Supabase ni el backend de precios (otro origen), ni lo del
+   No toca Supabase ni el backend de precios (/api), ni lo del
    servidor de desarrollo de Vite. */
 const CACHE = "valeur-v1";
 const SHELL = ["/", "/favicon.svg", "/icon-192.png", "/manifest.webmanifest"];
@@ -26,6 +26,8 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   const url = new URL(req.url);
   if (req.method !== "GET" || url.origin !== location.origin || DEV.test(url.pathname + url.search)) return;
+  // en el ejecutable la API de precios es del mismo sitio (/api): siempre a la red
+  if (url.pathname.startsWith("/api/")) return;
 
   if (req.mode === "navigate") {
     e.respondWith(
