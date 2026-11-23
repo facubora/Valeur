@@ -58,6 +58,7 @@
     <tr><td>El diagrama llamado "C4 nivel 1" era en realidad de contenedores.</td><td>C4 nivel 1 (contexto: actores y sistemas externos) y C4 nivel 2 (contenedores), por separado.</td></tr>
     <tr><td>Tabla de endpoints sin parámetros, ejemplos ni errores.</td><td>Contrato de API con método, ruta, parámetros, ejemplo de respuesta y códigos de error, más el acceso a datos por Supabase (sección 6).</td></tr>
     <tr><td>Diagrama de componentes del front con componentes que ya no existen.</td><td>Diagrama de módulos actualizado (sección 4).</td></tr>
+    <tr><td>Para probarla había que instalar y configurar el proyecto.</td><td>Ejecutable de un solo archivo para Windows y Mac, o un solo comando desde el código (secciones 7 y ADR-10).</td></tr>
     <tr><td>Riesgos ya resueltos: sin caché, sin tests, control de sesión página por página.</td><td>Hay caché en el backend, 116 tests automáticos y una protección central de rutas (sección 10).</td></tr>
   </tbody>
 </table>
@@ -112,7 +113,7 @@
 <h2>2.4 Restricciones</h2>
 <ul>
   <li><b>Organizativas:</b> equipo de 3, cursada anual, trabajo académico sin presupuesto.</li>
-  <li><b>Técnicas:</b> React + Vite en el front, Python + Flask en el backend, Supabase (Postgres + Auth) como base y autenticación, en su plan gratuito. La app se entrega para correr en la compu del docente con un solo comando (<code>iniciar.sh</code> / <code>iniciar.bat</code>); la base y las cuentas están en la nube.</li>
+  <li><b>Técnicas:</b> React + Vite en el front, Python + Flask en el backend, Supabase (Postgres + Auth) como base y autenticación, en su plan gratuito. La app se entrega para correr en la compu del docente: un ejecutable de un solo archivo (Windows y Mac) o, desde el código, un solo comando (<code>iniciar.sh</code> / <code>iniciar.bat</code>); la base y las cuentas están en la nube.</li>
   <li><b>De datos:</b> los precios, velas y eventos vienen de Yahoo Finance mediante la librería <code>yfinance</code>, gratuita, sin contrato ni garantía. Yahoo no tiene los bonos argentinos, así que el dólar MEP se calcula con los CEDEARs (ADR-07).</li>
 </ul>
 
@@ -886,7 +887,11 @@ GET /api/events?symbols=KO.BA
 <p>Autenticación (Supabase Auth): <code>signUp</code>, <code>signInWithPassword</code>, <code>signOut</code>, <code>resetPasswordForEmail</code>, <code>updateUser</code>. Errores traducidos en el front: credenciales inválidas, email ya registrado, contraseña corta, enlace vencido, demasiados intentos, sin conexión.</p>
 
 <h1>7. Vista de despliegue</h1>
-<p>Para la entrega, el front y el backend corren en la compu de quien prueba la app; la base, las cuentas y los mails están en Supabase (nube). <code>iniciar.sh</code> (Mac/Linux) o <code>iniciar.bat</code> (Windows) crean el entorno de Python, instalan las dependencias, levantan los dos procesos y abren el navegador.</p>
+<p>Para la entrega, la app corre en la compu de quien la prueba; la base, las cuentas y los mails están en Supabase (nube). Hay dos formas de abrirla:</p>
+<ul>
+  <li><b>Ejecutable</b> (<code>Valeur-Windows.exe</code> / <code>Valeur-Mac.zip</code>, en los Releases del repositorio): un solo proceso. El mismo Flask sirve la SPA ya compilada y la API en <code>localhost:5173</code>, y abre el navegador. No hace falta instalar nada. Lo arma GitHub Actions con PyInstaller en una máquina Windows y en una Mac, y lo prueba antes de publicarlo (<code>ejecutable/README.md</code>).</li>
+  <li><b>Desde el código:</b> <code>iniciar.sh</code> (Mac/Linux) o <code>iniciar.bat</code> (Windows) crean el entorno de Python, instalan las dependencias, levantan los dos procesos (Vite y Flask) y abren el navegador. Necesita Python y Node. Es la forma de trabajar del equipo y la que muestra la figura.</li>
+</ul>
 <figure><pre class="mermaid">
 flowchart LR
   subgraph PC["Compu del docente"]
@@ -903,7 +908,7 @@ flowchart LR
   BR -- "HTTPS + JWT" --> SUPA
   FLASK -- HTTPS --> YF
   FLASK -. "HTTPS (si hay service role key)" .-> SUPA
-</pre><figcaption>Figura 20. Despliegue de la entrega. Sin la <i>service role key</i> en el <code>.env</code> del backend, las alertas se revisan solo con la app abierta.</figcaption></figure>
+</pre><figcaption>Figura 20. Despliegue de la entrega desde el código. En el ejecutable, Vite no está: Flask sirve también la SPA, en el mismo <code>localhost:5173</code>. Sin la <i>service role key</i> en el <code>.env</code> del backend, las alertas se revisan solo con la app abierta.</figcaption></figure>
 <p><b>Si se publicara:</b> el front compilado (<code>npm run build</code>) en un hosting estático con HTTPS (Vercel, Netlify), la API en un servicio de contenedores (Render, Railway) con <code>CORS_ORIGINS</code> apuntando al dominio del front, y Supabase igual que ahora. El código ya está preparado: todo se configura por variables de entorno.</p>
 
 <h1>8. Decisiones arquitectónicas (ADR)</h1>
@@ -936,8 +941,8 @@ flowchart LR
 <h2>ADR-09 · Privacidad en porcentajes</h2>
 <p><b>Contexto:</b> compartir el portfolio es útil, mostrar cuánta plata tiene alguien no. <b>Decisión:</b> privado por defecto; amigos o todos a elección; se comparte solo peso y rendimiento. <b>Consecuencias:</b> la función <code>shared_portfolio</code> escala las cantidades para que no se puedan reconstruir montos.</p>
 
-<h2>ADR-10 · Entrega local con un comando, sin hosting</h2>
-<p><b>Contexto:</b> el docente tiene que poder probarla fácil; es un trabajo escolar. <b>Alternativas:</b> hosting gratuito (Vercel + Render); ejecutable; script de arranque. <b>Decisión:</b> el docente clona el repositorio y corre <code>iniciar.sh</code> / <code>iniciar.bat</code>; los datos están en Supabase con una cuenta de prueba cargada (<code>demo.py profe</code>). El modo práctica quedó guardado en la rama <code>modo-practica</code>. <b>Consecuencias:</b> sin costos ni servidores que mantener; requiere Python y Node instalados.</p>
+<h2>ADR-10 · Entrega local: ejecutable o un comando, sin hosting</h2>
+<p><b>Contexto:</b> el docente tiene que poder probarla fácil; es un trabajo escolar. <b>Alternativas:</b> hosting gratuito (Vercel + Render); ejecutable; script de arranque. <b>Decisión:</b> un ejecutable de un solo archivo para Windows y Mac (PyInstaller: el backend de Flask sirve también la SPA compilada y abre el navegador), armado y probado por GitHub Actions. Como alternativa, el repositorio con <code>iniciar.sh</code> / <code>iniciar.bat</code>. En los dos casos los datos están en Supabase, con una cuenta de prueba cargada (<code>demo.py profe</code>). El modo práctica quedó guardado en la rama <code>modo-practica</code>. <b>Consecuencias:</b> sin costos ni servidores que mantener, y el docente no instala nada. El ejecutable no está firmado (un certificado de desarrollador se paga), así que Windows y macOS piden confirmar la primera vez que se abre. Necesita internet para Supabase y Yahoo.</p>
 
 <h1>9. Atributos de calidad</h1>
 <table>

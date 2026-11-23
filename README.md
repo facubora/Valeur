@@ -86,18 +86,29 @@ valeur-backend/
 ├── events.py              próximos resultados y dividendos, y el aviso del día antes
 ├── supa.py                acceso a Supabase con la service role key
 ├── demo.py                carga (y borra) datos de ejemplo y la cuenta de prueba
+├── lanzador.py            el ejecutable: el backend sirve también la app compilada
 └── tests/                 tests del backend (pytest)
 Valeur/tests/              tests del front (Vitest)
 docs/entrega/              TP3 corregido y manual técnico (PDF)
 docs/capturas/             las capturas de este README
 iniciar.sh / iniciar.bat   levantan backend y front con un comando
+ejecutable/                Valeur en un solo archivo (.exe / Mac), armado por GitHub Actions
 ```
 
 ---
 
 ## Probarlo rápido (para el docente)
 
-Solo hace falta tener instalados **Python 3.9+** y **Node.js 20+**. La base de datos y las cuentas ya están en la nube (Supabase), con datos de ejemplo cargados.
+La base de datos y las cuentas ya están en la nube (Supabase), con datos de ejemplo cargados. Hay dos formas de abrirla:
+
+**A. Ejecutable (no hay que instalar nada).** Bajá el archivo de tu sistema desde [Releases](https://github.com/facubora/Valeur/releases/latest) y abrilo con doble clic:
+
+- **Windows:** `Valeur-Windows.exe`. Si aparece "Windows protegió su PC": **Más información → Ejecutar de todas formas**.
+- **Mac con chip Apple:** `Valeur-Mac.zip`. Descomprimilo y hacé clic derecho en `Valeur` → **Abrir**.
+
+Se abre una ventana con la dirección y el navegador en **http://localhost:5173**. Para cerrar Valeur, cerrá esa ventana. Más detalles en [`ejecutable/`](ejecutable/README.md).
+
+**B. Desde el código.** Hace falta tener instalados **Python 3.9+** y **Node.js 20+**.
 
 ```bash
 git clone https://github.com/facubora/Valeur.git
