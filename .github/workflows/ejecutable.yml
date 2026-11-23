@@ -72,6 +72,9 @@ jobs:
           curl -sf http://127.0.0.1:5173/api/health
           curl -sf http://127.0.0.1:5173/ | grep -q '<div id="root">'
           curl -sf http://127.0.0.1:5173/portfolio | grep -q '<div id="root">'
+          # precios reales de Yahoo: se muestra, pero no frena (Yahoo a veces limita a GitHub)
+          curl -s -m 60 http://127.0.0.1:5173/api/quote/AAPL || true
+          echo
           # cerrarlo (el de un solo archivo arranca dos procesos)
           if [ "$RUNNER_OS" = "Windows" ]; then taskkill //F //T //IM Valeur.exe || true; else pkill -f dist/Valeur || true; fi
 
