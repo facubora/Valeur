@@ -28,8 +28,8 @@
   inset: 0;
   z-index: -1;
   background: var(--glass);
-  backdrop-filter: saturate(1.8) blur(18px);
   -webkit-backdrop-filter: saturate(1.8) blur(18px);
+  backdrop-filter: saturate(1.8) blur(18px);
 }
 .app-root .lx-nav-in {
   display: flex;
