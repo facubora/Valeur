@@ -1,6 +1,6 @@
 # PyInstaller: arma Valeur en un solo archivo (Valeur.exe en Windows, Valeur en Mac).
 # Antes hay que compilar la app con la API en el mismo sitio:
-#   cd Valeur && VITE_MARKET_API=/api npm run build
+#   cd Valeur && npm run build -- --mode ejecutable
 # y después, desde la raíz del repo:
 #   pyinstaller ejecutable/valeur.spec
 # Lo hace solo el workflow .github/workflows/ejecutable.yml (ver ejecutable/README.md).

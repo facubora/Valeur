@@ -8,6 +8,7 @@ dist/
 Valeur/.env
 Valeur/.env.*
 !Valeur/.env.example
+!Valeur/.env.ejecutable
 
 # Python
 __pycache__/
