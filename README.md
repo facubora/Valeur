@@ -241,6 +241,7 @@ Para que la cuenta de prueba sea admin y el panel tenga algo para revisar (un pe
 
 - Los precios vienen de Yahoo Finance con demora. Lo que muestra Valeur es información, no asesoramiento financiero.
 - Los `.env` no se suben al repo; usá los `.env.example` de plantilla.
+- Entre mayo y octubre de 2026 se subió por error un `.env` viejo del backend, que sigue visible en el historial. **Nada de lo que tenía está en uso:** la contraseña de la base se cambió, y MySQL, el login propio con JWT y Alpha Vantage ya no son parte de Valeur. Nunca tuvo la service role key de Supabase.
 - El simulador no cuenta comisiones, impuestos ni dividendos.
 
 ---
