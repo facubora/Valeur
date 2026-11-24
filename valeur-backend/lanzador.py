@@ -2,7 +2,7 @@
 # El mismo backend de precios sirve además la app ya compilada (Valeur/dist),
 # así no hace falta Node ni Python en la compu: se abre el navegador solo.
 #
-#   Probarlo sin empaquetar:  (cd ../Valeur && VITE_MARKET_API=/api npm run build)
+#   Probarlo sin empaquetar:  (cd ../Valeur && npm run build -- --mode ejecutable)
 #                             python lanzador.py
 #   Empaquetarlo:             ver ../ejecutable/README.md
 

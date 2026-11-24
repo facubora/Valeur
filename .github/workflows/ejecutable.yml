@@ -43,12 +43,10 @@ jobs:
 
       - name: Compilar la app (la API de precios en el mismo sitio)
         working-directory: Valeur
-        env:
-          VITE_MARKET_API: /api
         run: |
           cp .env.example .env   # URL y anon key de Supabase (públicas, las protege el RLS)
           npm ci --no-fund --no-audit
-          npm run build
+          npm run build -- --mode ejecutable   # usa .env.ejecutable
 
       - uses: actions/setup-python@v5
         with:
@@ -72,6 +70,14 @@ jobs:
           curl -sf http://127.0.0.1:5173/api/health
           curl -sf http://127.0.0.1:5173/ | grep -q '<div id="root">'
           curl -sf http://127.0.0.1:5173/portfolio | grep -q '<div id="root">'
+          # la app que sirve le pide los precios a /api (en Windows llegó a salir "C:/Program Files/Git/api")
+          js=$(curl -sf http://127.0.0.1:5173/ | grep -oE 'assets/index-[^"]+\.js' | head -1)
+          curl -sf "http://127.0.0.1:5173/$js" -o app.js
+          echo "app: $js"
+          if ! grep -qE "[\`\"']/api[\`\"']" app.js; then
+            echo "::error::La app compilada no apunta a /api: no va a traer precios"
+            exit 1
+          fi
           # precios reales de Yahoo: se muestra, pero no frena (Yahoo a veces limita a GitHub)
           curl -s -m 60 http://127.0.0.1:5173/api/quote/AAPL || true
           echo
