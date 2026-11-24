@@ -64,6 +64,18 @@
   color: var(--accent-text);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
+/* lo que abre otra pantalla (Mercado, Aprendé) va aparte de las secciones */
+.app-root .lx-sep {
+  align-self: center;
+  width: 1px;
+  height: 18px;
+  margin: 0 8px;
+  background: var(--line);
+}
+.app-root .lx-links a i {
+  margin-right: 3px;
+  color: var(--accent-text);
+}
 .app-root .lx-right {
   display: flex;
   align-items: center;
@@ -84,7 +96,7 @@
 /* ---------- HERO ---------- */
 .app-root .lx-hero {
   position: relative;
-  padding: 56px 0 72px;
+  padding: 40px 0 72px;
 }
 .app-root .lx-hero-in {
   display: grid;
@@ -129,6 +141,32 @@
 .app-root .lx-mk.open i {
   background: var(--up);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--up) 20%, transparent);
+}
+/* mirar sin cuenta: una fila al pie del hero */
+.app-root .lx-open {
+  display: grid;
+  grid-template-columns: auto repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 16px;
+  margin-top: 26px;
+}
+.app-root .lx-open .lx-lbl {
+  padding-right: 8px;
+}
+.app-root .lx-open .dr-tool {
+  padding: 14px 16px;
+  border-radius: 16px;
+}
+.app-root .lx-open .dr-tool-go {
+  opacity: 1;
+  transform: none;
+}
+.app-root .lx-open .dr-tool:hover .dr-tool-go {
+  color: var(--accent-text);
+  transform: translateX(3px);
+}
+.app-root .lx-feat-go {
+  margin-top: 26px;
 }
 /* el adelanto (Showcase) en el hero: panel con el degradé de entrar */
 .app-root .lx-show {
@@ -704,7 +742,24 @@
     margin-left: auto;
   }
 }
+/* con las secciones y los accesos, recién entra cómodo desde acá */
+@media (min-width: 1001px) and (max-width: 1140px) {
+  .app-root .lx-links a {
+    padding: 8px 8px;
+  }
+  .app-root .lx-links a i {
+    display: none;
+  }
+  .app-root .lx-sep {
+    margin: 0 2px;
+  }
+}
 @media (max-width: 900px) {
+  .app-root .lx-open {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    margin-top: 32px;
+  }
   .app-root .lx-in,
   .app-root .lx-up,
   .app-root .lx-theme {
@@ -731,6 +786,10 @@
     padding: 12px 4px;
     font-weight: 600;
     border-bottom: 1px solid var(--line-soft);
+  }
+  .app-root .lx-menu a i {
+    margin-right: 6px;
+    color: var(--accent-text);
   }
   .app-root .lx-menu-btns {
     display: grid;
