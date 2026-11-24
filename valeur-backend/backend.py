@@ -364,5 +364,5 @@ if __name__ == "__main__":
     if not debug or os.getenv("WERKZEUG_RUN_MAIN") == "true":
         import alerts
         alerts.start(lambda syms: fetch_quotes([s for s in syms if valid_symbol(s)]))
-    app.run(debug=debug, port=int(os.getenv("PORT", 5001)), host=host if not debug else "127.0.0.1")
+    app.run(debug=debug, port=int(os.getenv("PORT", 5002)), host=host if not debug else "127.0.0.1")
     
