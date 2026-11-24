@@ -27,16 +27,16 @@
 <section class="toc">
   <h2>Contenido</h2>
   <ol>
-    <li>Resumen</li>
-    <li>Métodos de testeo
-      <ol><li>Estrategia y niveles de prueba</li><li>Herramientas y cómo correrlas</li><li>Qué cubre cada suite</li><li>Matriz de casos de prueba</li><li>Recorrido manual de la aplicación</li></ol></li>
-    <li>Medidas de seguridad
-      <ol><li>Qué delegamos en plataformas y librerías</li><li>Autenticación y manejo de sesiones</li><li>Autorización y control de acceso</li><li>Contraseñas y secretos</li><li>Validación y sanitización de datos</li><li>Manejo seguro de errores</li><li>Dependencias y configuración</li></ol></li>
-    <li>Riesgos conocidos y próximos pasos</li>
+    <li><a href="#s-1">Resumen</a></li>
+    <li><a href="#s-2">Métodos de testeo</a>
+      <ol><li><a href="#s-2-1">Estrategia y niveles de prueba</a></li><li><a href="#s-2-2">Herramientas y cómo correrlas</a></li><li><a href="#s-2-3">Qué cubre cada suite</a></li><li><a href="#s-2-4">Matriz de casos de prueba</a></li><li><a href="#s-2-5">Recorrido manual de la aplicación</a></li></ol></li>
+    <li><a href="#s-3">Medidas de seguridad</a>
+      <ol><li><a href="#s-3-1">Qué delegamos en plataformas y librerías</a></li><li><a href="#s-3-2">Autenticación y manejo de sesiones</a></li><li><a href="#s-3-3">Autorización y control de acceso</a></li><li><a href="#s-3-4">Contraseñas y secretos</a></li><li><a href="#s-3-5">Validación y sanitización de datos</a></li><li><a href="#s-3-6">Manejo seguro de errores</a></li><li><a href="#s-3-7">Dependencias y configuración</a></li></ol></li>
+    <li><a href="#s-4">Riesgos conocidos y próximos pasos</a></li>
   </ol>
 </section>
 
-<h1>1. Resumen</h1>
+<h1 id="s-1">1. Resumen</h1>
 <p>Valeur es una aplicación web para seguir inversiones (CEDEARs, acciones, cripto), ver el mercado y compartir recomendaciones con otros usuarios. Tiene tres piezas:</p>
 <ul>
   <li><b>Front</b> (React + Vite): todas las pantallas. Habla directo con Supabase para la cuenta y los datos del usuario.</li>
@@ -47,9 +47,9 @@
 
 <div class="note">Números de esta entrega: <b>116 tests automáticos</b> (66 en el backend con PyTest y 50 en el front con Vitest), todos pasando, más <b>11 casos</b> probados sobre una base Postgres local para las reglas de la base de datos y un recorrido manual de todas las pantallas.</div>
 
-<h1>2. Métodos de testeo</h1>
+<h1 id="s-2">2. Métodos de testeo</h1>
 
-<h2>2.1 Estrategia y niveles de prueba</h2>
+<h2 id="s-2-1">2.1 Estrategia y niveles de prueba</h2>
 <p>Seguimos la idea de la <b>pirámide de tests</b>: muchas pruebas chicas y rápidas sobre la lógica (unitarias), menos pruebas sobre la comunicación entre piezas (integración) y pocas pruebas de punta a punta, que son las más lentas y frágiles.</p>
 
 <figure><pre class="mermaid">
@@ -74,7 +74,7 @@ flowchart TB
 
 <div class="note">Elegimos que los E2E sean manuales porque la app depende de servicios externos con datos que cambian todos los días (precios de Yahoo, cuentas en Supabase). Automatizarlos implicaría simular ambos servicios enteros; con el tiempo que teníamos, preferimos cubrir bien la lógica con tests automáticos y recorrer los flujos a mano con una lista fija.</div>
 
-<h2>2.2 Herramientas y cómo correrlas</h2>
+<h2 id="s-2-2">2.2 Herramientas y cómo correrlas</h2>
 <table>
   <thead><tr><th style="width:18%">Herramienta</th><th>Para qué</th><th style="width:40%">Comando</th></tr></thead>
   <tbody>
@@ -87,7 +87,7 @@ flowchart TB
 </table>
 <p>Ningún test automático toca internet ni la base de datos real: en el backend, <code>tests/conftest.py</code> deja Supabase "sin configurar" y reemplaza Yahoo Finance por precios inventados; en el front, las funciones probadas son puras (reciben datos y devuelven un resultado).</p>
 
-<h2>2.3 Qué cubre cada suite</h2>
+<h2 id="s-2-3">2.3 Qué cubre cada suite</h2>
 <h3>Backend — <code>valeur-backend/tests/</code> (66 tests)</h3>
 <table>
   <thead><tr><th style="width:26%">Archivo</th><th>Casos</th></tr></thead>
@@ -127,7 +127,7 @@ flowchart TB
   </tbody>
 </table>
 
-<h2>2.4 Matriz de casos de prueba</h2>
+<h2 id="s-2-4">2.4 Matriz de casos de prueba</h2>
 <p>Casos representativos de los flujos principales, los casos borde y el manejo de errores. La última columna indica dónde está automatizado o si se prueba a mano.</p>
 <table>
   <thead><tr><th style="width:7%">ID</th><th style="width:13%">Módulo</th><th style="width:10%">Tipo</th><th style="width:27%">Entrada / precondición</th><th style="width:27%">Resultado esperado</th><th style="width:16%">Dónde</th></tr></thead>
@@ -153,7 +153,7 @@ flowchart TB
   </tbody>
 </table>
 
-<h2>2.5 Recorrido manual de la aplicación</h2>
+<h2 id="s-2-5">2.5 Recorrido manual de la aplicación</h2>
 <p>Antes de la entrega recorrimos todas las pantallas con una cuenta con datos reales, mirando que carguen sin errores en la consola del navegador, que los números coincidan entre pantallas y que los formularios rechacen lo inválido sin guardar nada:</p>
 <table>
   <thead><tr><th style="width:24%">Pantalla</th><th>Qué se verificó</th></tr></thead>
@@ -170,7 +170,7 @@ flowchart TB
 </table>
 <p>Durante este recorrido encontramos y corregimos: errores del backend que mostraban el mensaje interno de Yahoo, el modo <i>debug</i> de Flask abierto a la red, el CSV que permitía fórmulas, código y estilos que ya no se usaban (unas 4.000 líneas) y la falta de una protección central para las rutas privadas.</p>
 
-<h1>3. Medidas de seguridad</h1>
+<h1 id="s-3">3. Medidas de seguridad</h1>
 
 <figure><pre class="mermaid">
 flowchart LR
@@ -191,7 +191,7 @@ flowchart LR
   AL -- "HTTPS + service role" --> API
 </pre><figcaption>Figura 2. Dónde está cada barrera. Lo de Supabase lo da la plataforma; las reglas (políticas RLS, checks, triggers) y todo el backend los escribimos nosotros.</figcaption></figure>
 
-<h2>3.1 Qué delegamos en plataformas y librerías</h2>
+<h2 id="s-3-1">3.1 Qué delegamos en plataformas y librerías</h2>
 <p>Valeur no tiene un servidor propio de cuentas: usamos <b>Supabase</b>. Eso nos libera de programar a mano varias cosas difíciles de hacer bien, pero no de todo. La tabla separa qué da cada herramienta y qué sigue siendo responsabilidad nuestra.</p>
 <table>
   <thead><tr><th style="width:17%">Proveedor</th><th style="width:43%">Qué nos da de forma nativa</th><th>Qué nos ahorra / qué sigue siendo nuestro</th></tr></thead>
@@ -205,7 +205,7 @@ flowchart LR
 </table>
 <div class="note warn"><b>Sobre el hosting:</b> por decisión del equipo, Valeur se entrega para correr en la compu del docente (el ejecutable de Windows o Mac, o <code>./iniciar.sh</code> / <code>iniciar.bat</code>), no en un hosting. Por eso no contamos con protecciones de hosting como HTTPS automático para el front o mitigación de DDoS. El front y el backend corren en <code>localhost</code>, y todo lo que sale de la compu (Supabase y Yahoo) viaja por HTTPS.</div>
 
-<h2>3.2 Autenticación y manejo de sesiones</h2>
+<h2 id="s-3-2">3.2 Autenticación y manejo de sesiones</h2>
 <ul>
   <li><b>Mecanismo:</b> email y contraseña con Supabase Auth. Al entrar, Supabase devuelve un <i>access token</i> (JWT firmado, <b>dura 1 hora</b>) y un <i>refresh token</i>. La librería <code>supabase-js</code> renueva el access token sola antes de que venza; cada pedido a la base lleva el JWT y Postgres sabe quién es el usuario con <code>auth.uid()</code>.</li>
   <li><b>Dónde se guarda:</b> en el <code>localStorage</code> del navegador (es lo que hace <code>supabase-js</code> en una SPA). No usamos cookies <code>HttpOnly</code> porque no hay un servidor propio de páginas; lo compensamos con la protección contra XSS de la sección 3.1.</li>
@@ -216,7 +216,7 @@ flowchart LR
   <li><b>Rutas privadas:</b> un componente <code>Private</code> en <code>App.jsx</code> envía a <code>/login</code> a quien no tiene sesión. Está en un solo lugar, así una pantalla nueva no queda abierta por olvidarse el chequeo. Igual, la barrera real es la base: sin sesión, la API no devuelve datos privados.</li>
 </ul>
 
-<h2>3.3 Autorización y control de acceso</h2>
+<h2 id="s-3-3">3.3 Autorización y control de acceso</h2>
 <p>La autorización está en la <b>base de datos</b>, no en el código del front: aunque alguien modifique la app o le pegue directo a la API con su token, Postgres aplica las mismas reglas. Todas las tablas tienen RLS activado.</p>
 <table>
   <thead><tr><th style="width:24%">Tabla</th><th>Quién puede qué</th></tr></thead>
@@ -232,7 +232,7 @@ flowchart LR
 <p><b>Datos de otros, con cuidado.</b> El portfolio de otra persona no se lee de <code>trades</code> (RLS lo impide), sino con la función <code>shared_portfolio</code>, que primero llama a <code>can_see_portfolio</code> (dueño, perfil público, o "solo amigos" y son amigos) y después devuelve <b>solo porcentajes y cantidades escaladas, nunca montos</b>. Las funciones de admin (<code>admin_stats</code> y la revisión de verificaciones y reportes) comprueban <code>is_admin()</code> adentro y responden error 42501 (403) a cualquier otro.</p>
 <p><b>Reglas de negocio en el servidor.</b> Además de validar en el formulario, la base rechaza operaciones con cantidad o precio no positivos, fecha futura, ventas de más y borrar una compra que respalda ventas posteriores (migración <code>0008</code>, probada en 2.3).</p>
 
-<h2>3.4 Contraseñas y secretos</h2>
+<h2 id="s-3-4">3.4 Contraseñas y secretos</h2>
 <ul>
   <li><b>Contraseñas:</b> nunca pasan por nuestro código del lado del servidor ni se guardan en nuestras tablas. Supabase las guarda con <b>bcrypt + salt</b>. <code>profiles</code> no tiene email ni contraseña.</li>
   <li><b>Claves:</b>
@@ -240,11 +240,11 @@ flowchart LR
       <li>La <i>anon key</i> del front es pública por diseño: solo permite lo que dejan las políticas RLS. Por eso está en <code>Valeur/.env.example</code>, para que la app funcione al clonar.</li>
       <li>La <i>service role key</i> (que saltea el RLS) vive <b>solo</b> en <code>valeur-backend/.env</code>, que no se sube al repositorio. La usa solo el proceso que revisa las alertas, y nunca llega al navegador.</li>
     </ul></li>
-  <li><b>Repositorio:</b> <code>.gitignore</code> excluye <code>.env</code>, <code>venv/</code>, <code>node_modules/</code>, <code>dist/</code> y <code>__pycache__/</code>. Hubo una vez un <code>.env</code> del backend subido por error: se sacó del repositorio y las claves que contenía deben considerarse expuestas y rotarse.</li>
+  <li><b>Repositorio:</b> <code>.gitignore</code> excluye <code>.env</code>, <code>venv/</code>, <code>node_modules/</code>, <code>dist/</code> y <code>__pycache__/</code>. Hubo un <code>.env</code> del backend subido por error mientras el proyecto usaba MySQL y un login propio (de mayo a octubre de 2026). Tenía la clave de Alpha Vantage, los datos de la base MySQL local y el secreto del JWT propio; <b>nunca tuvo la <i>service role key</i> de Supabase</b>. Se sacó del repositorio, ninguna de esas claves se usa en la versión actual (MySQL y el JWT propio se reemplazaron por Supabase, ADR-02 y ADR-03 del Documento de Arquitectura) y la clave de Alpha Vantage se dio de baja en su panel.</li>
   <li><b>Comunicación cifrada:</b> todo lo que sale de la compu va por HTTPS/TLS (Supabase, Yahoo Finance, fuentes y logos).</li>
 </ul>
 
-<h2>3.5 Validación y sanitización de datos</h2>
+<h2 id="s-3-5">3.5 Validación y sanitización de datos</h2>
 <table>
   <thead><tr><th style="width:20%">Dónde</th><th>Qué se valida</th></tr></thead>
   <tbody>
@@ -258,7 +258,7 @@ flowchart LR
   </tbody>
 </table>
 
-<h2>3.6 Manejo seguro de errores</h2>
+<h2 id="s-3-6">3.6 Manejo seguro de errores</h2>
 <ul>
   <li><b>Backend:</b> si Yahoo Finance falla, la respuesta es <code>502 {"error": "Market data unavailable"}</code>; el detalle queda solo en la consola del servidor. Las rutas inexistentes y los métodos no permitidos responden JSON (<code>404</code>, <code>405</code>) en vez de la página HTML de Flask, y cualquier error no previsto responde <code>500 {"error": "Internal server error"}</code>, sin traza.</li>
   <li><b>Modo debug apagado:</b> la consola interactiva de Flask (que permite ejecutar código) solo se prende con <code>FLASK_DEBUG=1</code>, y aun así escucha solo en la propia compu. Por defecto el servidor escucha en <code>127.0.0.1</code>.</li>
@@ -266,13 +266,13 @@ flowchart LR
   <li><b>Cabeceras:</b> cada respuesta del backend lleva <code>X-Content-Type-Options: nosniff</code>, <code>X-Frame-Options: DENY</code>, <code>Referrer-Policy: no-referrer</code> y <code>Cache-Control: no-store</code>.</li>
 </ul>
 
-<h2>3.7 Dependencias y configuración</h2>
+<h2 id="s-3-7">3.7 Dependencias y configuración</h2>
 <ul>
-  <li>Revisamos las dependencias del front con <code>npm audit</code> y actualizamos las que tenían vulnerabilidades conocidas, entre ellas <code>react-router</code>. Quedan avisos solo en herramientas de desarrollo (Vitest y su buscador de archivos), que no forman parte de la app que se usa.</li>
+  <li>Revisamos las dependencias del front con <code>npm audit</code> y actualizamos las que tenían vulnerabilidades conocidas, entre ellas <code>react-router</code>. Hoy <code>npm audit</code> no reporta vulnerabilidades.</li>
   <li>La configuración va por variables de entorno (<code>.env</code>); los ejemplos sin secretos están en <code>.env.example</code>.</li>
 </ul>
 
-<h1>4. Riesgos conocidos y próximos pasos</h1>
+<h1 id="s-4">4. Riesgos conocidos y próximos pasos</h1>
 <table>
   <thead><tr><th style="width:30%">Riesgo</th><th>Mitigación actual / próximo paso</th></tr></thead>
   <tbody>
@@ -280,7 +280,7 @@ flowchart LR
     <tr><td>El backend de mercado no limita la cantidad de pedidos por cliente.</td><td>Hoy corre en la compu de cada uno, detrás de una caché de 60 s por símbolo. Si se publicara, agregar un límite por IP.</td></tr>
     <tr><td>Yahoo Finance no es una API oficial y puede cambiar.</td><td>Errores controlados (502 genérico) y la app sigue funcionando sin precios (muestra "—" y el costo).</td></tr>
     <tr><td>Los E2E son manuales.</td><td>Automatizarlos con Playwright y una base de Supabase de prueba.</td></tr>
-    <tr><td>Claves que estuvieron en el repositorio.</td><td>Rotar la <i>service role key</i> y la clave de Alpha Vantage en sus paneles.</td></tr>
+    <tr><td>El <code>.env</code> viejo sigue visible en el historial de git.</td><td>Sus claves ya no se usan y la de Alpha Vantage se dio de baja (3.4). Si el repositorio se publicara como producto, limpiar el historial (<code>git filter-repo</code>).</td></tr>
   </tbody>
 </table>
 

@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="estilo.css">
 <script src="mermaid.min.js"></script>
 <script>mermaid.initialize({ startOnLoad: true, theme: "neutral", fontFamily: "Helvetica Neue, Arial, sans-serif", securityLevel: "loose", flowchart: { wrappingWidth: 420, useMaxWidth: true }, sequence: { useMaxWidth: true, mirrorActors: false, messageFontSize: 13, actorFontSize: 13, noteFontSize: 12 }, er: { useMaxWidth: true }, class: { useMaxWidth: true }, state: { useMaxWidth: true } });</script>
-<style>figure.seq svg { max-height: 200mm; }</style>
+<style>figure.seq svg { max-height: 200mm; } figure.er-chico svg { max-height: 60mm; }</style>
 </head>
 <body>
 
@@ -19,7 +19,7 @@
   <table class="meta">
     <tr><td>Institución</td><td>Instituto Industrial Luis A. Huergo</td></tr>
     <tr><td>Curso</td><td>6.º año · Especialidad Computación</td></tr>
-    <tr><td>Equipo</td><td>Borassi (diseño y programación) · Aguilar y Seralvo (documentación)</td></tr>
+    <tr><td>Equipo</td><td>Borassi · Aguilar · Seralvo</td></tr>
     <tr><td>Repositorio</td><td>github.com/facubora/Valeur</td></tr>
     <tr><td>Versión</td><td>2.0 · Noviembre de 2026 (reemplaza la versión del 16/09/2026)</td></tr>
   </table>
@@ -28,31 +28,33 @@
 <section class="toc">
   <h2>Contenido</h2>
   <ol>
-    <li>Qué cambió respecto de la versión anterior</li>
-    <li>Contexto y alcance del sistema
-      <ol><li>Problema y objetivos</li><li>Roles de usuario</li><li>Funcionalidades</li><li>Restricciones</li><li>Diagrama de contexto (C4 nivel 1)</li><li>Diagrama de contenedores (C4 nivel 2)</li></ol></li>
-    <li>Modelo de datos
-      <ol><li>Diagrama entidad-relación</li><li>Diccionario de datos</li><li>Funciones y triggers de la base</li></ol></li>
-    <li>Diseño de módulos (UML)</li>
-    <li>Diagramas de comportamiento, por funcionalidad</li>
-    <li>Especificación de interfaces (contrato de API)
-      <ol><li>API de mercado (Flask)</li><li>Acceso a datos por Supabase</li></ol></li>
-    <li>Vista de despliegue</li>
-    <li>Decisiones arquitectónicas (ADR)</li>
-    <li>Atributos de calidad</li>
-    <li>Riesgos y deuda técnica</li>
-    <li>Glosario</li>
+    <li><a href="#s-1">Qué cambió respecto de la versión anterior</a></li>
+    <li><a href="#s-2">Contexto y alcance del sistema</a>
+      <ol><li><a href="#s-2-1">Problema y objetivos</a></li><li><a href="#s-2-2">Roles de usuario</a></li><li><a href="#s-2-3">Funcionalidades</a></li><li><a href="#s-2-4">Restricciones</a></li><li><a href="#s-2-5">Diagrama de contexto (C4 nivel 1)</a></li><li><a href="#s-2-6">Diagrama de contenedores (C4 nivel 2)</a></li></ol></li>
+    <li><a href="#s-3">Modelo de datos</a>
+      <ol><li><a href="#s-3-1">Diagrama entidad-relación</a></li><li><a href="#s-3-2">Diccionario de datos</a></li><li><a href="#s-3-3">Funciones y triggers de la base</a></li></ol></li>
+    <li><a href="#s-4">Diseño de módulos (UML)</a></li>
+    <li><a href="#s-5">Diagramas de comportamiento, por funcionalidad</a>
+      <ol><li><a href="#s-5-1">Registro e inicio de sesión</a></li><li><a href="#s-5-2">Recuperar y cambiar la contraseña</a></li><li><a href="#s-5-3">Registrar una operación y ver el portfolio</a></li><li><a href="#s-5-4">Ver un activo (Mercado) e Inicio</a></li><li><a href="#s-5-5">Alertas de precio</a></li><li><a href="#s-5-6">Notificaciones</a></li><li><a href="#s-5-7">Comunidad</a></li><li><a href="#s-5-8">Perfil, privacidad y portfolio compartido</a></li><li><a href="#s-5-9">Verificación y panel de administración</a></li><li><a href="#s-5-10">Calendario de resultados y dividendos</a></li><li><a href="#s-5-11">Simulador "¿Y si hubiera invertido?"</a></li><li><a href="#s-5-12">Aprendé</a></li></ol></li>
+    <li><a href="#s-6">Especificación de interfaces (contrato de API)</a>
+      <ol><li><a href="#s-6-1">API de mercado (Flask)</a></li><li><a href="#s-6-2">Acceso a datos por Supabase</a></li></ol></li>
+    <li><a href="#s-7">Vista de despliegue</a></li>
+    <li><a href="#s-8">Decisiones arquitectónicas (ADR)</a></li>
+    <li><a href="#s-9">Atributos de calidad</a></li>
+    <li><a href="#s-10">Riesgos y deuda técnica</a></li>
+    <li><a href="#s-11">Glosario</a></li>
   </ol>
 </section>
 
-<h1>1. Qué cambió respecto de la versión anterior</h1>
+<h1 id="s-1">1. Qué cambió respecto de la versión anterior</h1>
 <p>La versión del 16/09 documentaba el MVP (cotización, gráfico, búsqueda, cuenta y un portfolio básico). La devolución fue:</p>
 <div class="note">"Buen uso de diagramas y secciones para explicar el flujo en su proyecto. Buena defensa oral. <b>No incluyen diagramas ni ayuda para todas las funcionalidades planteadas para el proyecto como pedía la consigna.</b>"</div>
-<p>Esta versión describe el producto final completo y agrega un diagrama para cada funcionalidad.</p>
+<p>Esta versión describe el producto final completo y responde a las dos partes de la devolución: agrega un <b>diagrama</b> para cada funcionalidad (este documento) y una <b>ayuda</b> para cada una (el Manual de usuario 2.0, que se entrega junto con este documento).</p>
 <table>
   <thead><tr><th style="width:38%">Faltaba o estaba desactualizado</th><th>Qué hicimos en esta versión</th></tr></thead>
   <tbody>
     <tr><td>Diagramas solo de registro y búsqueda.</td><td>Sección 5: un diagrama por funcionalidad (12 flujos), con diagramas de secuencia UML para los principales, un diagrama de estados para las alertas y diagramas de actividad para las validaciones.</td></tr>
+    <tr><td>Ayuda solo para las ventanas del MVP.</td><td>Manual de usuario 2.0: una sección por ventana (las 24 que tiene la app, Anexo A del manual), cada una con para qué sirve, quién entra, captura anotada, paso a paso y con qué se conecta; más flujos completos (7.1 a 7.12), problemas frecuentes y preguntas frecuentes.</td></tr>
     <tr><td>Alcance del MVP: comunidad, alertas, perfiles y notificaciones "fuera de esta entrega".</td><td>Todo eso está hecho y documentado: portfolio, mercado, alertas, notificaciones, comunidad, perfiles y privacidad, verificación, panel de admin, calendario, simulador y Aprendé (2.3).</td></tr>
     <tr><td>Modelo de datos de 3 tablas, sin DER ni diccionario.</td><td>DER completo de las 13 tablas y diccionario de datos con tipos, restricciones y descripción (sección 3).</td></tr>
     <tr><td>El diagrama llamado "C4 nivel 1" era en realidad de contenedores.</td><td>C4 nivel 1 (contexto: actores y sistemas externos) y C4 nivel 2 (contenedores), por separado.</td></tr>
@@ -63,9 +65,9 @@
   </tbody>
 </table>
 
-<h1>2. Contexto y alcance del sistema</h1>
+<h1 id="s-2">2. Contexto y alcance del sistema</h1>
 
-<h2>2.1 Problema y objetivos</h2>
+<h2 id="s-2-1">2.1 Problema y objetivos</h2>
 <p><b>Problema.</b> Quien empieza a invertir en Argentina tiene la información desparramada: el broker muestra lo que tiene pero no lo explica, los precios de los CEDEARs están en pesos y hay que pasarlos al dólar MEP a mano, las plataformas profesionales son caras y confusas, y lo que opinan otros inversores está en redes sin forma de saber si acertaron.</p>
 <p><b>Objetivo general.</b> Una aplicación web gratuita donde una persona sin formación financiera pueda seguir sus inversiones en pesos o dólares, entender el mercado, enterarse a tiempo de lo que le importa y aprender de lo que recomienda su gente, viendo cómo les fue.</p>
 <table>
@@ -73,25 +75,25 @@
   <tbody>
     <tr><td>Saber cuánto vale lo que tengo</td><td>Portfolio calculado a partir de las operaciones, con precios en vivo y conversión al dólar MEP.</td></tr>
     <tr><td>Entender el mercado sin ser experto</td><td>Explorador por rubros, gráfico de velas, "Para vos" según intereses, glosario Aprendé y términos explicados en la misma pantalla.</td></tr>
-    <tr><td>No perderme lo importante</td><td>Alertas de precio que avisan aunque la app esté cerrada, calendario de resultados y dividendos con aviso el día antes.</td></tr>
+    <tr><td>No perderme lo importante</td><td>Alertas de precio y de variación del día (con la app abierta; y también con la app cerrada si el backend corre con la service role key, ver ADR-06), calendario de resultados y dividendos con aviso el día antes.</td></tr>
     <tr><td>Aprender de otros</td><td>Comunidad con recomendaciones que muestran cómo les fue desde que se dijeron, cuentas verificadas y amigos.</td></tr>
     <tr><td>Cuidar los datos</td><td>Cada usuario ve solo lo suyo; el portfolio se comparte solo en porcentajes y solo con quien el dueño elige.</td></tr>
   </tbody>
 </table>
 
-<h2>2.2 Roles de usuario</h2>
+<h2 id="s-2-2">2.2 Roles de usuario</h2>
 <table>
   <thead><tr><th style="width:20%">Rol</th><th>Qué puede hacer</th></tr></thead>
   <tbody>
     <tr><td><b>Visitante</b></td><td>Ver la landing, registrarse, entrar, recuperar la contraseña, explorar el mercado y ver un activo, leer Aprendé.</td></tr>
     <tr><td><b>Usuario registrado</b></td><td>Todo lo anterior más: portfolio, seguidos, alertas, notificaciones, comunidad (recomendar, "me sirve", seguir, reportar), perfil y privacidad, pedir verificación, calendario y simulador.</td></tr>
-    <tr><td><b>Usuario verificado</b></td><td>Un usuario registrado aprobado por un admin (analista, asesor, creador…): su recomendación lleva la marca de verificado y aparece en el filtro "Verificados".</td></tr>
+    <tr><td><b>Usuario verificado</b></td><td>Un usuario registrado aprobado por un admin (analista, asesor, creador…): su recomendación lleva la marca de verificado y aparece en el filtro "Verificados". Tiene los mismos permisos que un usuario registrado; por eso el Manual de usuario lo trata dentro de ese rol.</td></tr>
     <tr><td><b>Administrador</b></td><td>Además: aprobar o rechazar pedidos de verificación, revisar recomendaciones reportadas (descartar el reporte o borrarla) y ver los números de la app.</td></tr>
-    <tr><td><b>Proceso de alertas</b> (sistema)</td><td>No es una persona: un hilo del backend que cada 3 minutos revisa las alertas de todos y una vez por día avisa los eventos de mañana.</td></tr>
+    <tr><td><b>Proceso de alertas</b> (sistema)</td><td>No es una persona: un hilo del backend que cada 3 minutos revisa las alertas de todos y una vez por día avisa los eventos de mañana. Solo corre si el backend tiene la service role key (no en el ejecutable de la entrega).</td></tr>
   </tbody>
 </table>
 
-<h2>2.3 Funcionalidades</h2>
+<h2 id="s-2-3">2.3 Funcionalidades</h2>
 <table>
   <thead><tr><th style="width:17%">Módulo</th><th style="width:15%">Pantalla</th><th>Qué hace</th><th style="width:13%">Diagramas</th></tr></thead>
   <tbody>
@@ -110,14 +112,14 @@
   </tbody>
 </table>
 
-<h2>2.4 Restricciones</h2>
+<h2 id="s-2-4">2.4 Restricciones</h2>
 <ul>
   <li><b>Organizativas:</b> equipo de 3, cursada anual, trabajo académico sin presupuesto.</li>
   <li><b>Técnicas:</b> React + Vite en el front, Python + Flask en el backend, Supabase (Postgres + Auth) como base y autenticación, en su plan gratuito. La app se entrega para correr en la compu del docente: un ejecutable de un solo archivo (Windows y Mac) o, desde el código, un solo comando (<code>iniciar.sh</code> / <code>iniciar.bat</code>); la base y las cuentas están en la nube.</li>
   <li><b>De datos:</b> los precios, velas y eventos vienen de Yahoo Finance mediante la librería <code>yfinance</code>, gratuita, sin contrato ni garantía. Yahoo no tiene los bonos argentinos, así que el dólar MEP se calcula con los CEDEARs (ADR-07).</li>
 </ul>
 
-<h2>2.5 Diagrama de contexto (C4 nivel 1)</h2>
+<h2 id="s-2-5">2.5 Diagrama de contexto (C4 nivel 1)</h2>
 <p>Muestra a Valeur como una caja negra: quién lo usa y con qué sistemas externos se comunica.</p>
 <figure><pre class="mermaid">
 flowchart TB
@@ -143,7 +145,7 @@ flowchart TB
   class Y,S,L ext
 </pre><figcaption>Figura 1. Contexto de Valeur (C4 nivel 1).</figcaption></figure>
 
-<h2>2.6 Diagrama de contenedores (C4 nivel 2)</h2>
+<h2 id="s-2-6">2.6 Diagrama de contenedores (C4 nivel 2)</h2>
 <p>Abre la caja de Valeur: qué piezas se ejecutan por separado y cómo se hablan.</p>
 <figure><pre class="mermaid">
 flowchart LR
@@ -169,10 +171,10 @@ flowchart LR
   W -. "usa los precios de" .-> API
 </pre><figcaption>Figura 2. Contenedores (C4 nivel 2). El front habla directo con Supabase para todo lo de la cuenta; la API propia solo da datos de mercado.</figcaption></figure>
 
-<h1>3. Modelo de datos</h1>
+<h1 id="s-3">3. Modelo de datos</h1>
 <p>Toda la persistencia está en Postgres (Supabase). Las cuentas viven en <code>auth.users</code>, que administra Supabase Auth; nuestras tablas cuelgan de ahí por <code>user_id</code>. Las posiciones del portfolio <b>no se guardan</b>: se calculan a partir de <code>trades</code>, que es la única fuente de verdad.</p>
 
-<h2>3.1 Diagrama entidad-relación</h2>
+<h2 id="s-3-1">3.1 Diagrama entidad-relación</h2>
 <figure><pre class="mermaid">
 erDiagram
   AUTH_USERS ||--|| PROFILES : "tiene"
@@ -241,8 +243,6 @@ erDiagram
   POSTS ||--o{ REPORTS : "reportado"
   PROFILES ||--o{ REPORTS : "reporta"
   PROFILES ||--o{ VERIFICATION_REQUESTS : "pide"
-  PROFILES ||--o| PRACTICE_ACCOUNTS : "practica"
-  PROFILES ||--o{ PRACTICE_TRADES : "opera"
   FOLLOWS {
     uuid follower_id PK
     uuid followee_id PK
@@ -274,6 +274,12 @@ erDiagram
     text reason
     text status
   }
+</pre><figcaption>Figura 3b. DER: comunidad y moderación. <code>follows</code> relaciona dos perfiles (seguidor y seguido). Todas las tablas tienen <i>Row Level Security</i>.</figcaption></figure>
+
+<figure class="er-chico"><pre class="mermaid">
+erDiagram
+  PROFILES ||--o| PRACTICE_ACCOUNTS : "practica"
+  PROFILES ||--o{ PRACTICE_TRADES : "opera"
   PRACTICE_ACCOUNTS {
     uuid user_id PK
     numeric cash
@@ -284,9 +290,9 @@ erDiagram
     text symbol
     numeric qty
   }
-</pre><figcaption>Figura 3b. DER: comunidad y moderación. <code>follows</code> relaciona dos perfiles (seguidor y seguido). Las tablas de modo práctica existen en la base, pero la pantalla quedó fuera de esta versión (ADR-10). Todas las tablas tienen <i>Row Level Security</i>.</figcaption></figure>
+</pre><figcaption>Figura 3c. DER: modo práctica. Estas tablas existen en la base (migración <code>0006</code>), pero la pantalla quedó fuera de esta versión (ADR-10), por eso no están en el diccionario de datos.</figcaption></figure>
 
-<h2>3.2 Diccionario de datos</h2>
+<h2 id="s-3-2">3.2 Diccionario de datos</h2>
 <p>Se omiten en cada tabla <code>created_at</code> (fecha de alta, <code>now()</code> por defecto).</p>
 
 <h3>profiles — perfil público de cada cuenta</h3>
@@ -305,7 +311,7 @@ erDiagram
 <table><thead><tr><th style="width:18%">Campo</th><th style="width:16%">Tipo</th><th style="width:28%">Restricción</th><th>Descripción</th></tr></thead><tbody>
 <tr><td><code>id</code></td><td>uuid</td><td>PK</td><td></td></tr>
 <tr><td><code>user_id</code></td><td>uuid</td><td>FK → auth.users, cascade</td><td>Dueño.</td></tr>
-<tr><td><code>symbol</code></td><td>text</td><td><code>^[A-Z0-9.=^-]{1,12}$</code></td><td>Ticker como lo entiende Yahoo (AAPL, MELI.BA, BTC-USD).</td></tr>
+<tr><td><code>symbol</code></td><td>text</td><td><code>^[A-Z0-9.=^-]{1,12}$</code></td><td>Ticker como lo entiende Yahoo (AAPL, MELI.BA, BTC-USD). La base y los formularios aceptan hasta 12 caracteres. La API de mercado acepta hasta 15 porque solo consulta precios: todo lo que se guarda pasa igual por este límite de la base.</td></tr>
 <tr><td><code>name</code></td><td>text</td><td></td><td>Nombre de la empresa (para mostrar).</td></tr>
 <tr><td><code>side</code></td><td>text</td><td><code>buy | sell</code></td><td>Compra o venta.</td></tr>
 <tr><td><code>qty</code></td><td>numeric(18,6)</td><td>&gt; 0</td><td>Cantidad (admite fracciones, por cripto).</td></tr>
@@ -366,7 +372,7 @@ erDiagram
 <tr><td><code>user_id</code>, <code>base</code>, <code>kind</code>, <code>day</code></td><td>uuid, text, text, date</td><td>PK compuesta; kind <code>earnings | exdiv</code></td><td>Evita avisar dos veces el mismo evento (aunque se tengan AAPL y AAPL.BA).</td></tr>
 </tbody></table>
 
-<h2>3.3 Funciones y triggers de la base</h2>
+<h2 id="s-3-3">3.3 Funciones y triggers de la base</h2>
 <table>
   <thead><tr><th style="width:28%">Nombre</th><th>Qué hace</th></tr></thead>
   <tbody>
@@ -381,7 +387,7 @@ erDiagram
   </tbody>
 </table>
 
-<h1>4. Diseño de módulos (UML)</h1>
+<h1 id="s-4">4. Diseño de módulos (UML)</h1>
 <p>El front se organiza en capas: las <b>páginas</b> arman la pantalla con <b>componentes</b>, y piden y guardan datos solo a través de los módulos de <b>lib</b>, que son los únicos que hablan con Supabase o con la API. Así, cambiar de dónde sale un dato toca un solo archivo.</p>
 <figure><pre class="mermaid">
 classDiagram
@@ -447,6 +453,10 @@ classDiagram
   portfolio ..> market : precios y MEP
   market --> API_Flask
   otrosLib --> API_Flask
+  class otrosLib["otros (lib)"]
+  class supabase_js["supabase-js"]
+  class API_Flask["API de mercado (Flask)"]
+  class Paginas["Páginas"]
 </pre><figcaption>Figura 4. Módulos del front y de quién depende cada uno.</figcaption></figure>
 
 <figure><pre class="mermaid">
@@ -482,6 +492,12 @@ classDiagram
     +cargar() · borrar()
     +profe(clave)
   }
+  class lanzador_py {
+    +web(ruta)
+    +servidor()
+    +main()
+    sirve la SPA compilada
+  }
   class yfinance {
     Ticker · download · Search
   }
@@ -493,12 +509,19 @@ classDiagram
   backend_py --> yfinance
   events_py --> yfinance
   demo_py --> supa_py
-</pre><figcaption>Figura 5. Módulos del backend.</figcaption></figure>
+  lanzador_py --> backend_py : usa la app (sin el hilo de alertas)
+  class backend_py["backend.py"]
+  class events_py["events.py"]
+  class alerts_py["alerts.py"]
+  class supa_py["supa.py"]
+  class demo_py["demo.py"]
+  class lanzador_py["lanzador.py"]
+</pre><figcaption>Figura 5. Módulos del backend. <code>lanzador.py</code> es lo que corre el ejecutable: usa la misma app de Flask y además sirve la SPA compilada.</figcaption></figure>
 
-<h1>5. Diagramas de comportamiento, por funcionalidad</h1>
+<h1 id="s-5">5. Diagramas de comportamiento, por funcionalidad</h1>
 <p>Un diagrama por cada funcionalidad de la tabla 2.3. Los flujos principales están como diagramas de secuencia UML, y los que son más bien reglas, como diagramas de actividad o de estados.</p>
 
-<h2>5.1 Registro e inicio de sesión</h2>
+<h2 id="s-5-1">5.1 Registro e inicio de sesión</h2>
 <figure class="seq"><pre class="mermaid">
 sequenceDiagram
   autonumber
@@ -523,7 +546,7 @@ sequenceDiagram
   Note over U,A: Entrar: signInWithPassword → JWT. Si falla: "Email o contraseña incorrectos".
 </pre><figcaption>Figura 6. Registro (y entrar, en la nota).</figcaption></figure>
 
-<h2>5.2 Recuperar y cambiar la contraseña</h2>
+<h2 id="s-5-2">5.2 Recuperar y cambiar la contraseña</h2>
 <figure class="seq"><pre class="mermaid">
 sequenceDiagram
   autonumber
@@ -543,7 +566,7 @@ sequenceDiagram
   Note over U,A: Cambiar estando adentro: primero signInWithPassword con la actual. Si es correcta, updateUser.
 </pre><figcaption>Figura 7. Recuperar la contraseña.</figcaption></figure>
 
-<h2>5.3 Registrar una operación y ver el portfolio</h2>
+<h2 id="s-5-3">5.3 Registrar una operación y ver el portfolio</h2>
 <figure class="seq"><pre class="mermaid">
 sequenceDiagram
   autonumber
@@ -589,7 +612,7 @@ flowchart TD
   B -- sí --> FIN([Operación registrada])
 </pre><figcaption>Figura 9. Actividad: validación de una operación. Las mismas reglas se repiten en la base para que no dependan del front.</figcaption></figure>
 
-<h2>5.4 Ver un activo (Mercado) e Inicio</h2>
+<h2 id="s-5-4">5.4 Ver un activo (Mercado) e Inicio</h2>
 <figure class="seq"><pre class="mermaid">
 sequenceDiagram
   autonumber
@@ -618,7 +641,7 @@ sequenceDiagram
   Note over U,R: Las listas (explorador, Inicio) piden muchos símbolos juntos con /api/batch, con caché de 60 s.
 </pre><figcaption>Figura 10. Buscar y ver un activo.</figcaption></figure>
 
-<h2>5.5 Alertas de precio</h2>
+<h2 id="s-5-5">5.5 Alertas de precio</h2>
 <figure class="seq"><pre class="mermaid">
 sequenceDiagram
   autonumber
@@ -642,7 +665,7 @@ sequenceDiagram
     end
   end
   Note over U,M: Con la app abierta, useAlertWatcher también las revisa cada 60 s. El claim evita avisar dos veces.
-</pre><figcaption>Figura 11. Una alerta desde que se crea hasta que avisa, aunque la app esté cerrada.</figcaption></figure>
+</pre><figcaption>Figura 11. Una alerta desde que se crea hasta que avisa. El loop del proceso de alertas corre solo si el backend tiene la <i>service role key</i>; en el ejecutable de la entrega no la tiene, y las alertas las revisa la app abierta (<code>useAlertWatcher</code>, cada 60 s).</figcaption></figure>
 
 <figure><pre class="mermaid">
 stateDiagram-v2
@@ -659,7 +682,7 @@ stateDiagram-v2
   Disparada --> [*]: borra
 </pre><figcaption>Figura 12. Estados de una alerta. Las de precio (<code>above</code>, <code>below</code>) pasan a Disparada y se desactivan; las de porcentaje (<code>up_pct</code>, <code>down_pct</code>) avisan una vez por rueda.</figcaption></figure>
 
-<h2>5.6 Notificaciones</h2>
+<h2 id="s-5-6">5.6 Notificaciones</h2>
 <figure><pre class="mermaid">
 flowchart LR
   subgraph Origen
@@ -674,7 +697,7 @@ flowchart LR
   N -- realtime --> B[Campanita: pestañas, leer, borrar, ir al link]
 </pre><figcaption>Figura 13. De dónde sale cada notificación. Las que provoca otra persona las crea la base, no el front.</figcaption></figure>
 
-<h2>5.7 Comunidad: recomendar, "me sirve", seguir y reportar</h2>
+<h2 id="s-5-7">5.7 Comunidad: recomendar, "me sirve", seguir y reportar</h2>
 <figure class="seq"><pre class="mermaid">
 sequenceDiagram
   autonumber
@@ -704,7 +727,7 @@ sequenceDiagram
   end
 </pre><figcaption>Figura 14. Comunidad.</figcaption></figure>
 
-<h2>5.8 Perfil, privacidad y portfolio compartido</h2>
+<h2 id="s-5-8">5.8 Perfil, privacidad y portfolio compartido</h2>
 <figure class="seq"><pre class="mermaid">
 sequenceDiagram
   autonumber
@@ -726,7 +749,7 @@ sequenceDiagram
   Note over V,DB: La dueña cambia la privacidad en Editar perfil → update profiles.visibility (con confirmación).
 </pre><figcaption>Figura 15. Ver el portfolio de otra persona respetando su privacidad.</figcaption></figure>
 
-<h2>5.9 Verificación y panel de administración</h2>
+<h2 id="s-5-9">5.9 Verificación y panel de administración</h2>
 <figure class="seq"><pre class="mermaid">
 sequenceDiagram
   autonumber
@@ -754,7 +777,7 @@ sequenceDiagram
   end
 </pre><figcaption>Figura 16. Verificación y moderación.</figcaption></figure>
 
-<h2>5.10 Calendario de resultados y dividendos</h2>
+<h2 id="s-5-10">5.10 Calendario de resultados y dividendos</h2>
 <figure class="seq"><pre class="mermaid">
 sequenceDiagram
   autonumber
@@ -779,7 +802,7 @@ sequenceDiagram
   end
 </pre><figcaption>Figura 17. Calendario y aviso del día antes.</figcaption></figure>
 
-<h2>5.11 Simulador "¿Y si hubiera invertido?"</h2>
+<h2 id="s-5-11">5.11 Simulador "¿Y si hubiera invertido?"</h2>
 <figure><pre class="mermaid">
 flowchart TD
   S([Elige activo, monto, moneda,<br/>desde cuándo y si es de una vez o mensual]) --> C[GET /api/candles/símbolo?range=max]
@@ -793,7 +816,7 @@ flowchart TD
   C2 --> R([Resultado: valor hoy, ganancia, por año,<br/>peor y mejor momento, gráfico])
 </pre><figcaption>Figura 18. Actividad del simulador. Todo el cálculo se hace en el front.</figcaption></figure>
 
-<h2>5.12 Aprendé</h2>
+<h2 id="s-5-12">5.12 Aprendé</h2>
 <figure><pre class="mermaid">
 flowchart LR
   G[(glossary.js<br/>20 términos en 4 grupos)] --> L[Aprendé: tarjetas que se dan vuelta,<br/>búsqueda y progreso]
@@ -803,9 +826,9 @@ flowchart LR
   L --> P[(localStorage:<br/>términos vistos)]
 </pre><figcaption>Figura 19. Aprendé: un solo glosario alimenta las tarjetas y las ayudas de toda la app; no usa el backend.</figcaption></figure>
 
-<h1>6. Especificación de interfaces (contrato de API)</h1>
+<h1 id="s-6">6. Especificación de interfaces (contrato de API)</h1>
 
-<h2>6.1 API de mercado (Flask)</h2>
+<h2 id="s-6-1">6.1 API de mercado (Flask)</h2>
 <p>Base: <code>http://localhost:5002/api</code>. Todas las respuestas son JSON. No requiere sesión: solo devuelve datos públicos de mercado. Los símbolos se validan con <code>^[A-Z0-9.=^-]{1,15}$</code>. CORS solo para <code>localhost</code> y <code>127.0.0.1</code> (y <code>CORS_ORIGINS</code>).</p>
 <table>
   <thead><tr><th style="width:8%">Método</th><th style="width:22%">Ruta</th><th style="width:30%">Parámetros</th><th>Devuelve</th></tr></thead>
@@ -860,13 +883,13 @@ GET /api/events?symbols=KO.BA
 </table>
 <p>Nunca se devuelven trazas, rutas del servidor ni mensajes internos de Yahoo: quedan en la consola del backend.</p>
 
-<h2>6.2 Acceso a datos por Supabase</h2>
+<h2 id="s-6-2">6.2 Acceso a datos por Supabase</h2>
 <p>Para todo lo que es de la cuenta, el front usa <code>supabase-js</code>, que habla con la API REST de Supabase (<code>https://&lt;proyecto&gt;.supabase.co/rest/v1</code>) enviando el JWT de la sesión. No pasa por la API propia. Las políticas RLS de la base deciden qué puede hacer cada uno.</p>
 <table>
   <thead><tr><th style="width:22%">Recurso</th><th style="width:34%">Operaciones que usa la app</th><th>Errores posibles</th></tr></thead>
   <tbody>
     <tr><td><code>trades</code></td><td>select propias · insert · delete</td><td>403 (RLS: otro <code>user_id</code>), 400 (check: cantidad, precio, fecha, venta de más).</td></tr>
-    <tr><td><code>watchlist</code></td><td>select propias · insert · delete</td><td>409 si ya lo sigue.</td></tr>
+    <tr><td><code>watchlist</code></td><td>select propias · upsert · delete</td><td>Si ya lo sigue no da error: el upsert actualiza la fila. 403 (RLS).</td></tr>
     <tr><td><code>alerts</code></td><td>select propias · insert · update (valor, activa) · delete</td><td>400 (check), 403 (RLS).</td></tr>
     <tr><td><code>notifications</code></td><td>select propias · update <code>read_at</code> · delete · realtime</td><td>403.</td></tr>
     <tr><td><code>profiles</code></td><td>select · update la propia</td><td>Los campos protegidos se ignoran (trigger).</td></tr>
@@ -875,6 +898,33 @@ GET /api/events?symbols=KO.BA
     <tr><td><code>verification_requests</code>, <code>reports</code></td><td>insert · select propios (admin: todos, update)</td><td>403 si no es admin; 409 reporte repetido.</td></tr>
   </tbody>
 </table>
+
+<h3>Ejemplos de petición (request body) y respuesta</h3>
+<p>Todas las escrituras van a <code>https://&lt;proyecto&gt;.supabase.co/rest/v1/&lt;tabla&gt;</code> con las cabeceras <code>apikey: &lt;anon key&gt;</code> y <code>Authorization: Bearer &lt;JWT de la sesión&gt;</code>. <code>supabase-js</code> las arma solo; acá se muestra el pedido HTTP equivalente.</p>
+<div style="break-inside: avoid"><p><b>Registrar una operación</b> (<code>addTrade</code> en <code>lib/portfolio.js</code>)</p>
+<pre class="code">POST /rest/v1/trades
+{ "user_id": "&lt;id del usuario logueado&gt;", "symbol": "AAPL.BA", "name": "Apple",
+  "side": "buy", "qty": 10, "price": 18450.5, "executed_at": "2026-11-20",
+  "note": "Primera compra" }
+
+201 Created            (fila guardada; sin cuerpo)
+400 Bad Request        {"code": "23514", "message": "La fecha no puede ser futura"}
+400 Bad Request        {"code": "23514", "message": "Al 2026-11-20 no alcanza la cantidad de AAPL.BA para esa venta"}
+403 Forbidden          {"code": "42501", "message": "new row violates row-level security policy for table \"trades\""}
+                       (user_id de otra persona)</pre></div>
+<div style="break-inside: avoid"><p><b>Crear una alerta</b> (<code>addAlert</code> en <code>lib/alerts.js</code>)</p>
+<pre class="code">POST /rest/v1/alerts
+{ "user_id": "&lt;id del usuario logueado&gt;", "symbol": "GGAL.BA", "kind": "below", "value": 5200 }
+
+201 Created
+400 Bad Request        {"code": "23514", ...}   (kind fuera de above | below | up_pct | down_pct, o value &lt;= 0)
+403 Forbidden          {"code": "42501", ...}   (user_id de otra persona)</pre></div>
+<div style="break-inside: avoid"><p><b>Leer las operaciones propias</b></p>
+<pre class="code">GET /rest/v1/trades?select=*
+
+200 OK                 [ { "id": "…", "symbol": "AAPL.BA", "side": "buy", "qty": 10, "price": 18450.5,
+                           "executed_at": "2026-11-20", "note": "Primera compra", … } ]
+                       (el RLS filtra: solo vuelven las filas del dueño del JWT; las de otros no aparecen)</pre></div>
 <table>
   <thead><tr><th style="width:30%">Función (rpc)</th><th style="width:30%">Parámetros</th><th>Respuesta</th></tr></thead>
   <tbody>
@@ -886,7 +936,7 @@ GET /api/events?symbols=KO.BA
 </table>
 <p>Autenticación (Supabase Auth): <code>signUp</code>, <code>signInWithPassword</code>, <code>signOut</code>, <code>resetPasswordForEmail</code>, <code>updateUser</code>. Errores traducidos en el front: credenciales inválidas, email ya registrado, contraseña corta, enlace vencido, demasiados intentos, sin conexión.</p>
 
-<h1>7. Vista de despliegue</h1>
+<h1 id="s-7">7. Vista de despliegue</h1>
 <p>Para la entrega, la app corre en la compu de quien la prueba; la base, las cuentas y los mails están en Supabase (nube). Hay dos formas de abrirla:</p>
 <ul>
   <li><b>Ejecutable</b> (<code>Valeur-Windows.exe</code> / <code>Valeur-Mac.zip</code>, en los Releases del repositorio): un solo proceso. El mismo Flask sirve la SPA ya compilada y la API en <code>localhost:5173</code>, y abre el navegador. No hace falta instalar nada. Lo arma GitHub Actions con PyInstaller en una máquina Windows y en una Mac, y lo prueba antes de publicarlo (<code>ejecutable/README.md</code>).</li>
@@ -911,40 +961,40 @@ flowchart LR
 </pre><figcaption>Figura 20. Despliegue de la entrega desde el código. En el ejecutable, Vite no está: Flask sirve también la SPA, en el mismo <code>localhost:5173</code>. Sin la <i>service role key</i> en el <code>.env</code> del backend, las alertas se revisan solo con la app abierta.</figcaption></figure>
 <p><b>Si se publicara:</b> el front compilado (<code>npm run build</code>) en un hosting estático con HTTPS (Vercel, Netlify), la API en un servicio de contenedores (Render, Railway) con <code>CORS_ORIGINS</code> apuntando al dominio del front, y Supabase igual que ahora. El código ya está preparado: todo se configura por variables de entorno.</p>
 
-<h1>8. Decisiones arquitectónicas (ADR)</h1>
+<h1 id="s-8">8. Decisiones arquitectónicas (ADR)</h1>
 <p>Cada decisión con su contexto, las alternativas, lo que elegimos y sus consecuencias. Las ADR 1 a 4 vienen de la versión anterior (actualizadas); las demás son nuevas.</p>
 
-<h2>ADR-01 · Cliente-servidor en capas, un monolito por lado <span class="tag">vigente</span></h2>
+<h2 id="adr-01">ADR-01 · Cliente-servidor en capas, un monolito por lado <span class="tag">vigente</span></h2>
 <p><b>Contexto:</b> equipo de 3, un año de cursada. <b>Alternativas:</b> microservicios; serverless; monolito por capas. <b>Decisión:</b> una SPA y una API chica, cada una un solo desplegable. <b>Consecuencias:</b> desarrollo y despliegue simples, poca infraestructura; si la API creciera mucho habría que separarla.</p>
 
-<h2>ADR-02 · Supabase en lugar de MySQL propio <span class="tag">vigente</span></h2>
+<h2 id="adr-02">ADR-02 · Supabase en lugar de MySQL propio <span class="tag">vigente</span></h2>
 <p><b>Contexto:</b> hacían falta usuarios, datos relacionales y seguridad sin presupuesto. <b>Alternativas:</b> MySQL local con login propio; MongoDB; Supabase. <b>Decisión:</b> arrancamos con MySQL y migramos a Supabase (Postgres administrado + Auth). <b>Consecuencias:</b> backups, autenticación y RLS listos sin mantenerlos; dependemos de un servicio externo incluso en desarrollo.</p>
 
-<h2>ADR-03 · Autenticación delegada en Supabase Auth <span class="tag">reemplaza al JWT propio</span></h2>
+<h2 id="adr-03">ADR-03 · Autenticación delegada en Supabase Auth <span class="tag">reemplaza al JWT propio</span></h2>
 <p><b>Contexto:</b> la primera versión emitía y validaba un JWT propio en Flask. <b>Decisión:</b> pasar todo a Supabase Auth; Flask no maneja usuarios. <b>Consecuencias:</b> hash bcrypt, expiración, refresh rotativo, recuperación por mail y límite de intentos sin código propio; la sesión vive en el navegador (ver el Manual Técnico).</p>
 
-<h2>ADR-04 · Datos de mercado con yfinance <span class="tag">vigente</span></h2>
+<h2 id="adr-04">ADR-04 · Datos de mercado con yfinance <span class="tag">vigente</span></h2>
 <p><b>Contexto:</b> miles de tickers con historia larga, sin presupuesto. <b>Alternativas:</b> APIs pagas (Alpha Vantage, IEX); yfinance. <b>Decisión:</b> yfinance. <b>Consecuencias:</b> costo cero y CEDEARs de BYMA incluidos; no es oficial y puede cambiar, lo mitigamos con errores controlados y caché.</p>
 
-<h2>ADR-05 · Autorización en la base con RLS, no en la API</h2>
+<h2 id="adr-05">ADR-05 · Autorización en la base con RLS, no en la API</h2>
 <p><b>Contexto:</b> el front habla directo con la base. <b>Alternativas:</b> que todo pase por Flask y validar el dueño en cada endpoint; políticas RLS. <b>Decisión:</b> RLS en todas las tablas, más funciones <code>security definer</code> para lo que se comparte (portfolio en %, estadísticas de admin). <b>Consecuencias:</b> una sola regla que vale para cualquier cliente; las políticas hay que probarlas con cuidado porque un error abre datos.</p>
 
-<h2>ADR-06 · El backend solo da mercado; las alertas usan la service role key</h2>
-<p><b>Contexto:</b> las alertas tienen que avisar aunque nadie tenga la app abierta. <b>Alternativas:</b> revisar solo en el navegador; un servicio aparte; un hilo en la API. <b>Decisión:</b> un hilo dentro de la API que cada 3 minutos lee las alertas con la <i>service role key</i> y escribe la notificación; la app también revisa mientras está abierta, y un "claim" condicional evita avisar dos veces. <b>Consecuencias:</b> un solo proceso para levantar; la clave secreta queda solo en el <code>.env</code> del backend.</p>
+<h2 id="adr-06">ADR-06 · El backend solo da mercado; las alertas usan la service role key</h2>
+<p><b>Contexto:</b> las alertas tienen que avisar aunque nadie tenga la app abierta. <b>Alternativas:</b> revisar solo en el navegador; un servicio aparte; un hilo en la API. <b>Decisión:</b> un hilo dentro de la API que cada 3 minutos lee las alertas con la <i>service role key</i> y escribe la notificación; la app también revisa mientras está abierta, y un "claim" condicional evita avisar dos veces. <b>Consecuencias:</b> un solo proceso para levantar; la clave secreta queda solo en el <code>.env</code> del backend. Como el ejecutable de la entrega no lleva esa clave (no se puede repartir un secreto dentro de un archivo que se descarga), ahí las alertas se revisan solo mientras Valeur está abierto; así lo explica también el Manual de usuario.</p>
 
-<h2>ADR-07 · Dólar MEP calculado con CEDEARs</h2>
+<h2 id="adr-07">ADR-07 · Dólar MEP calculado con CEDEARs</h2>
 <p><b>Contexto:</b> Yahoo no tiene AL30/GD30. <b>Decisión:</b> MEP = precio en pesos / precio en dólares del mismo CEDEAR (AAPL.BA / AAPLD.BA, etc.), mediana de 6 pares por día. <b>Consecuencias:</b> serie histórica gratis desde 2017; puede diferir unos pesos del MEP de bonos.</p>
 
-<h2>ADR-08 · Posiciones derivadas de las operaciones</h2>
+<h2 id="adr-08">ADR-08 · Posiciones derivadas de las operaciones</h2>
 <p><b>Contexto:</b> guardar posiciones duplicaría datos. <b>Decisión:</b> solo se guardan <code>trades</code>; posiciones, costo promedio, evolución y composición se calculan. <b>Consecuencias:</b> historial completo y nada que se desincronice; las reglas (no vender de más) se validan sobre toda la historia (trigger 0008).</p>
 
-<h2>ADR-09 · Privacidad en porcentajes</h2>
+<h2 id="adr-09">ADR-09 · Privacidad en porcentajes</h2>
 <p><b>Contexto:</b> compartir el portfolio es útil, mostrar cuánta plata tiene alguien no. <b>Decisión:</b> privado por defecto; amigos o todos a elección; se comparte solo peso y rendimiento. <b>Consecuencias:</b> la función <code>shared_portfolio</code> escala las cantidades para que no se puedan reconstruir montos.</p>
 
-<h2>ADR-10 · Entrega local: ejecutable o un comando, sin hosting</h2>
+<h2 id="adr-10">ADR-10 · Entrega local: ejecutable o un comando, sin hosting</h2>
 <p><b>Contexto:</b> el docente tiene que poder probarla fácil; es un trabajo escolar. <b>Alternativas:</b> hosting gratuito (Vercel + Render); ejecutable; script de arranque. <b>Decisión:</b> un ejecutable de un solo archivo para Windows y Mac (PyInstaller: el backend de Flask sirve también la SPA compilada y abre el navegador), armado y probado por GitHub Actions. Como alternativa, el repositorio con <code>iniciar.sh</code> / <code>iniciar.bat</code>. En los dos casos los datos están en Supabase, con una cuenta de prueba cargada (<code>demo.py profe</code>). El modo práctica quedó guardado en la rama <code>modo-practica</code>. <b>Consecuencias:</b> sin costos ni servidores que mantener, y el docente no instala nada. El ejecutable no está firmado (un certificado de desarrollador se paga), así que Windows y macOS piden confirmar la primera vez que se abre. Necesita internet para Supabase y Yahoo.</p>
 
-<h1>9. Atributos de calidad</h1>
+<h1 id="s-9">9. Atributos de calidad</h1>
 <table>
   <thead><tr><th style="width:17%">Atributo</th><th>Escenario</th><th style="width:30%">Cómo lo cumplimos</th></tr></thead>
   <tbody>
@@ -957,7 +1007,7 @@ flowchart LR
   </tbody>
 </table>
 
-<h1>10. Riesgos y deuda técnica</h1>
+<h1 id="s-10">10. Riesgos y deuda técnica</h1>
 <table>
   <thead><tr><th style="width:32%">Tema</th><th>Estado</th></tr></thead>
   <tbody>
@@ -971,7 +1021,7 @@ flowchart LR
   </tbody>
 </table>
 
-<h1>11. Glosario</h1>
+<h1 id="s-11">11. Glosario</h1>
 <table><tbody>
   <tr><td style="width:22%"><b>Ticker</b></td><td>Símbolo de un activo (AAPL, MELI.BA, BTC-USD).</td></tr>
   <tr><td><b>CEDEAR</b></td><td>Certificado que representa una acción del exterior y se compra en pesos en BYMA (los terminados en D, en dólares).</td></tr>

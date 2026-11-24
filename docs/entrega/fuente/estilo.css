@@ -36,5 +36,6 @@ figcaption { font-size: 8.5pt; color: var(--soft); margin-top: 4px; }
 .cover .meta td:first-child { color: var(--soft); width: 32%; }
 .toc { break-after: page; }
 .toc + h1 { break-before: avoid; }
-.toc ol { padding-left: 1.2em; }
+.toc ol { padding-left: 2.2em; }
 .toc li { margin: 2px 0; }
+.toc a { color: inherit; text-decoration: none; }
