@@ -2,11 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>Valeur — Documento de Arquitectura (TP3 corregido)</title>
+<title>TP3 - Documento de Arquitectura</title>
 <link rel="stylesheet" href="estilo.css">
 <script src="mermaid.min.js"></script>
-<script>mermaid.initialize({ startOnLoad: true, theme: "neutral", fontFamily: "Helvetica Neue, Arial, sans-serif", securityLevel: "loose", flowchart: { wrappingWidth: 420, useMaxWidth: true }, sequence: { useMaxWidth: true, mirrorActors: false, messageFontSize: 13, actorFontSize: 13, noteFontSize: 12 }, er: { useMaxWidth: true }, class: { useMaxWidth: true }, state: { useMaxWidth: true } });</script>
-<style>figure.seq svg { max-height: 200mm; } figure.er-chico svg { max-height: 60mm; }</style>
+<script>mermaid.initialize({ startOnLoad: true, theme: "neutral", fontFamily: "Helvetica Neue, Arial, sans-serif", securityLevel: "loose", flowchart: { wrappingWidth: 170, useMaxWidth: true, nodeSpacing: 28, rankSpacing: 36, padding: 8 }, sequence: { useMaxWidth: true, mirrorActors: false, wrap: true, width: 105, actorMargin: 22, boxMargin: 6, messageMargin: 30, messageFontSize: 14, actorFontSize: 14, noteFontSize: 13 }, er: { useMaxWidth: true }, class: { useMaxWidth: true }, state: { useMaxWidth: true } });</script>
+<style>figure.seq svg { max-height: 218mm; } figure.alto svg { max-height: 218mm; } figure.bajo-titulo svg { max-height: 188mm; } figure.bajo-titulo2 svg { max-height: 165mm; }</style>
 </head>
 <body>
 
@@ -148,41 +148,38 @@ flowchart TB
 <h2 id="s-2-6">2.6 Diagrama de contenedores (C4 nivel 2)</h2>
 <p>Abre la caja de Valeur: qué piezas se ejecutan por separado y cómo se hablan.</p>
 <figure><pre class="mermaid">
-flowchart LR
-  U(["Usuario<br/>(navegador)"])
-  subgraph VAL["Valeur"]
-    SPA["<b>SPA</b><br/>[React 19 + Vite]<br/>Todas las pantallas.<br/>Cálculo del portfolio y el simulador."]
-    API["<b>API de mercado</b><br/>[Python + Flask]<br/>Precios, velas, MEP, búsqueda,<br/>calendario. Caché en memoria."]
-    W["<b>Proceso de alertas</b><br/>[hilo dentro de la API]<br/>Revisa alertas cada 3 min,<br/>avisa eventos de mañana."]
+flowchart TB
+  U(["Usuario (navegador)"])
+  SPA["<b>SPA</b> [React 19 + Vite]<br/>Todas las pantallas. Cálculo del portfolio y el simulador."]
+  subgraph VAL["Backend propio (en la compu)"]
+    API["<b>API de mercado</b> [Python + Flask]<br/>Precios, velas, MEP, búsqueda, calendario. Caché en memoria."]
+    W["<b>Proceso de alertas</b> [hilo de la API]<br/>Revisa alertas cada 3 min; usa los precios de la API."]
   end
-  subgraph SB["Supabase"]
-    AUTH["<b>Auth</b><br/>Cuentas, contraseñas (bcrypt),<br/>sesiones JWT"]
+  subgraph SB["Supabase (nube)"]
+    AUTH["<b>Auth</b><br/>Cuentas, bcrypt, sesiones JWT"]
     REST["<b>API REST + Realtime</b><br/>[PostgREST]"]
-    DB[("<b>Postgres</b><br/>13 tablas con RLS,<br/>funciones y triggers")]
+    DB[("<b>Postgres</b><br/>13 tablas con RLS")]
   end
   Y["Yahoo Finance"]
   U --> SPA
   SPA -- "JSON / HTTP" --> API
-  SPA -- "supabase-js: login, sesión" --> AUTH
-  SPA -- "supabase-js: datos (JWT)" --> REST
+  SPA -- "login, sesión" --> AUTH
+  SPA -- "datos (JWT)" --> REST
   REST --> DB
-  API -- "yfinance / HTTPS" --> Y
-  W -- "HTTPS (service role key)" --> REST
-  W -. "usa los precios de" .-> API
+  API -- "yfinance" --> Y
+  W -- "service role key" --> REST
 </pre><figcaption>Figura 2. Contenedores (C4 nivel 2). El front habla directo con Supabase para todo lo de la cuenta; la API propia solo da datos de mercado.</figcaption></figure>
 
 <h1 id="s-3">3. Modelo de datos</h1>
 <p>Toda la persistencia está en Postgres (Supabase). Las cuentas viven en <code>auth.users</code>, que administra Supabase Auth; nuestras tablas cuelgan de ahí por <code>user_id</code>. Las posiciones del portfolio <b>no se guardan</b>: se calculan a partir de <code>trades</code>, que es la única fuente de verdad.</p>
 
 <h2 id="s-3-1">3.1 Diagrama entidad-relación</h2>
+<p>Para que se lea bien, el modelo está dibujado en cinco partes. En todas, <code>PROFILES</code> es el mismo perfil (su detalle está en la Figura 3a).</p>
 <figure><pre class="mermaid">
 erDiagram
   AUTH_USERS ||--|| PROFILES : "tiene"
   PROFILES ||--o{ TRADES : "registra"
   PROFILES ||--o{ WATCHLIST : "sigue"
-  PROFILES ||--o{ ALERTS : "crea"
-  PROFILES ||--o{ NOTIFICATIONS : "recibe"
-  PROFILES ||--o{ EVENT_NOTICES : "avisado"
   PROFILES {
     uuid id PK
     text username UK
@@ -209,6 +206,13 @@ erDiagram
     text symbol PK
     text name
   }
+</pre><figcaption>Figura 3a. DER: cuenta y portfolio. <code>trades</code> y <code>watchlist</code> referencian <code>auth.users(id)</code>, que es el mismo id del perfil.</figcaption></figure>
+
+<figure><pre class="mermaid">
+erDiagram
+  PROFILES ||--o{ ALERTS : "crea"
+  PROFILES ||--o{ NOTIFICATIONS : "recibe"
+  PROFILES ||--o{ EVENT_NOTICES : "avisado"
   ALERTS {
     uuid id PK
     uuid user_id FK
@@ -233,16 +237,14 @@ erDiagram
     text kind PK
     date day PK
   }
-</pre><figcaption>Figura 3a. DER: cuenta, portfolio, alertas y notificaciones. <code>trades</code>, <code>watchlist</code>, <code>alerts</code>, <code>notifications</code> y <code>event_notices</code> referencian <code>auth.users(id)</code>, que es el mismo id del perfil.</figcaption></figure>
+</pre><figcaption>Figura 3b. DER: alertas y notificaciones. También referencian <code>auth.users(id)</code>.</figcaption></figure>
+
 <figure><pre class="mermaid">
 erDiagram
   PROFILES ||--o{ FOLLOWS : "sigue a"
   PROFILES ||--o{ POSTS : "publica"
   POSTS ||--o{ POST_LIKES : "recibe"
   PROFILES ||--o{ POST_LIKES : "me sirve"
-  POSTS ||--o{ REPORTS : "reportado"
-  PROFILES ||--o{ REPORTS : "reporta"
-  PROFILES ||--o{ VERIFICATION_REQUESTS : "pide"
   FOLLOWS {
     uuid follower_id PK
     uuid followee_id PK
@@ -260,13 +262,13 @@ erDiagram
     uuid post_id PK
     uuid user_id PK
   }
-  REPORTS {
-    uuid id PK
-    uuid post_id FK
-    uuid reporter_id FK
-    text reason
-    text status
-  }
+</pre><figcaption>Figura 3c. DER: comunidad. <code>follows</code> relaciona dos perfiles (seguidor y seguido); si es mutuo, son amigos.</figcaption></figure>
+
+<figure><pre class="mermaid">
+erDiagram
+  PROFILES ||--o{ VERIFICATION_REQUESTS : "pide"
+  PROFILES ||--o{ REPORTS : "reporta"
+  POSTS ||--o{ REPORTS : "reportado"
   VERIFICATION_REQUESTS {
     uuid id PK
     uuid user_id FK
@@ -274,9 +276,16 @@ erDiagram
     text reason
     text status
   }
-</pre><figcaption>Figura 3b. DER: comunidad y moderación. <code>follows</code> relaciona dos perfiles (seguidor y seguido). Todas las tablas tienen <i>Row Level Security</i>.</figcaption></figure>
+  REPORTS {
+    uuid id PK
+    uuid post_id FK
+    uuid reporter_id FK
+    text reason
+    text status
+  }
+</pre><figcaption>Figura 3d. DER: moderación (verificación y reportes). <code>POSTS</code> es la tabla de la Figura 3c. Todas las tablas tienen <i>Row Level Security</i>.</figcaption></figure>
 
-<figure class="er-chico"><pre class="mermaid">
+<figure><pre class="mermaid">
 erDiagram
   PROFILES ||--o| PRACTICE_ACCOUNTS : "practica"
   PROFILES ||--o{ PRACTICE_TRADES : "opera"
@@ -290,7 +299,7 @@ erDiagram
     text symbol
     numeric qty
   }
-</pre><figcaption>Figura 3c. DER: modo práctica. Estas tablas existen en la base (migración <code>0006</code>), pero la pantalla quedó fuera de esta versión (ADR-10), por eso no están en el diccionario de datos.</figcaption></figure>
+</pre><figcaption>Figura 3e. DER: modo práctica. Estas tablas existen en la base (migración <code>0006</code>), pero la pantalla quedó fuera de esta versión (ADR-10), por eso no están en el diccionario de datos.</figcaption></figure>
 
 <h2 id="s-3-2">3.2 Diccionario de datos</h2>
 <p>Se omiten en cada tabla <code>created_at</code> (fecha de alta, <code>now()</code> por defecto).</p>
@@ -389,79 +398,25 @@ erDiagram
 
 <h1 id="s-4">4. Diseño de módulos (UML)</h1>
 <p>El front se organiza en capas: las <b>páginas</b> arman la pantalla con <b>componentes</b>, y piden y guardan datos solo a través de los módulos de <b>lib</b>, que son los únicos que hablan con Supabase o con la API. Así, cambiar de dónde sale un dato toca un solo archivo.</p>
-<figure><pre class="mermaid">
-classDiagram
-  direction LR
-  class Paginas {
-    Home · Dashboard · Tickersearch
-    Community · Profile · Calendar
-    Simulator · Learn · Admin
-    Login · Register · NotFound
-  }
-  class Componentes {
-    AppShell · TradeModal · AssetChart
-    PortfolioChart · AlertEditor
-    NotificationBell · CommandPalette
-    PostCard · ProfileModal · Modal
-  }
-  class AuthContext {
-    user · loading
-    signIn() · signUp() · signOut()
-    resetPassword() · changePassword()
-  }
-  class portfolio {
-    useTrades() · addTrade() · deleteTrade()
-    computePositions() · findOversell()
-    useHistory() · tradesCsv()
-  }
-  class market {
-    getQuote() · getCandles() · useBatch()
-    useMep() · convert() · fmtPrice()
-    marketStatus()
-  }
-  class alerts {
-    useAlerts() · addAlert() · alertError()
-    useAlertWatcher() · useNotifications()
-  }
-  class social {
-    useFeed() · createPost() · setLike()
-    follow() · useSharedPortfolio()
-    requestVerification() · reportPost()
-  }
-  class otrosLib {
-    simulate · events · catalog
-    glossary · password · validate
-  }
-  class supabase_js {
-    auth · from(tabla) · rpc() · channel()
-  }
-  class API_Flask {
-    /api/quote · /api/candles · /api/batch
-    /api/mep · /api/search · /api/events
-  }
-  Paginas --> Componentes
-  Paginas --> AuthContext
-  Paginas --> portfolio
-  Paginas --> market
-  Paginas --> alerts
-  Paginas --> social
-  Paginas --> otrosLib
-  AuthContext --> supabase_js
-  portfolio --> supabase_js
-  alerts --> supabase_js
-  social --> supabase_js
-  portfolio ..> market : precios y MEP
-  market --> API_Flask
-  otrosLib --> API_Flask
-  class otrosLib["otros (lib)"]
-  class supabase_js["supabase-js"]
-  class API_Flask["API de mercado (Flask)"]
-  class Paginas["Páginas"]
-</pre><figcaption>Figura 4. Módulos del front y de quién depende cada uno.</figcaption></figure>
+<figure class="bajo-titulo alto"><pre class="mermaid">
+flowchart LR
+  P["<b>Páginas y componentes</b><br/>Home · Dashboard · Tickersearch · Community · Profile · Calendar · Simulator · Learn · Admin · Login · Register<br/><br/>AppShell · TradeModal · AssetChart · AlertEditor · NotificationBell · CommandPalette · PostCard"]
+  AC["<b>AuthContext</b><br/>signIn() · signUp() · signOut() · resetPassword() · changePassword()"]
+  PF["<b>lib/portfolio</b><br/>useTrades() · addTrade() · deleteTrade() · computePositions() · findOversell() · tradesCsv()"]
+  AL["<b>lib/alerts</b><br/>useAlerts() · addAlert() · alertError() · useAlertWatcher() · useNotifications()"]
+  SO["<b>lib/social</b><br/>useFeed() · createPost() · setLike() · follow() · useSharedPortfolio() · reportPost()"]
+  MK["<b>lib/market</b><br/>getQuote() · getCandles() · useBatch() · useMep() · convert() · fmtPrice()"]
+  OT["<b>otros de lib</b><br/>simulate · events · catalog · glossary · password · validate"]
+  SB["<b>supabase-js</b><br/>auth · from(tabla) · rpc() · channel()"]
+  API["<b>API de mercado (Flask)</b><br/>/api/quote · /candles · /batch · /mep · /search · /events"]
+  P --> AC &amp; PF &amp; AL &amp; SO &amp; MK &amp; OT
+  AC &amp; PF &amp; AL &amp; SO --> SB
+  MK &amp; OT --> API
+</pre><figcaption>Figura 4. Módulos del front y de quién depende cada uno. <code>lib/portfolio</code> usa además <code>lib/market</code> para los precios y el MEP.</figcaption></figure>
 
 <figure><pre class="mermaid">
 classDiagram
-  direction LR
+  direction TB
   class backend_py {
     +valid_symbol(s)
     +fetch_quotes(symbols)
@@ -522,7 +477,8 @@ classDiagram
 <p>Un diagrama por cada funcionalidad de la tabla 2.3. Los flujos principales están como diagramas de secuencia UML, y los que son más bien reglas, como diagramas de actividad o de estados.</p>
 
 <h2 id="s-5-1">5.1 Registro e inicio de sesión</h2>
-<figure class="seq"><pre class="mermaid">
+<figure class="bajo-titulo2 seq"><pre class="mermaid">
+%%{init: {"sequence": {"width": 125, "actorMargin": 28}}}%%
 sequenceDiagram
   autonumber
   actor U as Usuario
@@ -548,6 +504,7 @@ sequenceDiagram
 
 <h2 id="s-5-2">5.2 Recuperar y cambiar la contraseña</h2>
 <figure class="seq"><pre class="mermaid">
+%%{init: {"sequence": {"width": 150, "actorMargin": 40}}}%%
 sequenceDiagram
   autonumber
   actor U as Usuario
@@ -594,23 +551,24 @@ sequenceDiagram
   end
 </pre><figcaption>Figura 8. Registrar una operación. Las posiciones se calculan en el front, a partir de las operaciones.</figcaption></figure>
 
-<figure><pre class="mermaid">
+<figure class="alto"><pre class="mermaid">
+%%{init: {"flowchart": {"rankSpacing": 26, "nodeSpacing": 30}}}%%
 flowchart TD
-  S([Registrar]) --> T{¿Ticker válido<br/>y con cotización?}
+  S([Registrar]) --> T{¿Ticker<br/>válido?}
   T -- no --> E1[/"Elegí un ticker válido"/]
-  T -- sí --> Q{¿Cantidad &gt; 0<br/>y precio &gt; 0?}
-  Q -- no --> E2[/"La cantidad / el precio tiene que ser mayor a cero"/]
-  Q -- sí --> D{¿Fecha entre 1990 y hoy?}
+  T -- sí --> Q{¿Cantidad y<br/>precio &gt; 0?}
+  Q -- no --> E2[/"Tiene que ser mayor a cero"/]
+  Q -- sí --> D{¿Fecha<br/>válida?}
   D -- no --> E3[/"La fecha no puede ser futura"/]
-  D -- sí --> V{¿Es venta?}
+  D -- sí --> V{¿Es<br/>venta?}
   V -- no --> OK([Guardar])
-  V -- sí --> H{¿Alcanza lo que<br/>tenía ese día?}
+  V -- sí --> H{¿Alcanza?}
   H -- no --> E4[/"Solo tenés N para vender"/]
   H -- sí --> OK
-  OK --> B{¿La base la acepta?<br/>RLS + triggers}
-  B -- no --> E5[/mensaje del error/]
+  OK --> B{¿La base<br/>la acepta?}
+  B -- no --> E5[/"Mensaje del error<br/>(RLS o trigger)"/]
   B -- sí --> FIN([Operación registrada])
-</pre><figcaption>Figura 9. Actividad: validación de una operación. Las mismas reglas se repiten en la base para que no dependan del front.</figcaption></figure>
+</pre><figcaption>Figura 9. Actividad: validación de una operación. Las mismas reglas se repiten en la base para que no dependan del front. Las condiciones completas: ticker válido y con cotización; cantidad y precio mayores a cero; fecha entre 1990 y hoy; en una venta, que alcance lo que se tenía ese día.</figcaption></figure>
 
 <h2 id="s-5-4">5.4 Ver un activo (Mercado) e Inicio</h2>
 <figure class="seq"><pre class="mermaid">
@@ -729,6 +687,7 @@ sequenceDiagram
 
 <h2 id="s-5-8">5.8 Perfil, privacidad y portfolio compartido</h2>
 <figure class="seq"><pre class="mermaid">
+%%{init: {"sequence": {"width": 125, "actorMargin": 28}}}%%
 sequenceDiagram
   autonumber
   actor V as Visitante del perfil
@@ -803,7 +762,8 @@ sequenceDiagram
 </pre><figcaption>Figura 17. Calendario y aviso del día antes.</figcaption></figure>
 
 <h2 id="s-5-11">5.11 Simulador "¿Y si hubiera invertido?"</h2>
-<figure><pre class="mermaid">
+<figure class="alto"><pre class="mermaid">
+%%{init: {"flowchart": {"rankSpacing": 22, "nodeSpacing": 24, "wrappingWidth": 230}}}%%
 flowchart TD
   S([Elige activo, monto, moneda,<br/>desde cuándo y si es de una vez o mensual]) --> C[GET /api/candles/símbolo?range=max]
   C --> MEP{¿La moneda elegida es<br/>distinta de la del activo?}
@@ -818,7 +778,7 @@ flowchart TD
 
 <h2 id="s-5-12">5.12 Aprendé</h2>
 <figure><pre class="mermaid">
-flowchart LR
+flowchart TB
   G[(glossary.js<br/>20 términos en 4 grupos)] --> L[Aprendé: tarjetas que se dan vuelta,<br/>búsqueda y progreso]
   G --> T["Term: '?' al lado de cada término<br/>en Mercado, Portfolio, Comunidad…"]
   T -- "Ver más en Aprendé" --> L
@@ -943,7 +903,7 @@ GET /api/events?symbols=KO.BA
   <li><b>Desde el código:</b> <code>iniciar.sh</code> (Mac/Linux) o <code>iniciar.bat</code> (Windows) crean el entorno de Python, instalan las dependencias, levantan los dos procesos (Vite y Flask) y abren el navegador. Necesita Python y Node. Es la forma de trabajar del equipo y la que muestra la figura.</li>
 </ul>
 <figure><pre class="mermaid">
-flowchart LR
+flowchart TB
   subgraph PC["Compu del docente"]
     BR["Navegador<br/>localhost:5173"]
     VITE["Vite (Node 20+)<br/>sirve la SPA · :5173"]

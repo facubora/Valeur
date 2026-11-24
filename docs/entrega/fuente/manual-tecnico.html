@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>Valeur — Manual Técnico: Testing y Seguridad</title>
+<title>Manual Técnico - Testing y Seguridad</title>
 <link rel="stylesheet" href="estilo.css">
 <script src="mermaid.min.js"></script>
 <script>mermaid.initialize({ startOnLoad: true, theme: "neutral", fontFamily: "Helvetica Neue, Arial, sans-serif", securityLevel: "loose", flowchart: { wrappingWidth: 420, useMaxWidth: true }, sequence: { useMaxWidth: true }, er: { useMaxWidth: true } });</script>
@@ -52,16 +52,11 @@
 <h2 id="s-2-1">2.1 Estrategia y niveles de prueba</h2>
 <p>Seguimos la idea de la <b>pirámide de tests</b>: muchas pruebas chicas y rápidas sobre la lógica (unitarias), menos pruebas sobre la comunicación entre piezas (integración) y pocas pruebas de punta a punta, que son las más lentas y frágiles.</p>
 
-<figure><pre class="mermaid">
-flowchart TB
-  E2E["<b>Funcionales / E2E</b><br/>Flujos completos en el navegador<br/>(manuales, con la matriz de casos)"]
-  INT["<b>Integración</b><br/>Endpoints HTTP de la API (cliente de pruebas de Flask)<br/>Reglas de la base (Postgres local)"]
-  UNIT["<b>Unitarias</b><br/>Cálculos del portfolio, validaciones, formatos,<br/>reglas de alertas, simulador (PyTest + Vitest)"]
-  E2E --- INT --- UNIT
-  style E2E fill:#eef0fb,stroke:#3a4fd8
-  style INT fill:#e3e7fa,stroke:#3a4fd8
-  style UNIT fill:#d4daf7,stroke:#3a4fd8
-</pre><figcaption>Figura 1. Niveles de prueba de Valeur (arriba, pocas y lentas; abajo, muchas y rápidas).</figcaption></figure>
+<figure class="piramide">
+  <div class="nivel" style="width:42%; background:#eef0fb"><b>Funcionales / E2E</b><br>Flujos completos en el navegador<br>(manuales, con la matriz de casos)</div>
+  <div class="nivel" style="width:68%; background:#e3e7fa"><b>Integración</b><br>Endpoints HTTP de la API (cliente de pruebas de Flask)<br>Reglas de la base (Postgres local)</div>
+  <div class="nivel" style="width:94%; background:#d4daf7"><b>Unitarias</b><br>Cálculos del portfolio, validaciones, formatos,<br>reglas de alertas, simulador (PyTest + Vitest)</div>
+<figcaption>Figura 1. Niveles de prueba de Valeur (arriba, pocas y lentas; abajo, muchas y rápidas).</figcaption></figure>
 
 <table>
   <thead><tr><th style="width:18%">Nivel</th><th>Qué probamos</th><th style="width:24%">Cómo</th></tr></thead>
@@ -173,7 +168,8 @@ flowchart TB
 <h1 id="s-3">3. Medidas de seguridad</h1>
 
 <figure><pre class="mermaid">
-flowchart LR
+%%{init: {"flowchart": {"wrappingWidth": 170, "nodeSpacing": 28, "rankSpacing": 36}}}%%
+flowchart TB
   U["Navegador<br/>(SPA React)"]
   subgraph SB["Supabase (nube) — delegado"]
     AUTH["Auth<br/>bcrypt · JWT · refresh"]
@@ -187,7 +183,7 @@ flowchart LR
   Y["Yahoo Finance"]
   U -- "HTTPS + JWT" --> AUTH
   U -- "HTTPS + JWT" --> API --> DB
-  U -- "HTTP local · solo datos públicos" --> FL --> Y
+  U -- "HTTP local, solo datos públicos" --> FL --> Y
   AL -- "HTTPS + service role" --> API
 </pre><figcaption>Figura 2. Dónde está cada barrera. Lo de Supabase lo da la plataforma; las reglas (políticas RLS, checks, triggers) y todo el backend los escribimos nosotros.</figcaption></figure>
 
