@@ -1,0 +1,11 @@
+import { launch } from "./cdp.mjs"; const P = await launch(9381);
+const T = async (n, f) => { try { await f(); } catch (e) { console.log("ERR", n, e.message); } };
+await P.login("manual@valeur.test");
+await T("tarj", async () => { await P.go("/comunidad", 6000); await P.click("#recomendaciones .s-tools button|Todos", 2500); await P.ev(()=>{const c=[...document.querySelectorAll(".feed-grid .post")].find(x=>x.innerText.includes("Tesla"));c.id="pnv"; document.querySelectorAll(".feed-grid .post").forEach(x=>{if(x!==c)x.style.opacity=.25})}); await P.scrollTo("#pnv", 250); await P.hoverEl("#pnv .jug-body");
+ await P.ev(()=>{const c=document.querySelector("#pnv .jug-like");c.style.marginRight="14px"});
+ const r = await P.ev(()=>{const c=document.querySelector("#pnv").getBoundingClientRect();return {x:c.x-130,y:c.y-40+scrollY,width:c.width+260,height:c.height+80}});
+ await P.shot("comunidad-tarjeta-a", [[1,"#pnv .jug-asset",{at:"t"}],[2,"#pnv .jug-call",{at:"tr"}],[3,"#pnv .jug-body",{at:"l",pad:-3}],[4,"#pnv .jug-name",{at:"t",pad:2}],[5,"#pnv .jug-like",{at:"b",pad:2}],[6,"#pnv .jug-flag",{at:"b",pad:3}],[7,"#pnv .jug-perf",{at:"r"}]], r); });
+await T("lista", async () => { await P.go("/tickersearch", 6000); await P.scrollTo("#explorar", 100); await P.sleep(1500); await P.login(null); await P.go("/tickersearch", 6000); await P.scrollTo("#explorar", 100); await P.sleep(800); await P.shot("mercado-lista-a", [[1,".mkt-tabs",{at:"l"}],[2,".chips.scroll",{at:"t"}],[3,".list-filters .search-form",{at:"l"}],[4,".sort-seg",{at:"t"}],[5,".asset-row",{at:"l",pad:0}]]); });
+await T("osc", async () => { await P.login("manual@valeur.test"); await P.go("/tickersearch?symbol=AAPL.BA", 5000); await P.click(".vx-me",800); await P.click(".mp-cur button[title=Oscuro]",900); await P.key("Escape","Escape",27,0,900); await P.shot("oscuro-activo"); await P.click(".vx-me",800); await P.click(".mp-cur button[title=Claro]",800); await P.click(".mp-cur button|AR$",900); await P.shot("pesos-menu-a",[[1,".mp-cur",{at:"l"}],[2,".mp-cur ~ .mp-cur",{at:"l"}]]); await P.key("Escape","Escape",27); await P.go("/home",6000); await P.shot("pesos-inicio"); });
+await T("post", async () => { await P.login("manual@valeur.test"); await P.go("/u/manualdemo?editar=verify", 4000); });
+P.close(); process.exit(0);

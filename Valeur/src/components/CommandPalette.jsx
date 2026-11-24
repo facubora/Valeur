@@ -114,7 +114,7 @@ function Palette({ onClose, username }) {
     if (!nq) {
       // lo último que miraste; si todavía nada, lo que seguís
       const rec = recents();
-      const tiles = (rec.length ? rec : watch.data.map((w) => w.symbol)).slice(0, 4);
+      const tiles = (rec.length ? rec : watch.rows.map((w) => w.symbol)).slice(0, 4);
       if (tiles.length) out.push([rec.length ? "Recientes" : "Lo que seguís", tiles.map((s) => ({ kind: "asset", symbol: s, name: assetName(s) })), "tiles"]);
       out.push(["Hacer", ACTIONS.map(toItem)]);
       out.push(["Ir a", [...PAGES.map(toItem), ...(username ? [toItem([`/u/${username}`, "Mi perfil", "bi-person", `@${username}`])] : [])]]);
@@ -150,7 +150,7 @@ function Palette({ onClose, username }) {
     ];
     if (links.length) out.push(["Ir a", links.map(toItem)]);
     return out;
-  }, [nq, yahoo, people.rows, username, watch.data]);
+  }, [nq, yahoo, people.rows, username, watch.rows]);
 
   const flat = groups.flatMap(([, items]) => items);
   const sel = Math.min(cursor, Math.max(flat.length - 1, 0));

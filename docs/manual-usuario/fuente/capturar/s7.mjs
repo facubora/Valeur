@@ -1,0 +1,4 @@
+import { launch } from "./cdp.mjs"; const P = await launch(9383);
+await P.login(null); await P.go("/register", 2500); await P.type("#username","tunombre"); await P.type("#email","tu@email.com"); await P.type("[name=password]","Inversor2026!"); await P.type("[name=confirm]","Inversor2026!"); await P.click(".auth-form .btn-pink", 1800); await P.shot("registro-mail");
+await P.login("manual@valeur.test"); await P.go("/comunidad", 5000); await P.click(".rc-open", 1200); await P.type(".rc-pick input","MSFT",2500); await P.click(".suggest li", 3500); await P.type(".rc-why textarea","Azure y la IA siguen empujando los resultados. Compro de a poco."); await P.ev(()=>document.activeElement.blur()); await P.sleep(2500); await P.shot("recomendar-a", [[1,".rc-picked",{at:"l"}],[2,".rc-stances",{at:"l"}],[3,".rc-why textarea",{at:"l"}],[4,".rc-foot .vx-tabs",{at:"l"}],[5,".rc-foot .btn-pink",{at:"r"}]]);
+P.close(); process.exit(0);

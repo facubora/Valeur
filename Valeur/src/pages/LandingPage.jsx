@@ -18,6 +18,12 @@ const NAV = [
   ["#preguntas", "Preguntas"],
 ];
 
+/* Lo que se puede usar sin cuenta: la landing es la puerta, no un muro */
+const OPEN = [
+  ["/tickersearch", "Mercado", "bi-graph-up", "Precios y gráficos del momento"],
+  ["/aprende", "Aprendé", "bi-mortarboard", "CEDEAR, dólar MEP y más, explicado simple"],
+];
+
 /* Lo que hay adentro, cada cosa con un pedazo de la app al lado */
 const FEATURES = [
   {
@@ -45,6 +51,7 @@ const FEATURES = [
     points: ["Más de 90 activos ordenados por rubro", "Ideas para vos según lo que seguís", "Buscador con ⌘K desde cualquier pantalla"],
     Mock: MarketMock,
     hint: "Tocá las pestañas",
+    link: ["/tickersearch", "Abrir el mercado"],
   },
   {
     id: "alertas",
@@ -138,6 +145,12 @@ export default function LandingPage() {
                 {label}
               </a>
             ))}
+            <span className="lx-sep" aria-hidden="true" />
+            {OPEN.map(([to, label, icon]) => (
+              <Link key={to} to={to}>
+                <i className={"bi " + icon} aria-hidden="true" /> {label}
+              </Link>
+            ))}
           </nav>
           <div className="lx-right">
             <button type="button" className="icon-btn lx-theme" onClick={toggle} aria-label={dark ? "Modo claro" : "Modo oscuro"} title={dark ? "Modo claro" : "Modo oscuro"}>
@@ -160,6 +173,11 @@ export default function LandingPage() {
               <a key={href} href={href} onClick={() => setMenu(false)}>
                 {label}
               </a>
+            ))}
+            {OPEN.map(([to, label, icon]) => (
+              <Link key={to} to={to}>
+                <i className={"bi " + icon} aria-hidden="true" /> {label}
+              </Link>
             ))}
             <div className="lx-menu-btns">
               <Link to="/login" className="btn btn-line">
@@ -209,6 +227,24 @@ export default function LandingPage() {
             </div>
             <Showcase className="lx-show" />
           </div>
+          {/* para mirar sin registrarse: las mismas fichas del cajón de la app */}
+          <div className="wrap">
+            <nav className="lx-open" aria-label="Sin crear cuenta">
+              <span className="lx-lbl">Mirá sin crear cuenta</span>
+              {OPEN.map(([to, label, icon, sub]) => (
+                <Link key={to} to={to} className="card dr-tool">
+                  <span className="dr-tool-ic">
+                    <i className={"bi " + icon} />
+                  </span>
+                  <span>
+                    <b>{label}</b>
+                    <small>{sub}</small>
+                  </span>
+                  <i className="bi bi-arrow-right dr-tool-go" />
+                </Link>
+              ))}
+            </nav>
+          </div>
         </section>
 
         {/* PRODUCTO */}
@@ -222,7 +258,7 @@ export default function LandingPage() {
               <p>Todo lo que necesitás para seguir tus inversiones sin planillas ni diez apps abiertas.</p>
             </div>
             <div className="lx-feats">
-              {FEATURES.map(({ id, kicker, title, text, points, Mock, hint }, i) => (
+              {FEATURES.map(({ id, kicker, title, text, points, Mock, hint, link }, i) => (
                 <article key={id} id={id} className={"lx-feat" + (i % 2 ? " flip" : "")}>
                   <div className="lx-feat-copy">
                     <span className="kicker">{kicker}</span>
@@ -235,6 +271,11 @@ export default function LandingPage() {
                         </li>
                       ))}
                     </ul>
+                    {link && (
+                      <Link to={link[0]} className="btn btn-line lx-feat-go">
+                        {link[1]} <i className="bi bi-arrow-right" />
+                      </Link>
+                    )}
                   </div>
                   <div className="lx-feat-mock">
                     <Mock />
@@ -389,11 +430,17 @@ export default function LandingPage() {
                   <li>
                     <Link to="/login">Entrar</Link>
                   </li>
+                  <li>
+                    <Link to="/tickersearch">Ver el mercado</Link>
+                  </li>
                 </ul>
               </div>
               <div>
                 <b>Valeur</b>
                 <ul>
+                  <li>
+                    <Link to="/aprende">Aprendé</Link>
+                  </li>
                   <li>
                     <a href="#privacidad">Privacidad</a>
                   </li>

@@ -178,8 +178,8 @@
   border: 1px solid var(--line);
   border-radius: 14px;
   background: color-mix(in oklch, var(--surface) 92%, transparent);
-  backdrop-filter: saturate(1.6) blur(16px);
   -webkit-backdrop-filter: saturate(1.6) blur(16px);
+  backdrop-filter: saturate(1.6) blur(16px);
   box-shadow: 0 24px 60px -24px oklch(0.19 0 0 / 0.55);
 }
 .app-root .suggest li {
@@ -333,8 +333,8 @@
   justify-content: center;
   gap: 12px;
   background: color-mix(in oklch, var(--surface) 70%, transparent);
-  backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   text-align: center;
   padding: 24px;
 }
@@ -1398,8 +1398,8 @@
   justify-content: center;
   padding: 16px;
   background: color-mix(in oklch, var(--ink) 45%, transparent);
-  backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
   animation: fade-in 0.2s ease;
 }
 @keyframes fade-in {

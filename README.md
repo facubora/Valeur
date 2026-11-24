@@ -118,7 +118,7 @@ cd Valeur
 
 La primera vez instala todo (un par de minutos) y después abre **http://localhost:5173**.
 
-**Cuenta de prueba:** `profe@demo.valeur.test`. La contraseña está en la entrega de Classroom. La cuenta ya tiene portfolio, activos seguidos, alertas, amigos y una comunidad con recomendaciones.
+**Cuenta de prueba:** `profe@demo.valeur.test`. La contraseña está en la entrega de Classroom. La cuenta ya tiene portfolio, activos seguidos, alertas, amigos y una comunidad con recomendaciones. También es **admin**: usa Valeur como cualquier usuario y tiene el **Panel admin** en el menú de la cuenta.
 
 Documentación de la entrega en [`docs/entrega/`](docs/entrega/): el documento de arquitectura (TP3 corregido) y el manual técnico de testing y seguridad.
 
@@ -207,6 +207,8 @@ python demo.py cargar --usuario TU_USUARIO   # los de ejemplo te siguen a vos
 python demo.py profe --clave CONTRASEÑA      # cuenta de prueba con todo cargado
 python demo.py borrar                        # saca todo lo de ejemplo
 ```
+
+Para que la cuenta de prueba sea admin y el panel tenga algo para revisar (un pedido de verificado y una recomendación reportada), corré después [`supabase/demo_admin.sql`](supabase/demo_admin.sql) en el SQL Editor.
 
 ---
 

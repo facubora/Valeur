@@ -201,8 +201,8 @@
   inset: 0;
   z-index: -1;
   background: var(--glass);
-  backdrop-filter: saturate(1.8) blur(20px);
   -webkit-backdrop-filter: saturate(1.8) blur(20px);
+  backdrop-filter: saturate(1.8) blur(20px);
   transition: background 0.35s;
 }
 /* al bajar, la barra se achica para dejar más lugar al contenido */
@@ -1311,8 +1311,8 @@
 .app-root .vx-sub-fl {
   position: absolute;
   background: var(--glass);
-  backdrop-filter: saturate(1.8) blur(20px);
   -webkit-backdrop-filter: saturate(1.8) blur(20px);
+  backdrop-filter: saturate(1.8) blur(20px);
   pointer-events: none;
 }
 .app-root .vx-sub-bg {
@@ -1505,8 +1505,8 @@
   border: 1px solid color-mix(in oklch, var(--accent) 26%, transparent);
   border-radius: 10px;
   background: color-mix(in srgb, var(--accent) 9%, color-mix(in srgb, var(--surface) 60%, transparent));
-  backdrop-filter: saturate(1.8) blur(14px);
   -webkit-backdrop-filter: saturate(1.8) blur(14px);
+  backdrop-filter: saturate(1.8) blur(14px);
   color: var(--accent-text);
 }
 .app-root.shell .btn-line:hover {
@@ -1557,8 +1557,8 @@
 .app-root .vx-modal-bg {
   animation: none;
   background: oklch(0.2 0.03 265 / 0.22);
-  backdrop-filter: blur(3px) saturate(1.2);
   -webkit-backdrop-filter: blur(3px) saturate(1.2);
+  backdrop-filter: blur(3px) saturate(1.2);
 }
 [data-theme="dark"] .app-root .vx-modal-bg {
   background: oklch(0 0 0 / 0.5);
@@ -2425,8 +2425,8 @@
     grid-template-columns: repeat(4, 1fr);
     padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
     background: color-mix(in oklch, var(--surface) 90%, transparent);
-    backdrop-filter: saturate(1.5) blur(16px);
     -webkit-backdrop-filter: saturate(1.5) blur(16px);
+    backdrop-filter: saturate(1.5) blur(16px);
     border-top: 1px solid var(--line-soft);
     box-shadow: 0 -10px 28px -22px oklch(0.25 0.03 265 / 0.4);
   }
@@ -3713,8 +3713,8 @@
   padding: 20px;
   text-align: center;
   background: color-mix(in srgb, var(--surface) 94%, transparent);
-  backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
   animation: search-go-in 0.2s ease-out;
 }
 .app-root .jug-ask span {

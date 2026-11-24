@@ -38,6 +38,10 @@ export function useLandingMotion(rootRef) {
         gsap.to(show, { yPercent: 8, ease: "none", scrollTrigger: { trigger: ".lx-hero", start: "top top", end: "bottom top", scrub: 0.6 } });
       }
 
+      // los accesos sin cuenta suben después del hero
+      const open = q(".lx-open .dr-tool");
+      if (open.length) gsap.from(open, { y: 24, opacity: 0, duration: 1, ease: EASE, stagger: 0.08, delay: 0.35, ...handOff(open) });
+
       // títulos de sección: se destapan de abajo hacia arriba; la bajada llega atrás
       q(".lx-head").forEach((head) => {
         const tl = gsap.timeline({ scrollTrigger: enter(head) });
